@@ -2,6 +2,7 @@ import torch
 from scoring_rules import MLE_surv
 from base_models import Base_Linear
 from torch.distributions.log_normal import LogNormal
+from torch.distributions import Exponential
 from torch.distributions.constraint_registry import transform_to
 
 import numpy as np
@@ -31,7 +32,7 @@ class SurvBoost(object):
         return [torch.tensor(p, requires_grad=True) for p in params]
 
     def sample(self, X, Y, C):
-        return X, Y, C
+        return X, torch.Tensor(Y), torch.Tensor(C)
 
     def fit_base(self, X, resids):
         models = [self.Base().fit(X, rs) for rs in resids]
@@ -45,8 +46,8 @@ class SurvBoost(object):
 
             Forecast = self.D(params)
 
-            score = self.Score(Forecast, torch.Tensor(Y_batch), torch.Tensor(C_batch)).mean()
-            print('[iter %d] loss=%f' % (itr, float(score.data.numpy())))
+            score = self.Score(Forecast, Y_batch, C_batch).mean()
+            print('[iter %d] loss=%f' % (itr, float(score)))
 
             score.backward()
 

@@ -70,7 +70,6 @@ class SurvBoost(object):
             scale = self.line_search(lambda p_: self.Score(self.D(p_), Y_batch, C_batch).mean(), params, grads)
 
             resids = self.mul(grads, scale)
-            print(self.norm(resids), self.norm(grads), self.norm(params))
             if self.norm(resids) < 1e-5:
                 break
 

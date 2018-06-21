@@ -27,7 +27,7 @@ class SurvBoost(object):
 
         for models in self.base_models:
             base_params = [model.predict(X) for model in models]
-            params = [p + self.learning_rate * b for p, b in zip(params, base_params)]
+            params = [p - self.learning_rate * b for p, b in zip(params, base_params)]
         
         return [torch.tensor(p, requires_grad=True) for p in params]
 
@@ -37,6 +37,20 @@ class SurvBoost(object):
     def fit_base(self, X, resids):
         models = [self.Base().fit(X, rs) for rs in resids]
         self.base_models.append(models)
+
+    def mul(self, array, num):
+        return [a * num for a in array]
+
+    def norm(self, grads):
+        # of course this is not the norm, but serves the purpose
+        return sum([float(torch.norm(g)) for g in grads])
+
+    def line_search(self, fn, start, grad):
+        loss_init = fn(start)
+        scale = 1.
+        while float(fn(start + self.mul(grad, scale))) > float(loss_init):
+            scale = scale / 2.
+        return scale
 
     def fit(self, X, Y, C):
         for itr in range(self.n_estimators):
@@ -51,9 +65,16 @@ class SurvBoost(object):
 
             score.backward()
 
-            resids = [p.grad for p in params]
+            grads = [p.grad for p in params]
 
-            self.fit_base(X_batch, resids)
+            scale = self.line_search(lambda p_: self.Score(self.D(p_), Y_batch, C_batch).mean(), params, grads)
+
+            resids = self.mul(grads, scale)
+            print(self.norm(resids), self.norm(grads), self.norm(params))
+            if self.norm(resids) < 1e-5:
+                break
+
+            self.fit_base(X_batch, self.mul(resids, scale))
 
     def pred_dist(self, X):
         params = self.pred_param(X)
@@ -65,7 +86,7 @@ class SurvBoost(object):
         return dist.mean.data.numpy()
 
 def main():
-    m, n = 7, 3
+    m, n = 20, 3
     X = np.random.rand(m, n).astype(np.float32)
     Y = np.random.rand(m).astype(np.float32)
     C = (np.random.rand(m) > 0.5).astype(np.float32)

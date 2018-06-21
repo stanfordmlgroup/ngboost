@@ -41,6 +41,9 @@ class SurvBoost(object):
     def mul(self, array, num):
         return [a * num for a in array]
 
+    def sub(self, A, B):
+        return [a - b for a, b in zip(A, B)]
+
     def norm(self, grads):
         # of course this is not the norm, but serves the purpose
         return sum([float(torch.norm(g)) for g in grads])
@@ -48,7 +51,7 @@ class SurvBoost(object):
     def line_search(self, fn, start, grad):
         loss_init = fn(start)
         scale = 1.
-        while float(fn(start + self.mul(grad, scale))) > float(loss_init):
+        while float(fn(self.sub(start, self.mul(grad, scale)))) > float(loss_init):
             scale = scale / 2.
         return scale
 
@@ -89,6 +92,7 @@ def main():
     X = np.random.rand(m, n).astype(np.float32)
     Y = np.random.rand(m).astype(np.float32)
     C = (np.random.rand(m) > 0.5).astype(np.float32)
+    print(C)
 
     sb = SurvBoost()
     sb.fit(X, Y, C)

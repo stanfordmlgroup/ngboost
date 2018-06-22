@@ -29,7 +29,7 @@ class SurvBoost(object):
             base_params = [model.predict(X) for model in models]
             params = [p - self.learning_rate * b for p, b in zip(params, base_params)]
         
-        return [torch.tensor(p, requires_grad=True) for p in params]
+        return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p in params]
 
     def sample(self, X, Y, C):
         return X, torch.Tensor(Y), torch.Tensor(C)

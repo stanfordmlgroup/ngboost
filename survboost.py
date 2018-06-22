@@ -1,16 +1,22 @@
+import numpy as np
 import torch
 from scoring_rules import MLE_surv
 from base_models import Base_Linear
 from torch.distributions.log_normal import LogNormal
 from torch.distributions import Exponential
 from torch.distributions.constraint_registry import transform_to
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
-import numpy as np
+from evaluation import calculate_concordance_naive
+
 
 class SurvBoost(object):
-    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1):
+    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1, minibatch_frac=1.0):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
+        self.minibatch_frac = minibatch_frac
         self.Dist = Dist
         self.D = lambda args: Dist(*[transform_to(constraint)(arg) for (param, constraint), arg in zip(Dist.arg_constraints.items(), args)])
         self.Score = Score
@@ -32,7 +38,9 @@ class SurvBoost(object):
         return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p in params]
 
     def sample(self, X, Y, C):
-        return X, torch.Tensor(Y), torch.Tensor(C)
+        sample_size = int(self.minibatch_frac * len(Y))
+        idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
+        return X[idxs,:], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
 
     def fit_base(self, X, resids):
         models = [self.Base().fit(X, rs) for rs in resids]
@@ -103,14 +111,22 @@ def main():
     C = (np.random.rand(m) > 0.5).astype(np.float32)
     print(C)
 
-    sb = SurvBoost()
+    sb = SurvBoost(Base = DecisionTreeRegressor, n_estimators = 500)
     sb.fit(X, Y, C)
-    print(sb.pred_mean(X))
-    print(Y)
-    print(C)
+    preds_dt = sb.pred_mean(X)
+    # print(sb.pred_mean(X))
+    # print(Y)
+    # print(C)
+    
+    sb = SurvBoost(Base = LinearRegression, n_estimators = 500)
+    sb.fit(X, Y, C)
+    preds_lin = sb.pred_mean(X)
 
-    X_test = np.random.rand(m, n).astype(np.float32)
-    Y_pred = sb.pred_mean(X_test)
+    print("Train/DecTree:", calculate_concordance_naive(preds_dt, Y ,C))
+    print("Train/LinReg:", calculate_concordance_naive(preds_lin, Y ,C))
+
+    # X_test = np.random.rand(m, n).astype(np.float32)
+    # Y_pred = sb.pred_mean(X_test)
 
 
 if __name__ == '__main__':

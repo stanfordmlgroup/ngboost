@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Base_Linear(object):
     def __init__(self, l2=0.01):
         self.l2 = l2

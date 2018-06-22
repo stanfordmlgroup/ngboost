@@ -8,7 +8,7 @@ from torch.distributions.constraint_registry import transform_to
 import numpy as np
 
 class SurvBoost(object):
-    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear, n_estimators=100, learning_rate=0.1):
+    def __init__(self, Dist=Exponential, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.Dist = Dist
@@ -65,10 +65,13 @@ class SurvBoost(object):
 
             score = self.Score(Forecast, Y_batch, C_batch).mean()
             print('[iter %d] loss=%f' % (itr, float(score)))
+            if float(score) == float('-inf'):
+                break
 
             score.backward()
 
             grads = [p.grad for p in params]
+            print(self.norm(grads))
 
             scale = self.line_search(lambda p_: self.Score(self.D(p_), Y_batch, C_batch).mean(), params, grads)
 
@@ -88,7 +91,7 @@ class SurvBoost(object):
         return dist.mean.data.numpy()
 
 def main():
-    m, n = 20, 3
+    m, n = 10, 3
     X = np.random.rand(m, n).astype(np.float32)
     Y = np.random.rand(m).astype(np.float32)
     C = (np.random.rand(m) > 0.5).astype(np.float32)
@@ -96,11 +99,13 @@ def main():
 
     sb = SurvBoost()
     sb.fit(X, Y, C)
+    print(sb.pred_mean(X))
+    print(Y)
+    print(C)
 
     X_test = np.random.rand(m, n).astype(np.float32)
     Y_pred = sb.pred_mean(X_test)
 
-    print(Y_pred)
 
 if __name__ == '__main__':
     main()

@@ -8,7 +8,7 @@ from torch.distributions.constraint_registry import transform_to
 import numpy as np
 
 class SurvBoost(object):
-    def __init__(self, Dist=Exponential, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1):
+    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.Dist = Dist
@@ -67,6 +67,13 @@ class SurvBoost(object):
             print('[iter %d] loss=%f' % (itr, float(score)))
             if float(score) == float('-inf'):
                 break
+            if str(float(score)) == 'nan':
+                print(params)
+                print(self.Score(Forecast, Y_batch, C_batch))
+                for (m, s, y, c) in zip(params[0], params[1], Y_batch, C_batch):
+                    ln = LogNormal(m, s.exp())
+                    print(float(m), float(s), float(y), float(c), float(ln.log_prob(y)), float(ln.cdf(y)))
+                break
 
             score.backward()
 
@@ -91,7 +98,7 @@ class SurvBoost(object):
         return dist.mean.data.numpy()
 
 def main():
-    m, n = 10, 3
+    m, n = 100, 50
     X = np.random.rand(m, n).astype(np.float32)
     Y = np.random.rand(m).astype(np.float32)
     C = (np.random.rand(m) > 0.5).astype(np.float32)

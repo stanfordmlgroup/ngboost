@@ -78,7 +78,6 @@ class SurvBoost(object):
             score.backward()
 
             grads = [p.grad for p in params]
-            print(self.norm(grads))
 
             scale = self.line_search(lambda p_: self.Score(self.D(p_), Y_batch, C_batch).mean(), params, grads)
 

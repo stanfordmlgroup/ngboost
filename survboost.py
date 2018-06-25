@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-from scoring_rules import MLE_surv
+from scoring_rules import MLE_surv, CRPS_surv
 from base_models import Base_Linear
-from torch.distributions.log_normal import LogNormal
+from torch.distributions.log_normal import LogNormal, Normal
 from torch.distributions import Exponential
 from torch.distributions.constraint_registry import transform_to
 from sklearn.tree import DecisionTreeRegressor
@@ -107,23 +107,26 @@ class SurvBoost(object):
 def main():
     m, n = 100, 50
     X = np.random.rand(m, n).astype(np.float32)
-    Y = np.random.rand(m).astype(np.float32)
+    Y = np.random.rand(m).astype(np.float32) * 2 + 1
     C = (np.random.rand(m) > 0.5).astype(np.float32)
-    print(C)
 
-    sb = SurvBoost(Base = DecisionTreeRegressor, n_estimators = 500)
+    sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
+                   Dist = LogNormal,
+                   Score = CRPS_surv,
+                   n_estimators = 200)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)
     # print(sb.pred_mean(X))
     # print(Y)
     # print(C)
     
-    sb = SurvBoost(Base = LinearRegression, n_estimators = 500)
-    sb.fit(X, Y, C)
-    preds_lin = sb.pred_mean(X)
+#     sb = SurvBoost(Base = LinearRegression, n_estimators = 1000)
+#     sb.fit(X, Y, C)
+#     preds_lin = sb.pred_mean(X)
 
-    print("Train/DecTree:", calculate_concordance_naive(preds_dt, Y ,C))
-    print("Train/LinReg:", calculate_concordance_naive(preds_lin, Y ,C))
+    print("Train/DecTree:", calculate_concordance_naive(preds_dt, Y, C))
+    print('Pred_mean: %f, True_mean: %f' % (np.mean(preds_dt), np.mean(Y)))
+#    print("Train/LinReg:", calculate_concordance_naive(preds_lin, Y ,C))
 
     # X_test = np.random.rand(m, n).astype(np.float32)
     # Y_pred = sb.pred_mean(X_test)

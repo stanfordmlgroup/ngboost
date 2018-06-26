@@ -11,12 +11,17 @@ from evaluation import calculate_concordance_naive
 
 def gen_sim_data(N=50, M=5, var_explained=0.8, noise_dist=sp.stats.norm):
     """
-    Generate simulated data.
+    Generate simulated data, according to the process described in [1].
     
     Noise distribution should be one of:
     [ sp.stats.norm, sp.stats.genextreme, sp.stats.logistic ]
     
     Returns: (Y, X, beta)
+    
+    [1] Schmid, Matthias, and Torsten Hothorn. 
+    Flexible Boosting of Accelerated Failure Time Models.
+    BMC Bioinformatics 9 (June 6, 2008): 269. 
+    https://doi.org/10.1186/1471-2105-9-269.
     """
     cov_matrix = np.ones((M, M)) * 0.5 + np.eye(M) * 0.5
     covariates = sp.stats.multivariate_normal.rvs(cov=cov_matrix, size=N)
@@ -36,7 +41,9 @@ if __name__ == "__main__":
                    n_estimators = 200)
                    
     Y, X, beta = gen_sim_data(N=1000)
-    C = np.r_[np.zeros(len(Y) // 2), np.ones(len(Y) // 2)]
+    CENSORED_FRAC = 0.9
+    C = np.zeros_like(Y)
+    C[:int(CENSORED_FRAC * len(Y))] = 1
     sb.fit(X, Y, C)
     preds_train = sb.pred_mean(X)
     

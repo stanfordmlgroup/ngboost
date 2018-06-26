@@ -103,6 +103,10 @@ class SurvBoost(object):
     def pred_mean(self, X):
         dist = self.pred_dist(X)
         return dist.mean.data.numpy()
+        
+    def pred_median(self, X):
+        dist = self.pred_dist(X)
+        return dist.icdf(torch.tensor(0.5)).data.numpy()
 
 def main():
     m, n = 100, 50

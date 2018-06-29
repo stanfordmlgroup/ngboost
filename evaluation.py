@@ -1,5 +1,16 @@
+import numpy as np
 from tqdm import tqdm
+from sklearn.metrics import roc_auc_score
 
+
+def calculate_concordance_dead_only(preds, ys, cs):
+  """
+  Calculate C-statistic for only cases where outcome is uncensored.
+  """
+  return calculate_concordance_naive(np.array(preds[cs == 0]), 
+                                     np.array(ys[cs == 0]), 
+                                     np.array(cs[cs == 0]))
+    
 
 def calculate_concordance_naive(preds, ys, cs):
   """

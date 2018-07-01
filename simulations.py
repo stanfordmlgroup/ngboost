@@ -37,9 +37,8 @@ def gen_sim_data(N=50, M=5, var_explained=0.8, noise_dist=sp.stats.norm):
 def eval_preds(filename):
     preds = np.load(filename)
     df = pd.read_csv("data/simulated/sim_data_test.csv")
-    print(calculate_concordance_naive(preds, df["Y"], df["C"]))
-    # print(calculate_concordance_dead_only(preds, df["Y"], df["C"]))
-    print('Pred_mean: %f, True_mean: %f' % (np.mean(preds), np.mean(df["Y"])))
+    print("Concordance: %.4f" % calculate_concordance_naive(preds, df["Y"], df["C"]))
+    print('Pred_mean: %.4f, True_mean: %.2f' % (np.mean(preds), np.mean(df["Y"])))
     
     
 def run_survboost():
@@ -60,7 +59,7 @@ def run_survboost():
     
 if __name__ == "__main__":
     
-    Y, X, beta = gen_sim_data(N=1000, var_explained = 0.95)
+    Y, X, beta = gen_sim_data(N=1000, var_explained = 0.8)
     CENSORED_FRAC = 0.5
     C = np.zeros_like(Y)
     C[:int(CENSORED_FRAC * len(Y))] = 1

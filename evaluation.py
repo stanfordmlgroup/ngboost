@@ -3,6 +3,12 @@ from tqdm import tqdm
 from sklearn.metrics import roc_auc_score
 
 
+def empirical_loglik():
+  """
+  Calculate the empirical log-likihoo
+  """
+  pass
+
 def calculate_concordance_dead_only(preds, ys, cs):
   """
   Calculate C-statistic for only cases where outcome is uncensored.

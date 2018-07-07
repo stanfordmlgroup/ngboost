@@ -59,16 +59,15 @@ class SurvBoost(object):
         return [a - b for a, b in zip(A, B)]
 
     def norm(self, grads):
-        # of course this is not the norm, but serves the purpose
-        return sum([float(torch.norm(g)) for g in grads])
+        return np.linalg.norm([float(torch.norm(g)) for g in grads])
 
     def line_search(self, fn, start, resids):
         loss_init = float(fn(start))
-        scale = [1. for _ in resids]
+        scale = [10. for _ in resids]
         half = [0.5 for _ in resids]
         while True:
             new_loss = float(fn(self.sub(start, self.mul(resids, scale))))
-            if new_loss <= loss_init:
+            if new_loss < loss_init or self.norm(self.mul(resids, scale)) < 1e-5:
                 break
             scale = self.mul(scale, half)
         self.scalings.append(scale)
@@ -103,7 +102,7 @@ class SurvBoost(object):
 
             scale = self.line_search(S, params, resids)
 
-            if self.norm(self.mul(resids, scale)) < 1e-3:
+            if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
 
     def pred_dist(self, X):
@@ -129,7 +128,8 @@ def main():
                    Dist = LogNormal,
                    Score = CRPS_surv,
                    n_estimators = 1000,
-                   natural_gradient = True)
+                   natural_gradient = True,
+                   learning_rate = 1)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)
     # print(sb.pred_mean(X))

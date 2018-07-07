@@ -41,7 +41,7 @@ class MLE_surv(Score):
         return cov / self.K
 
 class CRPS_surv(Score):
-    def __init__(self, K=16):
+    def __init__(self, K=32):
         self.K = K
         pass
 
@@ -84,10 +84,10 @@ class CRPS_surv(Score):
             loss.backward(retain_graph=True)
 
             grads = torch.cat([p.grad.clone().reshape(-1, 1) for p in params], dim=1)
-            this_F = grads.reshape(m, 1, n) * grads.reshape(m, n, 1) / (this_x * this_x)
+            this_F = grads.reshape(m, 1, n) * grads.reshape(m, n, 1) / (th ** 2)
             Fdiff = 0.5 * (this_F + prev_F)
-            I_sum += Fdiff * xdiff
+            I_sum += Fdiff * 1./self.K
 
             prev_F = this_F
             prev_x = this_x
-        return I_sum
+        return 2 * I_sum

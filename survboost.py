@@ -124,7 +124,7 @@ def main():
 
     sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
                    Dist = LogNormal,
-                   Score = MLE_surv,
+                   Score = CRPS_surv,
                    n_estimators = 1000)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)

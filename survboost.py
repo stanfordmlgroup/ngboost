@@ -14,7 +14,7 @@ from evaluation import calculate_concordance_naive
 
 class SurvBoost(object):
     def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear,
-                 n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
+                 n_estimators=1000, learning_rate=1, minibatch_frac=1.0,
                  natural_gradient=True):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
@@ -140,7 +140,7 @@ def main():
 #     sb.fit(X, Y, C)
 #     preds_lin = sb.pred_mean(X)
 
-    print(sb.pred_dist(X[C == 1]).cdf(torch.tensor(Y[C == 1])))
+    #print(sb.pred_dist(X[C == 1]).cdf(torch.tensor(Y[C == 1])))
     print("Train/DecTree:", calculate_concordance_naive(preds_dt, Y, C))
     print('Pred_mean: %f, True_mean: %f' % (np.mean(preds_dt), np.mean(Y)))
 #    print("Train/LinReg:", calculate_concordance_naive(preds_lin, Y ,C))

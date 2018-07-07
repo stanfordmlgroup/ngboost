@@ -13,10 +13,13 @@ from evaluation import calculate_concordance_naive
 
 
 class SurvBoost(object):
-    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear, n_estimators=1000, learning_rate=1, minibatch_frac=1.0):
+    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear,
+                 n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
+                 natural_gradient=True):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
+        self.natural_gradient = natural_gradient
         self.Dist = Dist
         self.D = lambda args: Dist(*[transform_to(constraint)(arg) for (param, constraint), arg in zip(Dist.arg_constraints.items(), args)])
         self.Score = Score()
@@ -65,7 +68,7 @@ class SurvBoost(object):
         half = [0.5 for _ in resids]
         while True:
             new_loss = float(fn(self.sub(start, self.mul(resids, scale))))
-            if new_loss < loss_init:
+            if new_loss <= loss_init:
                 break
             scale = self.mul(scale, half)
         self.scalings.append(scale)
@@ -94,7 +97,7 @@ class SurvBoost(object):
 
             score.backward(retain_graph=True)
 
-            grads = self.Score.grad(params, self.D)
+            grads = self.Score.grad(params, self.D, natural_gradient=self.natural_gradient)
 
             resids = self.fit_base(X_batch, grads)
 
@@ -125,7 +128,8 @@ def main():
     sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
                    Dist = LogNormal,
                    Score = CRPS_surv,
-                   n_estimators = 1000)
+                   n_estimators = 1000,
+                   natural_gradient = True)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)
     # print(sb.pred_mean(X))

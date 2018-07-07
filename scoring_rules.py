@@ -2,8 +2,10 @@ import torch
 import numpy as np
 
 class Score(object):
-    def grad(self, params, D):
+    def grad(self, params, D, natural_gradient=True):
         grad = [p.grad.clone() for p in params]
+        if not natural_gradient:
+            return grad
         grads = torch.cat([g.reshape(-1, 1) for g in grad], dim=1)
         Forecast = D(params)
         metric = self.metric(params, Forecast)

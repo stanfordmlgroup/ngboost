@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 import torch
 from scoring_rules import MLE_surv, CRPS_surv
 from base_models import Base_Linear
@@ -15,11 +16,13 @@ from evaluation import calculate_concordance_naive
 class SurvBoost(object):
     def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear,
                  n_estimators=1000, learning_rate=1, minibatch_frac=1.0,
-                 natural_gradient=True):
+                 natural_gradient=True, quadrant_search=False, nu_penalty=0.0001):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
         self.natural_gradient = natural_gradient
+        self.do_quadrant_search = quadrant_search
+        self.nu_penalty = nu_penalty
         self.Dist = Dist
         self.D = lambda args: Dist(*[transform_to(constraint)(arg) for (param, constraint), arg in zip(Dist.arg_constraints.items(), args)])
         self.Score = Score()
@@ -73,6 +76,16 @@ class SurvBoost(object):
         self.scalings.append(scale)
         return scale
 
+    def quadrant_search(self, fn, start, resids):
+        def lossfn(lognu):
+            nu = [float(n) for n in np.exp(lognu)]
+            return float(fn(self.sub(start, self.mul(resids, nu)))) + self.nu_penalty * np.linalg.norm(nu)**2
+        lognu0 = np.array([0. for _ in resids])
+        res = scipy.optimize.minimize(lossfn, lognu0, method='Nelder-Mead', tol=1e-6)
+        scale = [float(np.exp(f)) for f in res.x]
+        self.scalings.append(scale)
+        return scale
+
     def fit(self, X, Y, C):
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
@@ -100,7 +113,10 @@ class SurvBoost(object):
 
             resids = self.fit_base(X_batch, grads)
 
-            scale = self.line_search(S, params, resids)
+            if self.do_quadrant_search:
+                scale = self.quadrant_search(S, params, resids)
+            else:
+                scale = self.line_search(S, params, resids)
 
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
@@ -128,8 +144,10 @@ def main():
                    Dist = LogNormal,
                    Score = CRPS_surv,
                    n_estimators = 1000,
+                   learning_rate = 1,
                    natural_gradient = True,
-                   learning_rate = 1)
+                   quadrant_search = True,
+                   nu_penalty=1e-5)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)
     # print(sb.pred_mean(X))

@@ -5,7 +5,7 @@ from sklearn.metrics import roc_auc_score
 
 def empirical_loglik():
   """
-  Calculate the empirical log-likihoo
+  Calculate the empirical log-likihood.
   """
   pass
 

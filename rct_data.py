@@ -56,6 +56,5 @@ if __name__ == "__main__":
     preds = sb.pred_dist(sprint["X"])
 
     pred_means = preds.mean.detach().numpy()
-    print(calculate_concordance_naive(pred_means, sprint["t"] / 365.25, 
-                                      1 - sprint["y"]))
+    print(calculate_concordance_naive(pred_means, sprint["t"] / 365.25, 1 - sprint["y"]))
 

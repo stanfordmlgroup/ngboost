@@ -16,11 +16,13 @@ from evaluation import calculate_concordance_naive
 class SurvBoost(object):
     def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear,
                  n_estimators=1000, learning_rate=1, minibatch_frac=1.0,
-                 natural_gradient=True, quadrant_search=False, nu_penalty=0.0001):
+                 natural_gradient=True, second_order=True,
+                 quadrant_search=False, nu_penalty=0.0001):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
         self.natural_gradient = natural_gradient
+        self.second_order = second_order
         self.do_quadrant_search = quadrant_search
         self.nu_penalty = nu_penalty
         self.Dist = Dist
@@ -50,7 +52,7 @@ class SurvBoost(object):
         return idxs, X[idxs,:], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
 
     def fit_base(self, X, grads):
-        models = [self.Base().fit(X, g) for g in grads]
+        models = [self.Base().fit(X, g.detach().numpy()) for g in grads]
         self.base_models.append(models)
         fitted = [torch.Tensor(m.predict(X)) for m in models]
         return fitted
@@ -107,9 +109,9 @@ class SurvBoost(object):
                     print(float(m), float(s), float(y), float(c), float(ln.log_prob(y)), float(ln.cdf(y)))
                 break
 
-            score.backward(retain_graph=True)
-
-            grads = self.Score.grad(params, self.D, natural_gradient=self.natural_gradient)
+            score.backward(retain_graph=True, create_graph=True)
+            
+            grads = self.Score.grad(params, self.D, natural_gradient=self.natural_gradient, second_order=self.second_order)
 
             resids = self.fit_base(X_batch, grads)
 
@@ -143,10 +145,11 @@ def main():
     sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
                    Dist = LogNormal,
                    Score = CRPS_surv,
-                   n_estimators = 1000,
+                   n_estimators = 10,
                    learning_rate = 1,
                    natural_gradient = True,
-                   quadrant_search = True,
+                   second_order = True,
+                   quadrant_search = False,
                    nu_penalty=1e-5)
     sb.fit(X, Y, C)
     preds_dt = sb.pred_mean(X)

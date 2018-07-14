@@ -2,16 +2,30 @@ import torch
 import numpy as np
 
 class Score(object):
-    def grad(self, params, D, natural_gradient=True):
+  
+    def grad(self, params, D, natural_gradient=True, second_order=True):
         grad = [p.grad.clone() for p in params]
-        if not natural_gradient:
+        if not natural_gradient and not second_order:
             return grad
+            
         grads = torch.cat([g.reshape(-1, 1) for g in grad], dim=1)
-        Forecast = D(params)
-        metric = self.metric(params, Forecast)
-        nat_grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, metric)], dim=0)
-        nat_grad = [ng.reshape(-1) for ng in torch.split(nat_grads, 1, dim=1)]
-        return nat_grad
+        
+        if second_order:
+            M, P = len(grads), len(params)
+            hessians = torch.zeros((M, P, P))
+            for i in range(P):
+                second_derivs = torch.autograd.grad(grads[:,i].split(1), params, retain_graph=True)
+                for j, g in enumerate(second_derivs):
+                    hessians[:,i,j] = g
+            grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, hessians)], dim=0)
+        
+        if natural_gradient:
+            Forecast = D(params)
+            metric = self.metric(params, Forecast)
+            grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, metric)], dim=0)
+            
+        grad = [ng.reshape(-1) for ng in torch.split(grads, 1, dim=1)]
+        return grad
 
     def inverse(self, matrix):
         m = int(matrix.shape[0])

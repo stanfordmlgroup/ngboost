@@ -17,8 +17,12 @@ class Score(object):
                 second_derivs = torch.autograd.grad(grads[:,i].split(1), params, retain_graph=True)
                 for j, g in enumerate(second_derivs):
                     hessians[:,i,j] = g
+            for k in range(M):
+                L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
+                L = torch.diag(torch.abs(L[:,0]))
+                hessians[k,:,:] = U @ L @ torch.transpose(U, 1, 0)
             grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, hessians)], dim=0)
-        
+
         if natural_gradient:
             Forecast = D(params)
             metric = self.metric(params, Forecast)

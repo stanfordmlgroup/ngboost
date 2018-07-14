@@ -145,7 +145,7 @@ def main():
     sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
                    Dist = LogNormal,
                    Score = CRPS_surv,
-                   n_estimators = 10,
+                   n_estimators = 12,
                    learning_rate = 1,
                    natural_gradient = True,
                    second_order = True,

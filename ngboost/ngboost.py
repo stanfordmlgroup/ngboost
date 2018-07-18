@@ -14,7 +14,7 @@ class NGBoost(object):
     def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=DecisionTreeRegressor,
                  n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
                  natural_gradient=True, second_order=True,
-                 quadrant_search=False, nu_penalty=0.0001):
+                 quadrant_search=False, nu_penalty=0.0001, verbose=True):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
@@ -22,6 +22,7 @@ class NGBoost(object):
         self.second_order = second_order
         self.do_quadrant_search = quadrant_search
         self.nu_penalty = nu_penalty
+        self.verbose = verbose
         self.Dist = Dist
         self.D = lambda args: Dist(*[transform_to(constraint)(arg) for (param, constraint), arg in zip(Dist.arg_constraints.items(), args)])
         self.Score = Score()
@@ -93,7 +94,8 @@ class NGBoost(object):
             params = self.pred_param(X_batch)
             score = S(params)
 
-            print('[iter %d] loss=%f' % (itr, float(score)))
+            if self.verbose:
+                print('[iter %d] loss=%f' % (itr, float(score)))
             if float(score) == float('-inf'):
                 break
             if str(float(score)) == 'nan':

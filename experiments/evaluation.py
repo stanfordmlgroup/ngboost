@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, r2_score
 
 
 def empirical_loglik():

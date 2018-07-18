@@ -4,7 +4,6 @@ library(pracma)
 library(ranger)
 library(tidyverse)
 library(BART)
-library(flexsurv)
 library(RcppCNPy)
 
 
@@ -69,4 +68,9 @@ surv_forest = ranger(Surv(Y, 1 - C) ~ ., data = train_data)
 preds = predict(surv_forest, data = test_data)
 expected = apply(preds$survival, 1, function(x) trapz(preds$unique.death.times, x) )
 npySave("data/simulated/sim_preds_survforest.npy", expected)
+
+
+gb <- mboost(Surv(time, status) ~ ., data = lung, baselearner = "bols",
+            control = boost_control(mstop = 200),
+            family = Weibull())
 

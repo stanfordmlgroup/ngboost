@@ -43,4 +43,3 @@ def calculate_concordance_naive(preds, ys, cs):
           concordance += 0.5
         counter += 1
   return concordance / counter
-

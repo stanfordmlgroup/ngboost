@@ -1,14 +1,12 @@
 from __future__ import division, print_function
 
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from torch.distributions import Exponential, LogNormal
+import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression
-from survboost import SurvBoost
-from tqdm import tqdm
-from evaluation import calculate_concordance_naive
+from torch.distributions import LogNormal
+
+from ngboost import SurvNGBoost, CRPS_surv
+from experiments.evaluation import calculate_concordance_naive
 
 
 def load_data(dataset):
@@ -46,10 +44,16 @@ def load_data(dataset):
 if __name__ == "__main__":
 
     sprint = load_data("sprint")
-    sb = SurvBoost(learning_rate = 1, n_estimators = 500, 
-                   Base = DecisionTreeRegressor,
-                   Dist = LogNormal, 
-                   minibatch_frac = 0.25)
+    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
+                     Dist = LogNormal,
+                     Score = CRPS_surv,
+                     n_estimators = 50,
+                     learning_rate = 0.1,
+                     natural_gradient = True,
+                     second_order = True,
+                     quadrant_search = False,
+                     minibatch_frac = 1.0,
+                     nu_penalty=1e-5)
     sb.fit(sprint["X"], sprint["t"] / 365.25, 1-sprint["y"])
 
     truth = sprint["t"] / 365.25

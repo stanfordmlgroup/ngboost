@@ -1,21 +1,18 @@
 import numpy as np
 import scipy
 import torch
-from scoring_rules import MLE_surv, CRPS_surv
-from base_models import Base_Linear
-from torch.distributions.log_normal import LogNormal, Normal
-from torch.distributions import Exponential
-from torch.distributions.constraint_registry import transform_to
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
+from torch.distributions.constraint_registry import transform_to
+from torch.distributions.log_normal import LogNormal
 
-from evaluation import calculate_concordance_naive
+from experiments.evaluation import calculate_concordance_naive
+from ngboost.scores import MLE_surv, CRPS_surv
 
 
-class SurvBoost(object):
-    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=Base_Linear,
-                 n_estimators=1000, learning_rate=1, minibatch_frac=1.0,
+class NGBoost(object):
+
+    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=DecisionTreeRegressor,
+                 n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
                  natural_gradient=True, second_order=True,
                  quadrant_search=False, nu_penalty=0.0001):
         self.n_estimators = n_estimators
@@ -43,13 +40,13 @@ class SurvBoost(object):
         for models, scalings in zip(self.base_models, self.scalings):
             base_params = [model.predict(X) for model in models]
             params = [p - self.learning_rate * b for p, b in zip(params, self.mul(base_params, scalings))]
-        
+
         return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p in params]
 
-    def sample(self, X, Y, C):
+    def sample(self, X, Y):
         sample_size = int(self.minibatch_frac * len(Y))
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
-        return idxs, X[idxs,:], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
+        return idxs, X[idxs,:], torch.Tensor(Y[idxs])
 
     def fit_base(self, X, grads):
         models = [self.Base().fit(X, g.detach().numpy()) for g in grads]
@@ -88,14 +85,12 @@ class SurvBoost(object):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y, C):
+    def fit(self, X, Y):
         for itr in range(self.n_estimators):
-            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
+            idxs, X_batch, Y_batch = self.sample(X, Y)
 
-            S = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
-
+            S = lambda p: self.Score(self.D(p), Y_batch).mean()
             params = self.pred_param(X_batch)
-
             score = S(params)
 
             print('[iter %d] loss=%f' % (itr, float(score)))
@@ -104,15 +99,10 @@ class SurvBoost(object):
             if str(float(score)) == 'nan':
                 print(params)
                 print(S(params))
-                for (m, s, y, c) in zip(params[0], params[1], Y_batch, C_batch):
-                    ln = LogNormal(m, s.exp())
-                    print(float(m), float(s), float(y), float(c), float(ln.log_prob(y)), float(ln.cdf(y)))
                 break
 
             score.backward(retain_graph=True, create_graph=True)
-            
             grads = self.Score.grad(params, self.D, natural_gradient=self.natural_gradient, second_order=self.second_order)
-
             resids = self.fit_base(X_batch, grads)
 
             if self.do_quadrant_search:
@@ -131,10 +121,47 @@ class SurvBoost(object):
     def pred_mean(self, X):
         dist = self.pred_dist(X)
         return dist.mean.data.numpy()
-        
+
     def pred_median(self, X):
         dist = self.pred_dist(X)
         return dist.icdf(torch.tensor(0.5)).data.numpy()
+
+
+class SurvNGBoost(NGBoost):
+
+    def sample(self, X, Y, C):
+        sample_size = int(self.minibatch_frac * len(Y))
+        idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
+        return idxs, X[idxs, :], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
+
+    def fit(self, X, Y, C):
+        for itr in range(self.n_estimators):
+            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
+
+            S = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
+            params = self.pred_param(X_batch)
+            score = S(params)
+
+            print('[iter %d] loss=%f' % (itr, float(score)))
+            if float(score) == float('-inf'):
+                break
+            if str(float(score)) == 'nan':
+                print(params)
+                print(S(params))
+                break
+
+            score.backward(retain_graph=True, create_graph=True)
+            grads = self.Score.grad(params, self.D, natural_gradient=self.natural_gradient, second_order=self.second_order)
+            resids = self.fit_base(X_batch, grads)
+
+            if self.do_quadrant_search:
+                scale = self.quadrant_search(S, params, resids)
+            else:
+                scale = self.line_search(S, params, resids)
+
+            if self.norm(self.mul(resids, scale)) < 1e-5:
+                break
+
 
 def main():
     m, n = 100, 50
@@ -142,32 +169,20 @@ def main():
     Y = np.random.rand(m).astype(np.float32) * 2 + 1
     C = (np.random.rand(m) > 0.5).astype(np.float32)
 
-    sb = SurvBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
-                   Dist = LogNormal,
-                   Score = CRPS_surv,
-                   n_estimators = 12,
-                   learning_rate = 1,
-                   natural_gradient = True,
-                   second_order = True,
-                   quadrant_search = False,
-                   nu_penalty=1e-5)
+    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
+                     Dist = LogNormal,
+                     Score = CRPS_surv,
+                     n_estimators = 12,
+                     learning_rate = 0.1,
+                     natural_gradient = True,
+                     second_order = True,
+                     quadrant_search = False,
+                     nu_penalty=1e-5)
     sb.fit(X, Y, C)
-    preds_dt = sb.pred_mean(X)
-    # print(sb.pred_mean(X))
-    # print(Y)
-    # print(C)
-    
-#     sb = SurvBoost(Base = LinearRegression, n_estimators = 1000)
-#     sb.fit(X, Y, C)
-#     preds_lin = sb.pred_mean(X)
+    preds = sb.pred_mean(X)
 
-    #print(sb.pred_dist(X[C == 1]).cdf(torch.tensor(Y[C == 1])))
-    print("Train/DecTree:", calculate_concordance_naive(preds_dt, Y, C))
-    print('Pred_mean: %f, True_mean: %f' % (np.mean(preds_dt), np.mean(Y)))
-#    print("Train/LinReg:", calculate_concordance_naive(preds_lin, Y ,C))
-
-    # X_test = np.random.rand(m, n).astype(np.float32)
-    # Y_pred = sb.pred_mean(X_test)
+    print("Train/DecTree:", calculate_concordance_naive(preds, Y, C))
+    print('Pred_mean: %f, True_mean: %f' % (np.mean(preds), np.mean(Y)))
 
 
 if __name__ == '__main__':

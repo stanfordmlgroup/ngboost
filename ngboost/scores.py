@@ -1,15 +1,16 @@
 import torch
 import numpy as np
 
+
 class Score(object):
-  
+
     def grad(self, params, D, natural_gradient=True, second_order=True):
         grad = [p.grad.clone() for p in params]
         if not natural_gradient and not second_order:
             return grad
-            
+
         grads = torch.cat([g.reshape(-1, 1) for g in grad], dim=1)
-        
+
         if second_order:
             M, P = len(grads), len(params)
             hessians = torch.zeros((M, P, P))
@@ -18,7 +19,10 @@ class Score(object):
                 for j, g in enumerate(second_derivs):
                     hessians[:,i,j] = g
             for k in range(M):
-                L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
+                try:
+                    L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
+                except:
+                    breakpoint()
                 L = torch.diag(torch.abs(L[:,0]))
                 hessians[k,:,:] = U @ L @ torch.transpose(U, 1, 0)
             grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, hessians)], dim=0)
@@ -27,7 +31,10 @@ class Score(object):
             Forecast = D(params)
             metric = self.metric(params, Forecast)
             grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, metric)], dim=0)
-            
+
+            if torch.any(torch.isnan(grads)):
+                breakpoint()
+
         grad = [ng.reshape(-1) for ng in torch.split(grads, 1, dim=1)]
         return grad
 
@@ -36,16 +43,16 @@ class Score(object):
         return torch.inverse(matrix + 1e-2 * torch.eye(m))
 
 
-class MLE_surv(Score):
+class MLE(Score):
+
     def __init__(self, K=32):
         self.K = K
-        pass
 
-    def loss(self, Forecast, Y, C):
-        return - ((1 - C) * Forecast.log_prob(Y) + (1 - Forecast.cdf(Y) + 1e-5).log() * C)
+    def __call__(self, Forecast, Y):
+        return self.loss(Forecast, Y)
 
-    def __call__(self, Forecast, Y, C):
-        return self.loss(Forecast, Y, C)
+    def loss(self, Forecast, Y):
+        return -Forecast.log_prob(Y)
 
     def metric(self, params, Forecast):
         cov = 0
@@ -59,6 +66,16 @@ class MLE_surv(Score):
             grads = torch.cat([p.grad.clone().reshape(-1, 1) for p in params], dim=1)
             cov += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
         return cov / self.K
+
+
+class MLE_surv(MLE):
+
+    def loss(self, Forecast, Y, C):
+        return - ((1 - C) * Forecast.log_prob(Y) + (1 - Forecast.cdf(Y) + 1e-5).log() * C)
+
+    def __call__(self, Forecast, Y, C):
+        return self.loss(Forecast, Y, C)
+
 
 class CRPS_surv(Score):
     def __init__(self, K=32):

@@ -1,14 +1,13 @@
-import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.stats
-from survboost import SurvBoost
-from scoring_rules import *
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression
-from torch.distributions.log_normal import LogNormal, Normal
-from evaluation import *
 from scipy.stats import norm
+from sklearn.tree import DecisionTreeRegressor
+from torch.distributions.log_normal import LogNormal
+
+from ngboost import SurvNGBoost
+from ngboost.scores import *
+from experiments.evaluation import *
 
 '''
 Below are a set of functions for parameters
@@ -168,10 +167,10 @@ def run_survboost():
     df_train = pd.read_csv("data/simulated/sim_data_train.csv")
     df_test = pd.read_csv("data/simulated/sim_data_test.csv")
 
-    sb = SurvBoost(Base = lambda: DecisionTreeRegressor(criterion='mse'),
-                   Dist = LogNormal,
-                   Score = CRPS_surv,
-                   n_estimators = 200)
+    sb = SurvNGBoost(Base = lambda: DecisionTreeRegressor(criterion='mse'),
+                     Dist = LogNormal,
+                     Score = CRPS_surv,
+                     n_estimators = 200)
 
     sb.fit(df_train.drop(["Y", "C"], axis=1).as_matrix(), 
            df_train["Y"], df_train["C"])

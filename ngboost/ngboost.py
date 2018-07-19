@@ -1,9 +1,11 @@
 import numpy as np
 import scipy
 import torch
+
 from sklearn.tree import DecisionTreeRegressor
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions.log_normal import LogNormal
+from torch.optim.adam import Adam
 
 from experiments.evaluation import calculate_concordance_naive
 from ngboost.scores import MLE_surv, CRPS_surv
@@ -27,16 +29,13 @@ class NGBoost(object):
         self.D = lambda args: Dist(*[transform_to(constraint)(arg) for (param, constraint), arg in zip(Dist.arg_constraints.items(), args)])
         self.Score = Score()
         self.Base = Base
+        self.init_params = []
         self.base_models = []
         self.scalings = []
 
-    def init_params(self, size):
-        Z = lambda l: np.zeros(size).astype(np.float32)
-        return [Z(size) for _ in  self.Dist.arg_constraints]
-
     def pred_param(self, X):
         m, n = X.shape
-        params = self.init_params(m)
+        params = [p * np.ones(m) for p in self.init_params]
 
         for models, scalings in zip(self.base_models, self.scalings):
             base_params = [model.predict(X) for model in models]
@@ -87,6 +86,9 @@ class NGBoost(object):
         return scale
 
     def fit(self, X, Y):
+
+        S = lambda p: self.Score(self.D(p), torch.tensor(Y, dtype=torch.float32)).mean()
+        self.fit_init_params_to_marginal(S)
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch = self.sample(X, Y)
 
@@ -115,6 +117,31 @@ class NGBoost(object):
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
 
+    def fit_init_params_to_marginal(self, S):
+
+        init_params = [torch.tensor(0., requires_grad=True) for _ in  self.Dist.arg_constraints]
+        opt = Adam(init_params, lr=0.01)
+
+        if self.verbose:
+            print("Fitting marginal distribution via MLE, until convergence...")
+
+        prev_loss = 0.
+        for i in range(10**10):
+            opt.zero_grad()
+            loss = S(init_params)
+            loss.backward(retain_graph=True)
+            opt.step()
+            curr_loss = loss.data.numpy()
+            if np.abs(prev_loss - curr_loss) < 1e-5:
+                break
+            prev_loss = curr_loss
+
+        self.init_params = [p.detach().numpy() for p in init_params]
+
+        if self.verbose:
+            print("Initial params: ", self.init_params)
+
+
     def pred_dist(self, X):
         params = self.pred_param(X)
         dist = self.D(params)
@@ -137,6 +164,8 @@ class SurvNGBoost(NGBoost):
         return idxs, X[idxs, :], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
 
     def fit(self, X, Y, C):
+        S = lambda p: self.Score(self.D(p), torch.tensor(Y, dtype=torch.float32), torch.tensor(C, dtype=torch.float32)).mean()
+        self.fit_init_params_to_marginal(S)
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
 

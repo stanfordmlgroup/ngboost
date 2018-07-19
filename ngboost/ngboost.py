@@ -123,7 +123,7 @@ class NGBoost(object):
         opt = Adam(init_params, lr=0.01)
 
         if self.verbose:
-            print("Fitting marginal distribution via MLE, until convergence...")
+            print("Fitting marginal distribution, until convergence...")
 
         prev_loss = 0.
         for i in range(10**10):

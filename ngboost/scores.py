@@ -77,34 +77,35 @@ class MLE_surv(MLE):
         return self.loss(Forecast, Y, C)
 
 
-class CRPS_surv(Score):
+class CRPS(Score):
+
     def __init__(self, K=32):
         self.K = K
-        pass
 
-    def loss(self, Forecast, Y, C):
-        def I(F, U):
-            I_sum = 0.
-            for th in np.linspace(0, 1., self.K):
-                if th == 0:
-                    prev_F = 0.
-                    prev_x = 0.
-                    continue
-                this_x = U * th
-                this_F = F(this_x)
-                Fdiff = 0.5 * (this_F + prev_F)
-                xdiff = this_x - prev_x
-                I_sum += (Fdiff * xdiff)
-                prev_F = this_F
-                prev_x = this_x
-            return I_sum
+    def __call__(self, Forecast, Y):
+        return self.loss(Forecast, Y)
 
-        left = I(lambda y: Forecast.cdf(y).pow(2), Y)
-        right = I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
-        return (left + (1 - C) * right)
+    def I(self, F, U):
+        I_sum = 0.
+        for th in np.linspace(0, 1., self.K):
+            if th == 0:
+                prev_F = 0.
+                prev_x = 0.
+                continue
+            this_x = U * th
+            this_F = F(this_x)
+            Fdiff = 0.5 * (this_F + prev_F)
+            xdiff = this_x - prev_x
+            I_sum += (Fdiff * xdiff)
+            prev_F = this_F
+            prev_x = this_x
+        return I_sum
 
-    def __call__(self, Forecast, Y, C):
-        return self.loss(Forecast, Y, C)
+    def loss(self, Forecast, Y):
+
+        left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
+        right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
+        return left + right
 
     def metric(self, params, Forecast):
         m, n = int(params[0].shape[0]), len(params)
@@ -128,3 +129,15 @@ class CRPS_surv(Score):
             prev_F = this_F
             prev_x = this_x
         return 2 * I_sum
+
+
+class CRPS_surv(CRPS):
+
+    def loss(self, Forecast, Y, C):
+        left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
+        right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
+        return (left + (1 - C) * right)
+
+    def __call__(self, Forecast, Y, C):
+        return self.loss(Forecast, Y, C)
+

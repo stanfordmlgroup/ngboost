@@ -1,4 +1,5 @@
 from __future__ import print_function
+import numpy as np
 
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
@@ -19,7 +20,7 @@ if __name__ == "__main__":
 
     ngb = NGBoost(Base=lambda: DecisionTreeRegressor(criterion='mse'),
                   Dist=Normal,
-                  Score=CRPS,
+                  Score=MLE,
                   n_estimators=100,
                   learning_rate=0.5,
                   natural_gradient=True,

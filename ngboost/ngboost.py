@@ -5,7 +5,7 @@ import torch
 from sklearn.tree import DecisionTreeRegressor
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions.log_normal import LogNormal
-from torch.optim.adam import Adam
+from torch.optim import LBFGS
 
 from experiments.evaluation import calculate_concordance_naive
 from ngboost.scores import MLE_surv, CRPS_surv
@@ -120,17 +120,19 @@ class NGBoost(object):
     def fit_init_params_to_marginal(self, S):
 
         init_params = [torch.tensor(0., requires_grad=True) for _ in  self.Dist.arg_constraints]
-        opt = Adam(init_params, lr=0.01)
+        opt = LBFGS(init_params, lr=1.)
 
         if self.verbose:
             print("Fitting marginal distribution, until convergence...")
 
         prev_loss = 0.
+
         for i in range(10**10):
+
             opt.zero_grad()
             loss = S(init_params)
             loss.backward(retain_graph=True)
-            opt.step()
+            opt.step(lambda: loss)
             curr_loss = loss.data.numpy()
             if np.abs(prev_loss - curr_loss) < 1e-5:
                 break

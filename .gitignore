@@ -6,8 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-# Distribution / packaging
-.Python
+# Distribution / packaging .Python
 build/
 develop-eggs/
 dist/
@@ -102,3 +101,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Get rid of data
+*.csv
+*.Rdata
+*.npy

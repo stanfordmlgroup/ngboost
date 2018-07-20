@@ -7,13 +7,12 @@ from torch.distributions.constraint_registry import transform_to
 from torch.distributions.log_normal import LogNormal
 from torch.optim import LBFGS
 
-from experiments.evaluation import calculate_concordance_naive
-from ngboost.scores import MLE_surv, CRPS_surv
+from ngboost.scores import MLE, MLE_surv
 
 
 class NGBoost(object):
 
-    def __init__(self, Dist=LogNormal, Score=MLE_surv, Base=DecisionTreeRegressor,
+    def __init__(self, Dist=LogNormal, Score=MLE, Base=DecisionTreeRegressor,
                  n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
                  natural_gradient=True, second_order=True,
                  quadrant_search=False, nu_penalty=0.0001, verbose=True):
@@ -194,29 +193,3 @@ class SurvNGBoost(NGBoost):
 
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
-
-
-def main():
-    m, n = 100, 50
-    X = np.random.rand(m, n).astype(np.float32)
-    Y = np.random.rand(m).astype(np.float32) * 2 + 1
-    C = (np.random.rand(m) > 0.5).astype(np.float32)
-
-    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='mse'),
-                     Dist = LogNormal,
-                     Score = CRPS_surv,
-                     n_estimators = 12,
-                     learning_rate = 0.1,
-                     natural_gradient = True,
-                     second_order = True,
-                     quadrant_search = False,
-                     nu_penalty=1e-5)
-    sb.fit(X, Y, C)
-    preds = sb.pred_mean(X)
-
-    print("Train/DecTree:", calculate_concordance_naive(preds, Y, C))
-    print('Pred_mean: %f, True_mean: %f' % (np.mean(preds), np.mean(Y)))
-
-
-if __name__ == '__main__':
-    main()

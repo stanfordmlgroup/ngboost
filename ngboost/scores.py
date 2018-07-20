@@ -19,10 +19,7 @@ class Score(object):
                 for j, g in enumerate(second_derivs):
                     hessians[:,i,j] = g
             for k in range(M):
-                try:
-                    L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
-                except:
-                    breakpoint()
+                L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
                 L = torch.diag(torch.abs(L[:,0]))
                 hessians[k,:,:] = U @ L @ torch.transpose(U, 1, 0)
             grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, hessians)], dim=0)
@@ -31,9 +28,6 @@ class Score(object):
             Forecast = D(params)
             metric = self.metric(params, Forecast)
             grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, metric)], dim=0)
-
-            if torch.any(torch.isnan(grads)):
-                breakpoint()
 
         grad = [ng.reshape(-1) for ng in torch.split(grads, 1, dim=1)]
         return grad

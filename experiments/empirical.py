@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     ngb = NGBoost(Base=lambda: DecisionTreeRegressor(criterion='mse'),
                   Dist=Normal,
-                  Score=MLE,
+                  Score=CRPS,
                   n_estimators=100,
                   learning_rate=0.5,
                   natural_gradient=True,

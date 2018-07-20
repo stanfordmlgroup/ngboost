@@ -120,7 +120,7 @@ class NGBoost(object):
     def fit_init_params_to_marginal(self, S):
 
         init_params = [torch.tensor(0., requires_grad=True) for _ in  self.Dist.arg_constraints]
-        opt = LBFGS(init_params, lr=1.)
+        opt = LBFGS(init_params, lr=0.5, max_iter=20)
 
         if self.verbose:
             print("Fitting marginal distribution, until convergence...")

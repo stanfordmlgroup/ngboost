@@ -9,6 +9,7 @@ from ngboost import SurvNGBoost
 from ngboost.scores import *
 from experiments.evaluation import *
 
+
 def create_cov_matrix(num_vars, cov_strength):
     '''
     Generate the covariate matrix for normally distributed covariates
@@ -65,7 +66,7 @@ def f_custom(X):
             2 * X[:,4] * X[:,0] - 4 * pnorm(-1) #adjust expectation
     return res
 
-def simulate_Y(X, D = sp.stats.lognorm, D_config={'s':1, 'scale':1, 'loc':0}):
+def simulate_Y_C(X, D = sp.stats.lognorm, D_config={'s':1, 'scale':1, 'loc':0}):
 
     ''' 
     Input:
@@ -81,17 +82,11 @@ def simulate_Y(X, D = sp.stats.lognorm, D_config={'s':1, 'scale':1, 'loc':0}):
     D_loc = f_const(X, 1.5)
     D_config['s'] = D_s
     D_config['loc'] = D_loc
-    Y = D.rvs(s=D_config['s'], scale=D_config['scale'], loc=D_config['loc'], size=n_observations)
-    return Y
-
-def simulate_C(X, Y, D = sp.stats.lognorm, D_config={'s':1, 'scale':1, 'loc':0}):
-    '''
-    Log-normal censoring
-    '''
-    n_observations = len(X)
-    C = D.rvs(s=D_config['s'], scale=D_config['scale'], loc=D_config['loc'], size=n_observations)
-    C = (C > Y)*1.0
-    return C
+    T = D.rvs(s=D_config['s'], scale=D_config['scale'], loc=D_config['loc'], size=n_observations)
+    U = D.rvs(s=1, scale=1, loc=0, size=n_observations)
+    Y = np.minimum(T, U)
+    C = (T > U) * 1.0
+    return Y, C
 
 def create_df(X, Y, C, num):
     df = pd.DataFrame(X, columns=["X%d" % i for i in range(X.shape[1])])

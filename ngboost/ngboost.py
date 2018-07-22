@@ -167,12 +167,14 @@ class SurvNGBoost(NGBoost):
     def fit(self, X, Y, C):
         S = lambda p: self.Score(self.D(p), torch.tensor(Y, dtype=torch.float32), torch.tensor(C, dtype=torch.float32)).mean()
         self.fit_init_params_to_marginal(S)
+        loss_list = []
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
 
             S = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
             params = self.pred_param(X_batch)
             score = S(params)
+            loss_list.append(score)
 
             print('[iter %d] loss=%f' % (itr, float(score)))
             if float(score) == float('-inf'):
@@ -193,3 +195,4 @@ class SurvNGBoost(NGBoost):
 
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
+        return loss_list

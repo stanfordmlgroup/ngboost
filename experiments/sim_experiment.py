@@ -9,6 +9,7 @@ from ngboost import SurvNGBoost
 from ngboost.scores import *
 from experiments.evaluation import *
 
+
 def create_cov_matrix(num_vars, cov_strength):
     '''
     Generate the covariate matrix for normally distributed covariates

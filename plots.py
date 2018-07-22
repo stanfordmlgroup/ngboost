@@ -21,8 +21,8 @@ def generate_data(total, frac_cens=0.5, mu=0., logstd=0.):
 
 def fit(Y, C, Score, mu_init=0., logstd_init=0.):
     lossfn = Score(K=1024)
-    mu = torch.nn.Parameter(torch.tensor(mu_init))
-    logstd = torch.nn.Parameter(torch.tensor(logstd_init))
+    mu = torch.tensor(mu_init, requires_grad=True)
+    logstd = torch.tensor(logstd_init, requires_grad=True)
 
     opt = Adam([mu, logstd], lr=0.1)
     opt = LBFGS([mu, logstd], lr=0.5, max_iter=20)

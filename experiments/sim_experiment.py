@@ -78,10 +78,10 @@ def simulate_Y_C(X, D = sp.stats.lognorm, D_config={'s':1, 'scale':1, 'loc':0}):
     '''
     
     n_observations = len(X)
-    D_s = abs(f_custom(X))
-    D_loc = f_const(X, 1.5)
-    D_config['s'] = D_s
-    D_config['loc'] = D_loc
+    #D_s = abs(f_custom(X))
+    #D_loc = f_const(X, 1.5)
+    #D_config['s'] = D_s
+    #D_config['loc'] = D_loc
     T = D.rvs(s=D_config['s'], scale=D_config['scale'], loc=D_config['loc'], size=n_observations)
     U = D.rvs(s=1, scale=1, loc=0, size=n_observations)
     Y = np.minimum(T, U)

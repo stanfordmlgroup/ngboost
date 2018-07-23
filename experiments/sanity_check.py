@@ -23,7 +23,8 @@ def main():
                      second_order = True,
                      quadrant_search = False,
                      nu_penalty=1e-5)
-    sb.fit(X, Y, C)
+    
+    sb.fit(X[:70], Y[:70], C[:70], X[70:], Y[70:], C[70:])
     preds = sb.pred_mean(X)
 
     print("Train/DecTree:", calculate_concordance_naive(preds, Y, C))

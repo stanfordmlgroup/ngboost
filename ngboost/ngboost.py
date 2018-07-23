@@ -164,19 +164,27 @@ class SurvNGBoost(NGBoost):
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs, :], torch.Tensor(Y[idxs]), torch.Tensor(C[idxs])
 
-    def fit(self, X, Y, C):
+    def fit(self, X, Y, C, X_test, Y_test, C_test):
         S = lambda p: self.Score(self.D(p), torch.tensor(Y, dtype=torch.float32), torch.tensor(C, dtype=torch.float32)).mean()
         self.fit_init_params_to_marginal(S)
-        loss_list = []
+        train_loss_list = []
+        test_loss_list = []
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
+            idxs, X_batch_test, Y_batch_test, C_batch_test = self.sample(X_test, Y_test, C_test)
 
             S = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
-            params = self.pred_param(X_batch)
-            score = S(params)
-            loss_list.append(score)
+            S_test = lambda p: self.Score(self.D(p), Y_batch_test, C_batch_test).mean()
 
-            print('[iter %d] loss=%f' % (itr, float(score)))
+            params = self.pred_param(X_batch)
+            params_test = self.pred_param(X_batch_test)
+            score = S(params)
+            score_test = S_test(params_test)
+
+            train_loss_list.append(score)
+            test_loss_list.append(score_test)
+
+            print('[iter %d] training loss=%f testing loss=%f' % (itr, float(score), float(score_test)))
             if float(score) == float('-inf'):
                 break
             if str(float(score)) == 'nan':
@@ -195,4 +203,4 @@ class SurvNGBoost(NGBoost):
 
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
-        return loss_list
+        return train_loss_list, test_loss_list

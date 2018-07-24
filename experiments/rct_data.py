@@ -48,13 +48,13 @@ if __name__ == "__main__":
 
     sprint = load_data("sprint")
     sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion="friedman_mse"),
-                     Dist = HomoskedasticLogNormal,
+                     Dist = LogNormal,
                      Score = MLE_surv,
                      n_estimators = 20,
                      learning_rate = 0.1,
                      natural_gradient = True,
                      second_order = True,
-                     quadrant_search = False,
+                     quadrant_search = True,
                      minibatch_frac = 0.5,
                      nu_penalty=1e-5)
     sprint["X"] = np.c_[sprint["X"], sprint["w"]]

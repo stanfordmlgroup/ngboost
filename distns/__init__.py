@@ -1,1 +1,2 @@
 from .homoskedastic_normal import HomoskedasticNormal
+from .homoskedastic_log_normal import HomoskedasticLogNormal

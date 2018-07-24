@@ -64,7 +64,7 @@ class NGBoost(object):
 
     def line_search(self, fn, start, resids):
         loss_init = float(fn(start))
-        scale = [10. for _ in resids]
+        scale = [1. for _ in resids]
         half = [0.5 for _ in resids]
         while True:
             new_loss = float(fn(self.sub(start, self.mul(resids, scale))))

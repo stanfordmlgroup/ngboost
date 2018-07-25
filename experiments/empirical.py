@@ -26,7 +26,7 @@ if __name__ == "__main__":
     print("Heteroskedastic")
     ngb = SurvNGBoost(Base=base_learner,
                   Dist=Normal,
-                  Score=CRPS_surv,
+                  Score=MLE_surv,
                   n_estimators=100,
                   learning_rate=0.1,
                   natural_gradient=True,
@@ -45,21 +45,20 @@ if __name__ == "__main__":
     print("Homoskedastic")
     ngb = SurvNGBoost(Base=base_learner,
                   Dist=HomoskedasticNormal,
-                  Score=CRPS_surv,
+                  Score=MLE_surv,
                   n_estimators=100,
-                  learning_rate=0.01,
+                  learning_rate=0.1,
                   natural_gradient=True,
                   second_order=True,
                   quadrant_search=False,
                   minibatch_frac=1.0,
                   nu_penalty=1e-5,
-                  verbose=True)
+                  verbose=False)
 
     ngb.fit(X_train, y_train, C_train, X_test, y_test, C_test)
     y_pred = ngb.pred_mean(X_test)
     print(r2_score(y_test, y_pred))
     print(mean_squared_error(y_test, y_pred))
-    print(np.mean(y_pred))
 
     print("Scikit-Learn GBM")
     gbr = GradientBoostingRegressor()

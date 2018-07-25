@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-from torch.distributions import LogNormal, Exponential
+from torch.distributions import LogNormal, Exponential, Weibull
 
 from ngboost import SurvNGBoost, CRPS_surv, MLE_surv
 from experiments.evaluation import calculate_concordance_naive
@@ -47,14 +47,14 @@ def load_data(dataset):
 if __name__ == "__main__":
 
     sprint = load_data("sprint")
-    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion="friedman_mse"),
-                     Dist = LogNormal,
-                     Score = MLE_surv,
-                     n_estimators = 20,
-                     learning_rate = 0.1,
+    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3),
+                     Dist = Weibull,
+                     Score = CRPS_surv,
+                     n_estimators = 50,
+                     learning_rate = 0.05,
                      natural_gradient = True,
                      second_order = True,
-                     quadrant_search = True,
+                     quadrant_search = False,
                      minibatch_frac = 0.5,
                      nu_penalty=1e-5)
     sprint["X"] = np.c_[sprint["X"], sprint["w"]]
@@ -69,4 +69,6 @@ if __name__ == "__main__":
     # pred_means = preds.mean.detach().numpy()
     print(calculate_concordance_naive(sb.pred_mean(X_train), T_train, 1 - Y_train))
     print(calculate_concordance_naive(sb.pred_mean(X_test), T_test, 1 - Y_test))
+    print("True mean:", T_test.mean())
+    print("Pred mean:", sb.pred_mean(X_test).mean())
 

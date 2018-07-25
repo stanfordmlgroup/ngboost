@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from torch.distributions import Normal
 
 
 class Score(object):
@@ -95,10 +96,23 @@ class CRPS(Score):
             prev_x = this_x
         return I_sum
 
+    def I_norm(self, Forecast, Y):
+        S = Forecast.scale
+        Y_std = (Y - Forecast.mean) / Forecast.scale
+        norm2 = Normal(Forecast.mean, Forecast.scale / float(np.sqrt(2.)))
+        ncdf = Forecast.cdf(Y)
+        npdf = Forecast.log_prob(Y).exp()
+        n2cdf = norm2.cdf(Y)
+        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S - float(1./np.sqrt(np.pi)) * n2cdf)
+
     def loss(self, Forecast, Y):
 
-        left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
-        right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
+        if isinstance(Forecast, Normal):
+            left = self.I_norm(Forecast, Normal)
+            right = self.I_norm(Normal(-Forecast.mean, Forecast.scale), -Y)
+        else:
+            left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
+            right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
         return left + right
 
     def metric(self, params, Forecast):
@@ -128,8 +142,12 @@ class CRPS(Score):
 class CRPS_surv(CRPS):
 
     def loss(self, Forecast, Y, C):
-        left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
-        right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
+        if isinstance(Forecast, Normal):
+            left = self.I_norm(Forecast, Y)
+            right = self.I_norm(Normal(-Forecast.mean, Forecast.scale), -Y)
+        else:
+            left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
+            right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
         return (left + (1 - C) * right)
 
     def __call__(self, Forecast, Y, C):

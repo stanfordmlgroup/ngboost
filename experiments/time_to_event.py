@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     sprint = load_data("sprint")
     sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3),
-                     Dist = Weibull,
+                     Dist = HomoskedasticLogNormal,
                      Score = CRPS_surv,
                      n_estimators = 50,
                      learning_rate = 0.05,

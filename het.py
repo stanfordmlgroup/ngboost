@@ -18,16 +18,19 @@ from ngboost.scores import MLE_surv, CRPS_surv
 
 from scipy.stats import norm
 
+
+DISTRIBUTION = Normal
+
 def load_data():
-    m, n = 500, 10
+    m, n = 500, 25
     X = np.random.random((m, n)) * 2 - 1
-    theta_mu = np.random.random(n) * 10 - 2
-    theta_logs = np.random.random(n) * 2
+    theta_mu = np.random.random(n) * 10 - 5
+    theta_logs = np.random.random(n)
     mu = X.dot(theta_mu)
     logs = X.dot(theta_logs)
     s = np.exp(logs)
     print('Mean MU/STDV: %.3f, %.3f' % (np.mean(mu), np.mean(s)))
-    y = norm.rvs(size=m) * s + mu
+    y = norm.rvs(size=m) * s + mu + 100
     return { 'data': X, 'target': y}
 
 def run(data):
@@ -39,7 +42,7 @@ def run(data):
     base_learner = lambda: LinearRegression()
 
     ngb = SurvNGBoost(Base=base_learner,
-                  Dist=Normal,
+                  Dist=DISTRIBUTION,
                   Score=CRPS_surv,
                   n_estimators=200,
                   learning_rate=0.1,
@@ -56,14 +59,14 @@ def run(data):
     print('===== CRPS =====')
     print('CRPS Train RMSE: %.3f' % mean_squared_error(y_train, ngb.pred_mean(X_train)))
     print(' CRPS Test RMSE: %.3f' % mean_squared_error(y_test, y_pred))
-    print('CRPS Train STDV: %.3f' % np.mean(ngb.pred_param(X_train)[1].exp().data.numpy()))
-    print(' CRPS Test STDV: %.3f' % np.mean(ngb.pred_param(X_test)[1].exp().data.numpy()))
+    # print('CRPS Train STDV: %.3f' % np.mean(ngb.pred_param(X_train)[1].exp().data.numpy()))
+    # print(' CRPS Test STDV: %.3f' % np.mean(ngb.pred_param(X_test)[1].exp().data.numpy()))
     # print(np.mean(y_pred))
 
 
 
     ngb = SurvNGBoost(Base=base_learner,
-                  Dist=Normal,
+                  Dist=DISTRIBUTION,
                   Score=MLE_surv,
                   n_estimators=200,
                   learning_rate=0.1,
@@ -80,8 +83,8 @@ def run(data):
     print('===== MLE =====')
     print(' MLE Train RMSE: %.3f' % mean_squared_error(y_train, ngb.pred_mean(X_train)))
     print('  MLE Test RMSE: %.3f' % mean_squared_error(y_test, y_pred))
-    print(' MLE Train STDV: %.3f' % np.mean(ngb.pred_param(X_train)[1].exp().data.numpy()))
-    print('  MLE Test STDV: %.3f' % np.mean(ngb.pred_param(X_test)[1].exp().data.numpy()))
+    # print(' MLE Train STDV: %.3f' % np.mean(ngb.pred_param(X_train)[1].exp().data.numpy()))
+    # print('  MLE Test STDV: %.3f' % np.mean(ngb.pred_param(X_test)[1].exp().data.numpy()))
 
     return
 

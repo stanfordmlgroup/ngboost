@@ -108,7 +108,7 @@ class CRPS(Score):
     def loss(self, Forecast, Y):
 
         if isinstance(Forecast, Normal):
-            left = self.I_norm(Forecast, Normal)
+            left = self.I_norm(Forecast, Y)
             right = self.I_norm(Normal(-Forecast.mean, Forecast.scale), -Y)
         else:
             left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)

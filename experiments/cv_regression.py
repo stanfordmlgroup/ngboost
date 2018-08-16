@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 import seaborn as sns
 
+
 def cv_n_estimators(X, y, C, cv_list, n_folds=10, distrib = HomoskedasticNormal, quadrant = False, s = CRPS_surv):
     kf = KFold(n_splits=n_folds)
     kf.get_n_splits(X)
@@ -30,7 +31,7 @@ def cv_n_estimators(X, y, C, cv_list, n_folds=10, distrib = HomoskedasticNormal,
             X_train_cv, X_val_cv = X[train_index], X[val_index]
             y_train_cv, y_val_cv = y[train_index], y[val_index]
             C_train_cv, C_val_cv = C[train_index], C[val_index]
-            
+
             base_learner = lambda: DecisionTreeRegressor(criterion='friedman_mse', \
                           min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3)
 
@@ -66,7 +67,7 @@ def cv_n_estimators_gbr(X, y, C, cv_list, n_folds=10):
             X_train_cv, X_val_cv = X[train_index], X[val_index]
             y_train_cv, y_val_cv = y[train_index], y[val_index]
             C_train_cv, C_val_cv = C[train_index], C[val_index]
-            
+
             gbr = GradientBoostingRegressor(n_estimators=param)
             gbr.fit(X_train_cv, y_train_cv)
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     n_estimators_list = [10,20]
     fold_num = 2
 
-    print("*"*6 + "  Heteroskedastic Distributions with MLE [Orthan Search]  " + "*"*6)
+    print("*"*6 + "  Heteroskedastic Distributions with MLE [Orthant Search]  " + "*"*6)
     #n_estimators_list = [10,50,80,100,150,200,500,600, 800, 1000, 1200,1500]
     het_q_mle = cv_n_estimators(X_train, y_train, C_train, cv_list = n_estimators_list, \
                                 n_folds=fold_num, distrib = Normal, quadrant = True, s=MLE_surv)
@@ -177,8 +178,8 @@ if __name__ == "__main__":
     print(optimal_gbr)
 
 
-    colors = ["denim blue", "amber", "dark pink", "medium green", 
-          "mulberry", "pale red", "military green", 
+    colors = ["denim blue", "amber", "dark pink", "medium green",
+          "mulberry", "pale red", "military green",
           "prussian blue", "avocado green"]
     customized_palette = sns.xkcd_palette(colors)
     sns.set_palette(customized_palette)
@@ -200,10 +201,10 @@ if __name__ == "__main__":
     plt.plot(n_estimators_list, gbr, linestyle=":", linewidth=1.5)
 
 
-    plt.legend(["Heteroskedastic-MLE [Orthant]", "Homoskedastic-MLE [Orthant]", 
+    plt.legend(["Heteroskedastic-MLE [Orthant]", "Homoskedastic-MLE [Orthant]",
                 "Heteroskedastic-MLE [Line]", "Homoskedastic-MLE [Line]",
-               "Heteroskedastic-CRPS [Orthant]", "Homoskedastic-CRPS [Orthant]", 
-                "Heteroskedastic-CRPS [Line]", "Homoskedastic-CRPS [Line]", "GB"], 
+               "Heteroskedastic-CRPS [Orthant]", "Homoskedastic-CRPS [Orthant]",
+                "Heteroskedastic-CRPS [Line]", "Homoskedastic-CRPS [Line]", "GB"],
                loc='best')
 
     plt.xlabel("Number of Estimators")
@@ -211,4 +212,3 @@ if __name__ == "__main__":
     plt.title("Cross Validation on the Number of Estimators", fontsize=16)
     plt.show()
 
-    

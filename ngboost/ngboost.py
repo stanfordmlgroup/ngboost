@@ -84,10 +84,12 @@ class NGBoost(object):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y):
+    def fit(self, X, Y, X_test, Y_test):
 
         S = lambda p: self.Score(self.D(p), torch.tensor(Y, dtype=torch.float32)).mean()
         self.fit_init_params_to_marginal(S)
+        train_loss_list = []
+        test_loss_list = []
         for itr in range(self.n_estimators):
             idxs, X_batch, Y_batch = self.sample(X, Y)
 

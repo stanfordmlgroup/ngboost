@@ -2,7 +2,6 @@ import numpy as np
 import scipy as sp
 import torch
 import pickle
-import objgraph
 
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions import Normal
@@ -41,13 +40,13 @@ class NGBoost(object):
         params = [p * np.ones(m) for p in self.init_params]
         for models, scalings in zip(self.base_models, self.scalings):
             base_params = [model.predict(X) for model in models]
-            params = [p - self.learning_rate * b for p, b 
+            params = [p - self.learning_rate * b for p, b
                       in zip(params, self.mul(base_params, scalings))]
-        return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p 
+        return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p
                 in params]
 
     def sample(self, X, Y, frac=1.0):
-        sample_size = int(frac * len(Y)) 
+        sample_size = int(frac * len(Y))
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs]
 
@@ -84,7 +83,7 @@ class NGBoost(object):
             return float(fn(self.sub(start, self.mul(resids, nu)))) + \
                    self.nu_penalty * np.linalg.norm(nu) ** 2
         lognu0 = np.array([0. for _ in resids])
-        res = sp.optimize.minimize(lossfn, lognu0, method='Nelder-Mead', 
+        res = sp.optimize.minimize(lossfn, lognu0, method='Nelder-Mead',
                                    tol=1e-6)
         scale = [float(np.exp(f)) for f in res.x]
         self.scalings.append(scale)
@@ -116,8 +115,8 @@ class NGBoost(object):
                 break
 
             grads = torch.autograd.grad(score, params, create_graph=True)
-            grads = self.Score.grad(self.D, params, init_grads,
-                                    natural_gradient=self.natural_gradient, 
+            grads = self.Score.grad(self.D, params, grads,
+                                    natural_gradient=self.natural_gradient,
                                     second_order=self.second_order)
             resids = self.fit_base(X_batch, grads)
 
@@ -125,22 +124,14 @@ class NGBoost(object):
                 scale = self.quadrant_search(S_batch, params, resids)
             else:
                 scale = self.line_search(S_batch, params, resids)
-            
+
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
-
-            if itr == 20:
-                objgraph.show_growth(limit=10)
-            
-            if itr == 25:
-                objgraph.show_growth(limit=10)
-                breakpoint()
-
 
 
     def fit_init_params_to_marginal(self, S):
 
-        init_params = [torch.tensor(0., requires_grad=True) for _ 
+        init_params = [torch.tensor(0., requires_grad=True) for _
                        in self.Dist.arg_constraints]
         opt = LBFGS(init_params, lr=0.5, max_iter=20)
         prev_loss = 0.
@@ -208,18 +199,18 @@ class SurvNGBoost(NGBoost):
         test_loss_list = []
         for itr in range(self.n_estimators):
 
-            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C, 
+            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C,
                                                           self.minibatch_frac)
 
-            S = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
+            S_batch = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
             #S_test = lambda p: self.Score(self.D(p), Y_batch_test, C_batch_test).mean()
 
             params = self.pred_param(X_batch)
             #params_test = self.pred_param(X_batch_test)
-            score = S(params)
+            score = S_batch(params)
             #score_test = S_test(params_test)
 
-            train_loss_list.append(score)
+            train_loss_list.append(score.detach().numpy())
             # test_loss_list.append(score_test)
             score_test = 0.
 
@@ -234,14 +225,14 @@ class SurvNGBoost(NGBoost):
 
             grads = torch.autograd.grad(score, params, create_graph=True)
             grads = self.Score.grad(self.D, params, grads,
-                                    natural_gradient=self.natural_gradient, 
+                                    natural_gradient=self.natural_gradient,
                                     second_order=self.second_order)
             resids = self.fit_base(X_batch, grads)
 
             if self.do_quadrant_search:
-                scale = self.quadrant_search(S, params, resids)
+                scale = self.quadrant_search(S_batch, params, resids)
             else:
-                scale = self.line_search(S, params, resids)
+                scale = self.line_search(S_batch, params, resids)
 
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break

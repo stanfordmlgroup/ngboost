@@ -5,30 +5,31 @@ from torch.distributions import Normal
 
 class Score(object):
 
-    def grad(self, params, D, natural_gradient=True, second_order=True):
-        grad = [p.grad.clone() for p in params]
-        if not natural_gradient and not second_order:
-            return grad
+    def grad(self, D, params, grads, natural_gradient=True, second_order=True):
 
-        grads = torch.cat([g.reshape(-1, 1) for g in grad], dim=1)
+        if not natural_gradient and not second_order:
+            return grads
+
+        grads = torch.cat([g.reshape(-1, 1) for g in grads], dim=1)
 
         if second_order:
             M, P = len(grads), len(params)
             hessians = torch.zeros((M, P, P))
             for i in range(P):
-                second_derivs = torch.autograd.grad(grads[:,i].split(1), params, retain_graph=True)
+                second_derivs = torch.autograd.grad(grads[:,i].split(1), 
+                                                    params, retain_graph=True)
                 for j, g in enumerate(second_derivs):
                     hessians[:,i,j] = g
             for k in range(M):
                 L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
                 L = torch.diag(torch.abs(L[:,0]))
                 hessians[k,:,:] = U @ L @ torch.transpose(U, 1, 0)
-            grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, hessians)], dim=0)
+            grads = self.matmul_inv(hessians, grads)
 
         if natural_gradient:
             Forecast = D(params)
-            metric = self.metric(params, Forecast)
-            grads = torch.cat([torch.mv(self.inverse(m), g).unsqueeze(0) for g, m in zip(grads, metric)], dim=0)
+            metrics = self.metric(params, Forecast)
+            grads = self.matmul_inv(metrics, grads)
 
         grad = [ng.reshape(-1) for ng in torch.split(grads, 1, dim=1)]
         return grad
@@ -36,6 +37,10 @@ class Score(object):
     def inverse(self, matrix):
         m = int(matrix.shape[0])
         return torch.inverse(matrix + 1e-2 * torch.eye(m))
+
+    def matmul_inv(self, matrices, vecs):
+        return torch.cat([torch.mv(self.inverse(m), v).unsqueeze(0) for m, v
+                          in zip(matrices, vecs)], dim=0)
 
 
 class MLE(Score):
@@ -53,12 +58,10 @@ class MLE(Score):
         cov = 0
         m, n = int(params[0].shape[0]), len(params)
         for _ in range(self.K):
-            for p in params:
-                p.grad.data.zero_()
             X = Forecast.sample()
             score = Forecast.log_prob(X).mean()
-            score.backward(retain_graph=True)
-            grads = torch.cat([p.grad.clone().reshape(-1, 1) for p in params], dim=1)
+            grads = torch.autograd.grad(score, params, retain_graph=True)
+            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1) 
             cov += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
         return cov / self.K
 
@@ -66,7 +69,8 @@ class MLE(Score):
 class MLE_surv(MLE):
 
     def loss(self, Forecast, Y, C):
-        return - ((1 - C) * Forecast.log_prob(Y) + (1 - Forecast.cdf(Y) + 1e-5).log() * C)
+        return - ((1 - C) * Forecast.log_prob(Y) + 
+                  C * (1 - Forecast.cdf(Y) + 1e-5).log())
 
     def __call__(self, Forecast, Y, C):
         return self.loss(Forecast, Y, C)
@@ -103,7 +107,8 @@ class CRPS(Score):
         ncdf = Forecast.cdf(Y)
         npdf = Forecast.log_prob(Y).exp()
         n2cdf = norm2.cdf(Y)
-        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S - float(1./np.sqrt(np.pi)) * n2cdf)
+        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S - 
+               float(1./np.sqrt(np.pi)) * n2cdf)
 
     def loss(self, Forecast, Y):
 
@@ -127,9 +132,8 @@ class CRPS(Score):
             xdiff = this_x - prev_x
 
             loss = Forecast.cdf(torch.Tensor([this_x])).mean()
-            loss.backward(retain_graph=True)
-
-            grads = torch.cat([p.grad.clone().reshape(-1, 1) for p in params], dim=1)
+            grads = torch.autograd.grad(loss, params, retain_graph=True)
+            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1)
             this_F = grads.reshape(m, 1, n) * grads.reshape(m, n, 1) / (th ** 2)
             Fdiff = 0.5 * (this_F + prev_F)
             I_sum += Fdiff * 1./self.K

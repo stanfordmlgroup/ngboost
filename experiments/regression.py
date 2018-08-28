@@ -12,6 +12,7 @@ from distns import HomoskedasticNormal
 from ngboost.ngboost import NGBoost, SurvNGBoost
 from experiments.evaluation import r2_score, calibration_regression, plot_calibration_curve
 from sklearn.metrics import mean_squared_error
+from ngboost.learners import default_tree_learner
 from ngboost.scores import MLE, CRPS
 
 np.random.seed(123)
@@ -23,10 +24,9 @@ if __name__ == "__main__":
     X, y = data["data"], data["target"]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y)
-    base_learner = lambda: DecisionTreeRegressor(criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3)
 
     print("Heteroskedastic")
-    ngb = NGBoost(Base=base_learner,
+    ngb = NGBoost(Base=default_tree_learner,
                   Dist=Normal,
                   Score=CRPS,
                   n_estimators=200,
@@ -45,7 +45,8 @@ if __name__ == "__main__":
     print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
 
     pred, obs, slope, intercept = calibration_regression(forecast, y_test)
-    plot_calibration_curve(pred, obs)
+    # plot_calibration_curve(pred, obs)
+    ngb.write_to_disk("./ngb_ex.pkl")
 
     # print("Homoskedastic")
     # ngb = NGBoost(Base=base_learner,

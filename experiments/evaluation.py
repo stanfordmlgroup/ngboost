@@ -13,8 +13,6 @@ plt_colors = sns.color_palette()
 mpl.rcParams["xtick.direction"] = "in"
 mpl.rcParams["ytick.direction"] = "in"
 
-
-
 def calibration_regression(Forecast, Y, bins=10, eps=1e-3):
     """
     Calculate calibration in the regression setting.

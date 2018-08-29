@@ -31,8 +31,8 @@ if __name__ == "__main__":
     results = []
 
     for (n_estimators, lr, score, base) in itertools.product(
-            (50,, 100, 150, 200, 250, 300),
-            (0.005,, 0.01, 0.025, 0.05, 0.1),
+            (50, 100, 150, 200, 250, 300),
+            (0.005, 0.01, 0.025, 0.05, 0.1),
             (MLE, CRPS),
             (default_tree_learner, default_linear_learner)):
 

@@ -28,23 +28,28 @@ if __name__ == "__main__":
     print("Heteroskedastic")
     ngb = NGBoost(Base=default_tree_learner,
                   Dist=Normal,
-                  Score=CRPS,
+                  Score=MLE,
                   n_estimators=200,
                   learning_rate=0.1,
                   natural_gradient=True,
                   second_order=True,
-                  quadrant_search=True,
+                  quadrant_search=False,
                   minibatch_frac=1.0,
                   nu_penalty=1e-5,
                   verbose=True)
 
     ngb.fit(X_train, y_train)
+
     y_pred = ngb.pred_mean(X_test)
     forecast = ngb.pred_dist(X_test)
     print("R2: %.4f" % r2_score(y_test, y_pred))
     print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
 
     pred, obs, slope, intercept = calibration_regression(forecast, y_test)
+    plot_calibration_curve(pred, obs)
+
+    forecast = ngb.pred_dist(X_train)
+    pred, obs, slope, intercept = calibration_regression(forecast, y_train)
     plot_calibration_curve(pred, obs)
 
     # print("Homoskedastic")

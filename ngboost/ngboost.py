@@ -224,5 +224,6 @@ class SurvNGBoost(NGBoost):
             loss_list.append(score.detach().numpy())
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
-        return train_loss_list, test_loss_list
+
+        return loss_list
 

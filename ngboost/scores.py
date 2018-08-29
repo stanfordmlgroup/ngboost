@@ -16,7 +16,7 @@ class Score(object):
             M, P = len(grads), len(params)
             hessians = torch.zeros((M, P, P))
             for i in range(P):
-                second_derivs = torch.autograd.grad(grads[:,i].split(1), 
+                second_derivs = torch.autograd.grad(grads[:,i].split(1),
                                                     params, retain_graph=True)
                 for j, g in enumerate(second_derivs):
                     hessians[:,i,j] = g
@@ -31,7 +31,7 @@ class Score(object):
             metrics = self.metric(params, Forecast)
             grads = self.matmul_inv(metrics, grads)
 
-        grad = [ng.reshape(-1) for ng in torch.split(grads, 1, dim=1)]
+        grad = [g.reshape(-1) for g in torch.split(grads, 1, dim=1)]
         return grad
 
     def inverse(self, matrix):
@@ -61,7 +61,7 @@ class MLE(Score):
             X = Forecast.sample()
             score = Forecast.log_prob(X).mean()
             grads = torch.autograd.grad(score, params, retain_graph=True)
-            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1) 
+            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1)
             cov += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
         return cov / self.K
 
@@ -69,7 +69,7 @@ class MLE(Score):
 class MLE_surv(MLE):
 
     def loss(self, Forecast, Y, C):
-        return - ((1 - C) * Forecast.log_prob(Y) + 
+        return - ((1 - C) * Forecast.log_prob(Y) +
                   C * (1 - Forecast.cdf(Y) + 1e-5).log())
 
     def __call__(self, Forecast, Y, C):
@@ -100,21 +100,21 @@ class CRPS(Score):
             prev_x = this_x
         return I_sum
 
-    def I_norm(self, Forecast, Y):
+    def I_normal(self, Forecast, Y):
         S = Forecast.scale
         Y_std = (Y - Forecast.mean) / Forecast.scale
         norm2 = Normal(Forecast.mean, Forecast.scale / float(np.sqrt(2.)))
         ncdf = Forecast.cdf(Y)
         npdf = Forecast.log_prob(Y).exp()
         n2cdf = norm2.cdf(Y)
-        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S - 
+        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S -
                float(1./np.sqrt(np.pi)) * n2cdf)
 
     def loss(self, Forecast, Y):
 
         if isinstance(Forecast, Normal):
-            left = self.I_norm(Forecast, Y)
-            right = self.I_norm(Normal(-Forecast.mean, Forecast.scale), -Y)
+            left = self.I_normal(Forecast, Y)
+            right = self.I_normal(Normal(-Forecast.mean, Forecast.scale), -Y)
         else:
             left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
             right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
@@ -147,9 +147,10 @@ class CRPS_surv(CRPS):
 
     def loss(self, Forecast, Y, C):
         if isinstance(Forecast, Normal):
-            left = self.I_norm(Forecast, Y)
-            right = self.I_norm(Normal(-Forecast.mean, Forecast.scale), -Y)
+            left = self.I_normal(Forecast, Y)
+            right = self.I_normal(Normal(-Forecast.mean, Forecast.scale), -Y)
         else:
+            import objgraph
             left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
             right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
         return (left + (1 - C) * right)

@@ -7,11 +7,16 @@ from tqdm import tqdm
 from sklearn.metrics import roc_auc_score, r2_score
 
 
-sns.set_style("ticks")
-sns.set_palette(sns.color_palette("dark", 8))
-plt_colors = sns.color_palette()
-mpl.rcParams["xtick.direction"] = "in"
-mpl.rcParams["ytick.direction"] = "in"
+def set_style():
+    """
+    Set the default style for plotting.
+    """
+    global plt_colors
+    sns.set_style("ticks")
+    sns.set_palette(sns.color_palette("dark", 8))
+    plt_colors = sns.color_palette()
+    mpl.rcParams["xtick.direction"] = "in"
+    mpl.rcParams["ytick.direction"] = "in"
 
 def calibration_regression(Forecast, Y, bins=10, eps=1e-3):
     """
@@ -27,9 +32,10 @@ def calibration_regression(Forecast, Y, bins=10, eps=1e-3):
     slope, intercept = np.polyfit(pctles, observed, deg=1)
     return pctles, observed, slope, intercept
 
-
 def plot_calibration_curve(predicted, observed):
-
+    """
+    Plot calibration curve.
+    """
     slope, intercept = np.polyfit(predicted, observed, deg=1)
     plt.plot(predicted, observed, "o")
     plt.plot(np.linspace(0, 1), np.linspace(0, 1) * slope + intercept, "--",
@@ -85,3 +91,5 @@ def calculate_concordance_naive(preds, ys, cs):
                     concordance += 0.5
                 counter += 1
     return concordance / counter
+
+set_style()

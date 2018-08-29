@@ -45,8 +45,8 @@ class NGBoost(object):
         return [torch.tensor(p, requires_grad=True, dtype=torch.float32) for p
                 in params]
 
-    def sample(self, X, Y, frac=1.0):
-        sample_size = int(frac * len(Y))
+    def sample(self, X, Y):
+        sample_size = int(self.minibatch_frac * len(Y))
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs]
 
@@ -89,30 +89,27 @@ class NGBoost(object):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y, X_test=None, Y_test=None):
+    def fit(self, X, Y):
 
+        loss_list = []
         Y = torch.tensor(Y, dtype=torch.float32)
         S_full = lambda p: self.Score(self.D(p), Y).mean()
         self.fit_init_params_to_marginal(S_full)
 
-        train_loss_list = []
-        test_loss_list = []
-
         for itr in range(self.n_estimators):
 
-            idxs, X_batch, Y_batch = self.sample(X, Y, self.minibatch_frac)
+            idxs, X_batch, Y_batch = self.sample(X, Y)
             S_batch = lambda p: self.Score(self.D(p), Y_batch).mean()
+
             params = self.pred_param(X_batch)
             score = S_batch(params)
 
             if self.verbose:
-                print('[iter %d] loss=%f' % (itr, float(score)))
+                print("[iter %d] loss=%.4f" % (itr, float(score)))
             if float(score) == float('-inf'):
                 raise ValueError("Score of -inf occurred.")
-                break
             if str(float(score)) == 'nan':
                 raise ValueError("Score of nan occurred.")
-                break
 
             grads = torch.autograd.grad(score, params, create_graph=True)
             grads = self.Score.grad(self.D, params, grads,
@@ -125,12 +122,13 @@ class NGBoost(object):
             else:
                 scale = self.line_search(S_batch, params, resids)
 
+            loss_list.append(score.detach().numpy())
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
 
+        return loss_list
 
     def fit_init_params_to_marginal(self, S):
-
         init_params = [torch.tensor(0., requires_grad=True) for _
                        in self.Dist.arg_constraints]
         opt = LBFGS(init_params, lr=0.5, max_iter=20)
@@ -184,44 +182,33 @@ class NGBoost(object):
 
 class SurvNGBoost(NGBoost):
 
-    def sample(self, X, Y, C, frac=1.0):
-        sample_size = int(frac * len(Y))
+    def sample(self, X, Y, C):
+        sample_size = int(self.minibatch_frac * len(Y))
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs, :], Y[idxs], C[idxs]
 
-    def fit(self, X, Y, C, X_test=None, Y_test=None, C_test=None):
+    def fit(self, X, Y, C):
+
+        loss_list = []
         Y = torch.tensor(Y, dtype=torch.float32)
         C = torch.tensor(C, dtype=torch.float32)
         S_full = lambda p: self.Score(self.D(p), Y, C).mean()
         self.fit_init_params_to_marginal(S_full)
-        # idxs, X_batch_test, Y_batch_test, C_batch_test = self.sample(X_test, Y_test, C_test, frac=1.0)
-        train_loss_list = []
-        test_loss_list = []
+
         for itr in range(self.n_estimators):
 
-            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C,
-                                                          self.minibatch_frac)
+            idxs, X_batch, Y_batch, C_batch = self.sample(X, Y, C)
 
             S_batch = lambda p: self.Score(self.D(p), Y_batch, C_batch).mean()
-            #S_test = lambda p: self.Score(self.D(p), Y_batch_test, C_batch_test).mean()
-
             params = self.pred_param(X_batch)
-            #params_test = self.pred_param(X_batch_test)
             score = S_batch(params)
-            #score_test = S_test(params_test)
-
-            train_loss_list.append(score.detach().numpy())
-            # test_loss_list.append(score_test)
-            score_test = 0.
 
             if self.verbose:
-                print('[iter %d] training loss=%f testing loss=%f' % (itr, float(score), float(score_test)))
+                print("[iter %d] loss=%.4f" % (itr, float(score)))
             if float(score) == float('-inf'):
-                break
+                raise ValueError("Score of -inf occurred.")
             if str(float(score)) == 'nan':
-                print(params)
-                print(S(params))
-                break
+                raise ValueError("Score of nan occurred.")
 
             grads = torch.autograd.grad(score, params, create_graph=True)
             grads = self.Score.grad(self.D, params, grads,
@@ -234,6 +221,7 @@ class SurvNGBoost(NGBoost):
             else:
                 scale = self.line_search(S_batch, params, resids)
 
+            loss_list.append(score.detach().numpy())
             if self.norm(self.mul(resids, scale)) < 1e-5:
                 break
         return train_loss_list, test_loss_list

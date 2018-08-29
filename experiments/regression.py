@@ -6,14 +6,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from distns import HomoskedasticNormal
-from torch.distributions import Normal
+from torch.distributions import Normal, LogNormal
 
 from distns import HomoskedasticNormal
 from ngboost.ngboost import NGBoost, SurvNGBoost
-from experiments.evaluation import r2_score, calibration_regression, plot_calibration_curve
+from experiments.evaluation import *
 from sklearn.metrics import mean_squared_error
 from ngboost.learners import default_tree_learner
-from ngboost.scores import MLE, CRPS
+from ngboost.scores import *
 
 np.random.seed(123)
 
@@ -38,15 +38,14 @@ if __name__ == "__main__":
                   nu_penalty=1e-5,
                   verbose=True)
 
-    ngb.fit(X_train, y_train, X_test, y_test)
+    ngb.fit(X_train, y_train)
     y_pred = ngb.pred_mean(X_test)
     forecast = ngb.pred_dist(X_test)
     print("R2: %.4f" % r2_score(y_test, y_pred))
     print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
 
     pred, obs, slope, intercept = calibration_regression(forecast, y_test)
-    # plot_calibration_curve(pred, obs)
-    ngb.write_to_disk("./ngb_ex.pkl")
+    plot_calibration_curve(pred, obs)
 
     # print("Homoskedastic")
     # ngb = NGBoost(Base=base_learner,

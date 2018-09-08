@@ -48,7 +48,7 @@ class RegressionLogger(object):
         r2 = r2_score(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         y_test_tens = torch.tensor(y_test, dtype=torch.float32)
-        nll = -forecast.log_prob(y_test_tens).mean().detach().numpy())
+        nll = -forecast.log_prob(y_test_tens).mean().detach().numpy()
         pred, obs, slope, intercept = calibration_regression(forecast, y_test)
         self.r2s.append(r2)
         self.mses.append(mse)

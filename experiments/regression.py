@@ -2,18 +2,16 @@ from __future__ import print_function
 import csv
 import numpy as np
 import pandas as pd
-import itertools
+import pickle
 from argparse import ArgumentParser
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from distns import HomoskedasticNormal
 from torch.distributions import Normal, LogNormal
-
 from distns import HomoskedasticNormal
 from ngboost.ngboost import NGBoost, SurvNGBoost
 from experiments.evaluation import *
-from sklearn.metrics import mean_squared_error
 from ngboost import *
 
 np.random.seed(123)
@@ -35,6 +33,40 @@ score_name_to_score = {
     "CRPS": CRPS,
 }
 
+class RegressionLogger(object):
+
+    def __init__(self, dataset_name, verbose=False):
+        self.name = dataset_name
+        self.verbose = verbose
+        self.r2s = []
+        self.mses = []
+        self.nlls = []
+        self.calib_slopes = []
+
+    def tick(self, forecast, y_test):
+        y_pred = forecast.mean.detach().numpy()
+        r2 = r2_score(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        y_test_tens = torch.tensor(y_test, dtype=torch.float32)
+        nll = -forecast.log_prob(y_test_tens).mean().detach().numpy())
+        pred, obs, slope, intercept = calibration_regression(forecast, y_test)
+        self.r2s.append(r2)
+        self.mses.append(mse)
+        self.nlls.append(nll)
+        self.calib_slopes.append(slope)
+        if self.verbose:
+            print("R2: %.4f\tMSE:%.4f\tNLL:%.4f\tSlope:%.4f" %
+                  (r2, mse, nll, slope))
+
+    def save(self):
+        if self.verbose:
+            print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
+            print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
+            print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
+            print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
+                                            np.std(self.calib_slopes)))
+        pickle.dump(self, "results/regression/logs_%s.pkl" % self.name)
+
 
 if __name__ == "__main__":
 
@@ -44,70 +76,64 @@ if __name__ == "__main__":
     argparser.add_argument("--lr", type=float, default=0.01)
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
+    argparser.add_argument("--n_reps", type=int, default=10)
+    argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
+    logger = RegressionLogger(args.dataset, args.verbose)
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
-    results = []
+    for rep in range(args.n_reps):
 
-    ngb = NGBoost(Base=base_name_to_learner[args.base],
-                  Dist=Normal,
-                  Score=score_name_to_score[args.score],
-                  n_estimators=args.n_est,
-                  learning_rate=args.lr,
-                  natural_gradient=True,
-                  second_order=True,
-                  quadrant_search=True,
-                  minibatch_frac=0.5,
-                  nu_penalty=1e-5,
-                  verbose=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+        results = []
 
-    ngb.fit(X_train, y_train)
+        ngb = NGBoost(Base=base_name_to_learner[args.base],
+                    Dist=Normal,
+                    Score=score_name_to_score[args.score],
+                    n_estimators=args.n_est,
+                    learning_rate=args.lr,
+                    natural_gradient=True,
+                    second_order=True,
+                    quadrant_search=True,
+                    minibatch_frac=0.5,
+                    nu_penalty=1e-5,
+                    verbose=args.verbose)
 
-    y_pred = ngb.pred_mean(X_test)
-    y_test_tens = torch.tensor(y_test, dtype=torch.float32)
-    forecast = ngb.pred_dist(X_test)
+        ngb.fit(X_train, y_train)
+        forecast = ngb.pred_dist(X_test)
+        ngb.tick(forecast, y_test)
 
-    print("R2: %.4f" % r2_score(y_test, y_pred))
-    print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
-    print("NLL: %.4f" % -forecast.log_prob(y_test_tens).mean().detach().numpy())
+    ngb.save()
 
-    pred, obs, slope, intercept = calibration_regression(forecast, y_test)
-    print("Val slope: %.4f | intercept: %.4f" % (slope, intercept))
+        # with open("./results/regression_experiment.csv", "w") as csvfile:
+        #     writer = csv.writer(csvfile)
+        #     writer.writerow(["n_learners", "lr", "score", "base", "r2", "mse",
+        #                      "val_slope", "val_int", "tr_slope", "tr_int"])
+        #     for row in results:
+        #         writer.writerow(row)
 
-    forecast = ngb.pred_dist(X_train)
-    _, _, tslope, tintercept = calibration_regression(forecast, y_train)
-    print("Train slope: %.4f | intercept: %.4f" % (tslope, tintercept))
-
-    # with open("./results/regression_experiment.csv", "w") as csvfile:
-    #     writer = csv.writer(csvfile)
-    #     writer.writerow(["n_learners", "lr", "score", "base", "r2", "mse",
-    #                      "val_slope", "val_int", "tr_slope", "tr_int"])
-    #     for row in results:
-    #         writer.writerow(row)
-
-    # print("Homoskedastic")
-    # ngb = NGBoost(Base=base_learner,
-    #               Dist=HomoskedasticNormal,
-    #               Score=CRPS,
-    #               n_estimators=400,
-    #               learning_rate=0.1,
-    #               natural_gradient=True,
-    #               second_order=True,
-    #               quadrant_search=False,
-    #               minibatch_frac=1.0,
-    #               nu_penalty=1e-5,
-    #               verbose=False)
-    #
-    # ngb.fit(X_train, y_train, X_test, y_test)
-    # y_pred = ngb.pred_mean(X_test)
-    # print("R2: %.4f" % r2_score(y_test, y_pred))
-    # print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
-    #
-    # print("Scikit-Learn GBM")
-    # gbr = GradientBoostingRegressor()
-    # gbr.fit(X_train, y_train)
-    # print("R2: %.4f" % r2_score(y_test, gbr.predict(X_test)))
-    # print("MSE: %.4f" % mean_squared_error(y_test, gbr.predict(X_test)))
+        # print("Homoskedastic")
+        # ngb = NGBoost(Base=base_learner,
+        #               Dist=HomoskedasticNormal,
+        #               Score=CRPS,
+        #               n_estimators=400,
+        #               learning_rate=0.1,
+        #               natural_gradient=True,
+        #               second_order=True,
+        #               quadrant_search=False,
+        #               minibatch_frac=1.0,
+        #               nu_penalty=1e-5,
+        #               verbose=False)
+        #
+        # ngb.fit(X_train, y_train, X_test, y_test)
+        # y_pred = ngb.pred_mean(X_test)
+        # print("R2: %.4f" % r2_score(y_test, y_pred))
+        # print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
+        #
+        # print("Scikit-Learn GBM")
+        # gbr = GradientBoostingRegressor()
+        # gbr.fit(X_train, y_train)
+        # print("R2: %.4f" % r2_score(y_test, gbr.predict(X_test)))
+        # print("MSE: %.4f" % mean_squared_error(y_test, gbr.predict(X_test)))

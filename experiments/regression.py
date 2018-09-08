@@ -71,7 +71,7 @@ class RegressionLogger(object):
             self.print_results()
         time = datetime.datetime.now()
         outfile = open("results/regression/logs_%s_%s.pkl" %
-            (self.name, now.strftime("%Y-%m-%d-%H:%M")), "wb")
+            (self.name, time.strftime("%Y-%m-%d-%H:%M")), "wb")
         pickle.dump(self, outfile)
 
 

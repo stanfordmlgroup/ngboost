@@ -103,9 +103,9 @@ if __name__ == "__main__":
 
         ngb.fit(X_train, y_train)
         forecast = ngb.pred_dist(X_test)
-        ngb.tick(forecast, y_test)
+        logger.tick(forecast, y_test)
 
-    ngb.save()
+    logger.save()
 
         # with open("./results/regression_experiment.csv", "w") as csvfile:
         #     writer = csv.writer(csvfile)

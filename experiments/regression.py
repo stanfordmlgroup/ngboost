@@ -3,6 +3,7 @@ import csv
 import numpy as np
 import pandas as pd
 import pickle
+import datetime
 from argparse import ArgumentParser
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -35,9 +36,9 @@ score_name_to_score = {
 
 class RegressionLogger(object):
 
-    def __init__(self, dataset_name, verbose=False):
-        self.name = dataset_name
-        self.verbose = verbose
+    def __init__(self, args):
+        self.name = args.dataset_name
+        self.verbose = args.verbose
         self.r2s = []
         self.mses = []
         self.nlls = []
@@ -65,7 +66,10 @@ class RegressionLogger(object):
             print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
             print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
                                             np.std(self.calib_slopes)))
-        pickle.dump(self, "results/regression/logs_%s.pkl" % self.name)
+        time = datetime.datetime.now()
+        outfile = open("results/regression/logs_%s_%s.pkl" %
+            (self.name, now.strftime("%Y-%m-%d-%H:%M")), "wb")
+        pickle.dump(self, outfile)
 
 
 if __name__ == "__main__":
@@ -77,10 +81,13 @@ if __name__ == "__main__":
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--n_reps", type=int, default=10)
+    argparser.add_argument("--minibatch_frac", type=float, default=0.5)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
-    logger = RegressionLogger(args.dataset, args.verbose)
+    breakpoint()
+
+    logger = RegressionLogger(args)
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
 
@@ -97,7 +104,7 @@ if __name__ == "__main__":
                     natural_gradient=True,
                     second_order=True,
                     quadrant_search=True,
-                    minibatch_frac=0.5,
+                    minibatch_frac=args.minibatch_frac,
                     nu_penalty=1e-5,
                     verbose=args.verbose)
 

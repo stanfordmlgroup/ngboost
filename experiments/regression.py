@@ -88,8 +88,6 @@ if __name__ == "__main__":
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
-    breakpoint()
-
     logger = RegressionLogger(args)
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values

@@ -59,13 +59,16 @@ class RegressionLogger(object):
             print("R2: %.4f\tMSE:%.4f\tNLL:%.4f\tSlope:%.4f" %
                   (r2, mse, nll, slope))
 
+    def print_results(self):
+        print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
+        print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
+        print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
+        print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
+                                        np.std(self.calib_slopes)))
+
     def save(self):
         if self.verbose:
-            print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
-            print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
-            print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
-            print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
-                                            np.std(self.calib_slopes)))
+            self.print_results()
         time = datetime.datetime.now()
         outfile = open("results/regression/logs_%s_%s.pkl" %
             (self.name, now.strftime("%Y-%m-%d-%H:%M")), "wb")
@@ -80,7 +83,7 @@ if __name__ == "__main__":
     argparser.add_argument("--lr", type=float, default=0.01)
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
-    argparser.add_argument("--n_reps", type=int, default=10)
+    argparser.add_argument("--n_reps", type=int, default=5)
     argparser.add_argument("--minibatch_frac", type=float, default=0.5)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()

@@ -37,7 +37,7 @@ score_name_to_score = {
 class RegressionLogger(object):
 
     def __init__(self, args):
-        self.name = args.dataset_name
+        self.name = args.dataset
         self.verbose = args.verbose
         self.r2s = []
         self.mses = []

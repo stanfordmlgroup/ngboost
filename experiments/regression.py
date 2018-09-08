@@ -37,7 +37,7 @@ score_name_to_score = {
 class RegressionLogger(object):
 
     def __init__(self, args):
-        self.name = args.dataset_name
+        self.name = args.dataset
         self.verbose = args.verbose
         self.r2s = []
         self.mses = []
@@ -87,8 +87,6 @@ if __name__ == "__main__":
     argparser.add_argument("--minibatch_frac", type=float, default=0.5)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
-
-    breakpoint()
 
     logger = RegressionLogger(args)
     data = dataset_name_to_loader[args.dataset]()

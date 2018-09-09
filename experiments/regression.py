@@ -19,9 +19,12 @@ np.random.seed(123)
 
 dataset_name_to_loader = {
     "housing": lambda: pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data', header=None, delim_whitespace=True),
-    "wine": lambda: pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv', delimiter=";"),
     "concrete": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/Concrete_Data.xls"),
+    "wine": lambda: pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv', delimiter=";"),
     "kin8nm": lambda: pd.read_csv("data/uci/kin8nm.csv"),
+    "naval": lambda: pd.read_csv("data/uci/naval-propulsion.csv", delim_whitespace=True, header=None).iloc[:,:-1],
+    "power": lambda: pd.read_excel("data/uci/power-plant.xlsx"),
+    "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
 }
 
 base_name_to_learner = {
@@ -84,13 +87,20 @@ if __name__ == "__main__":
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--n_reps", type=int, default=5)
-    argparser.add_argument("--minibatch_frac", type=float, default=0.5)
+    argparser.add_argument("--minibatch_frac", type=float, default=None)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
-    logger = RegressionLogger(args)
+    # load dataset -- use last column as label
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
+
+    # set default minibatch fraction based on dataset size
+    breakpoint()
+    if not args.minibatch_frac:
+        args.minibatch_frac = min(0.5, 5000 / len(X))
+
+    logger = RegressionLogger(args)
 
     for rep in range(args.n_reps):
 

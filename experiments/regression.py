@@ -22,7 +22,7 @@ dataset_name_to_loader = {
     "concrete": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/Concrete_Data.xls"),
     "wine": lambda: pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv', delimiter=";"),
     "kin8nm": lambda: pd.read_csv("data/uci/kin8nm.csv"),
-    "naval": lambda: pd.read_csv("data/uci/naval-propulsion.csv", delim_whitespace=True, header=None).iloc[:,:-1],
+    "naval": lambda: pd.read_csv("data/uci/naval-propulsion.txt", delim_whitespace=True, header=None).iloc[:,:-1],
     "power": lambda: pd.read_excel("data/uci/power-plant.xlsx"),
     "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
     "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']],

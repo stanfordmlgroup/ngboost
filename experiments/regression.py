@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # set default minibatch fraction based on dataset size
     if not args.minibatch_frac:
-        args.minibatch_frac = min(0.5, 5000 / len(X))
+        args.minibatch_frac = min(1.0, 5000 / len(X))
 
     logger = RegressionLogger(args)
 

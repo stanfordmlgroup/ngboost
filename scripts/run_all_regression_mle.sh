@@ -7,3 +7,4 @@ python3 -m experiments.regression --dataset naval --score=MLE --verbose
 python3 -m experiments.regression --dataset power --score=MLE --verbose
 python3 -m experiments.regression --dataset energy --score=MLE --verbose
 python3 -m experiments.regression --dataset protein --score=MLE --verbose
+python3 -m experiments.regression --dataset yacht --score=MLE --verbose

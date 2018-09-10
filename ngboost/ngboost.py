@@ -132,7 +132,7 @@ class NGBoost(object):
         init_params = [torch.tensor(0., requires_grad=True) for _
                        in self.Dist.arg_constraints]
         opt = LBFGS(init_params, lr=lbfgs_lr, max_iter=20)
-        prev_loss = 0.
+        prev_loss = float("inf")
         if self.verbose:
             print("Fitting marginal distribution, until convergence...")
         while True:
@@ -142,6 +142,8 @@ class NGBoost(object):
             if np.isnan(curr_loss):
                 lbfgs_lr /= 10
                 opt = LBFGS(init_params, lr=lbfgs_lr, max_iter=20)
+                init_params = [torch.tensor(0., requires_grad=True) for _
+                               in self.Dist.arg_constraints]
                 continue
             loss.backward(retain_graph=True)
             opt.step(lambda: loss)

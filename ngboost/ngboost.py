@@ -128,19 +128,23 @@ class NGBoost(object):
 
         return loss_list
 
-    def fit_init_params_to_marginal(self, S):
+    def fit_init_params_to_marginal(self, S, lbfgs_lr=0.1):
         init_params = [torch.tensor(0., requires_grad=True) for _
                        in self.Dist.arg_constraints]
-        opt = LBFGS(init_params, lr=0.1, max_iter=20)
+        opt = LBFGS(init_params, lr=lbfgs_lr, max_iter=20)
         prev_loss = 0.
         if self.verbose:
             print("Fitting marginal distribution, until convergence...")
         while True:
             opt.zero_grad()
             loss = S(init_params)
+            curr_loss = loss.data.numpy()
+            if np.isnan(curr_loss):
+                lbfgs_lr /= 10
+                opt = LBFGS(init_params, lr=lbfgs_lr, max_iter=20)
+                continue
             loss.backward(retain_graph=True)
             opt.step(lambda: loss)
-            curr_loss = loss.data.numpy()
             if np.abs(prev_loss - curr_loss) < 1e-5:
                 break
             prev_loss = curr_loss

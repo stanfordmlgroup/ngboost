@@ -25,7 +25,7 @@ dataset_name_to_loader = {
     "naval": lambda: pd.read_csv("data/uci/naval-propulsion.csv", delim_whitespace=True, header=None).iloc[:,:-1],
     "power": lambda: pd.read_excel("data/uci/power-plant.xlsx"),
     "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
-    "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']]],
+    "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']],
 }
 
 base_name_to_learner = {

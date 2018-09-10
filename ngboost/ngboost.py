@@ -4,11 +4,12 @@ import torch
 import pickle
 
 from sklearn.preprocessing import StandardScaler
-from torch.distributions import Normal, TransformedDistribution
+from torch.distributions import Normal
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions.transforms import AffineTransform
 from torch.optim import LBFGS
 
+from distns import AffineDistribution
 from ngboost.scores import MLE, MLE_surv
 from ngboost.learners import default_tree_learner
 
@@ -169,11 +170,10 @@ class NGBoost(object):
             X = self.X_scaler.transform(X)
         params = self.pred_param(X)
         dist = self.D(params)
-        breakpoint()
         if self.normalize_outputs:
-            transform = AffineTransform(self.Y_scaler.mean_[0],
-                                        self.Y_scaler.scale_[0])
-            dist = TransformedDistribution(dist, [transform])
+            transform = AffineTransform(torch.tensor(self.Y_scaler.mean_[0]),
+                                        torch.tensor(self.Y_scaler.scale_[0]))
+            dist = AffineDistribution(dist, transform)
         return dist
 
     # def pred_mean(self, X):

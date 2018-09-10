@@ -3,8 +3,10 @@ import scipy as sp
 import torch
 import pickle
 
+from sklearn.preprocessing import StandardScaler
+from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.constraint_registry import transform_to
-from torch.distributions import Normal
+from torch.distributions.transforms import AffineTransform
 from torch.optim import LBFGS
 
 from ngboost.scores import MLE, MLE_surv
@@ -16,7 +18,8 @@ class NGBoost(object):
     def __init__(self, Dist=Normal, Score=MLE, Base=default_tree_learner,
                  n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
                  natural_gradient=True, second_order=True,
-                 quadrant_search=False, nu_penalty=0.0001, verbose=True):
+                 quadrant_search=False, nu_penalty=0.0001,
+                 normalize_inputs=True, normalize_outputs=True, verbose=True):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
@@ -24,6 +27,8 @@ class NGBoost(object):
         self.second_order = second_order
         self.do_quadrant_search = quadrant_search
         self.nu_penalty = nu_penalty
+        self.normalize_inputs = normalize_inputs
+        self.normalize_outputs = normalize_outputs
         self.verbose = verbose
         self.Dist = Dist
         self.D = lambda args: \
@@ -91,6 +96,13 @@ class NGBoost(object):
 
     def fit(self, X, Y):
 
+        if self.normalize_inputs:
+            self.X_scaler = StandardScaler(copy=True)
+            X = self.X_scaler.fit_transform(X)
+        if self.normalize_outputs:
+            self.Y_scaler = StandardScaler(copy=True)
+            Y = self.Y_scaler.fit_transform(Y[:,np.newaxis])[:,0]
+
         loss_list = []
         Y = torch.tensor(Y, dtype=torch.float32)
         S_full = lambda p: self.Score(self.D(p), Y).mean()
@@ -153,17 +165,24 @@ class NGBoost(object):
         self.init_params = [p.detach().numpy() for p in init_params]
 
     def pred_dist(self, X):
+        if self.normalize_inputs:
+            X = self.X_scaler.transform(X)
         params = self.pred_param(X)
         dist = self.D(params)
+        breakpoint()
+        if self.normalize_outputs:
+            transform = AffineTransform(self.Y_scaler.mean_[0],
+                                        self.Y_scaler.scale_[0])
+            dist = TransformedDistribution(dist, [transform])
         return dist
 
-    def pred_mean(self, X):
-        dist = self.pred_dist(X)
-        return dist.mean.data.numpy()
+    # def pred_mean(self, X):
+    #     dist = self.pred_dist(X)
+    #     return dist.mean.data.numpy()
 
-    def pred_median(self, X):
-        dist = self.pred_dist(X)
-        return dist.icdf(torch.tensor(0.5)).data.numpy()
+    # def pred_median(self, X):
+    #     dist = self.pred_dist(X)
+    #     return dist.icdf(torch.tensor(0.5)).data.numpy()
 
     def write_to_disk(self, filename):
         if not self.base_models:

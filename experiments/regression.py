@@ -26,6 +26,7 @@ dataset_name_to_loader = {
     "power": lambda: pd.read_excel("data/uci/power-plant.xlsx"),
     "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
     "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']],
+    "yacht": lambda: pd.read_csv("http://archive.ics.uci.edu/ml/machine-learning-databases/00243/yacht_hydrodynamics.data", header=None, delim_whitespace=True),
 }
 
 base_name_to_learner = {
@@ -41,7 +42,7 @@ score_name_to_score = {
 class RegressionLogger(object):
 
     def __init__(self, args):
-        self.name = args.dataset
+        self.args = args
         self.verbose = args.verbose
         self.r2s = []
         self.mses = []
@@ -75,7 +76,7 @@ class RegressionLogger(object):
             self.print_results()
         time = datetime.datetime.now()
         outfile = open("results/regression/logs_%s_%s.pkl" %
-            (self.name, self.args.score), "wb")
+            (self.args.dataset, self.args.score), "wb")
         pickle.dump(self, outfile)
 
 

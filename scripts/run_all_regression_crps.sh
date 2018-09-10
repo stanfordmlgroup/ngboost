@@ -7,3 +7,4 @@ python3 -m experiments.regression --dataset naval --score=CRPS --verbose
 python3 -m experiments.regression --dataset power --score=CRPS --verbose
 python3 -m experiments.regression --dataset energy --score=CRPS --verbose
 python3 -m experiments.regression --dataset protein --score=CRPS --verbose
+python3 -m experiments.regression --dataset yacht --score=CRPS --verbose

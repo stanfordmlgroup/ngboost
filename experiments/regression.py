@@ -25,6 +25,7 @@ dataset_name_to_loader = {
     "naval": lambda: pd.read_csv("data/uci/naval-propulsion.csv", delim_whitespace=True, header=None).iloc[:,:-1],
     "power": lambda: pd.read_excel("data/uci/power-plant.xlsx"),
     "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
+    "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']]],
 }
 
 base_name_to_learner = {
@@ -74,7 +75,7 @@ class RegressionLogger(object):
             self.print_results()
         time = datetime.datetime.now()
         outfile = open("results/regression/logs_%s_%s.pkl" %
-            (self.name, time.strftime("%Y-%m-%d-%H:%M")), "wb")
+            (self.name, self.args.score) "wb")
         pickle.dump(self, outfile)
 
 
@@ -82,7 +83,7 @@ if __name__ == "__main__":
 
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="housing")
-    argparser.add_argument("--n_est", type=int, default=250)
+    argparser.add_argument("--n_est", type=int, default=350)
     argparser.add_argument("--lr", type=float, default=0.01)
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -96,7 +97,6 @@ if __name__ == "__main__":
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
 
     # set default minibatch fraction based on dataset size
-    breakpoint()
     if not args.minibatch_frac:
         args.minibatch_frac = min(0.5, 5000 / len(X))
 

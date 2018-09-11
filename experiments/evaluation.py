@@ -21,8 +21,6 @@ def set_style():
 def calibration_regression(Forecast, Y, bins=10, eps=1e-3):
     """
     Calculate calibration in the regression setting.
-
-    Returns: list of predicted vs observed
     """
     pctles = np.linspace(eps, 1-eps, bins)
     observed = np.zeros_like(pctles)
@@ -31,6 +29,22 @@ def calibration_regression(Forecast, Y, bins=10, eps=1e-3):
         observed[i] = np.mean(Y < icdfs)
     slope, intercept = np.polyfit(pctles, observed, deg=1)
     return pctles, observed, slope, intercept
+
+def calibration_time_to_event(Forecast, Y, C, bins=10, eps=1e-3):
+    """
+    Calculate calibration in the time-to-event setting.
+    Note that this assumes censoring occurs completely at random.
+    """
+    pctles = np.linspace(eps, 1-eps, bins)
+    pctles = np.linspace(eps, 1-eps, bins)
+    observed = np.zeros_like(pctles)
+    for i, pctle in enumerate(pctles):
+        icdfs = Forecast.icdf(torch.tensor(pctle)).detach().numpy()
+        uncens = np.logical_not((Y < icdfs) & (C == 1))
+        observed[i] = np.mean(Y[uncens] < icdfs[uncens])
+    slope, intercept = np.polyfit(pctles, observed, deg=1)
+    return pctles, observed, slope, intercept
+
 
 def plot_calibration_curve(predicted, observed):
     """
@@ -50,12 +64,6 @@ def plot_calibration_curve(predicted, observed):
     plt.ylim((0, 1))
     plt.legend(loc="upper left")
     plt.show()
-
-def empirical_loglik():
-    """
-    Calculate the empirical log-likihood.
-    """
-    pass
 
 def calculate_concordance_dead_only(preds, ys, cs):
     """

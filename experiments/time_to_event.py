@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 from torch.distributions import LogNormal, Exponential, Weibull
 
 from ngboost import *
-from experiments.evaluation import calculate_concordance_naive
+from experiments.evaluation import *
 from ngboost.distns import HomoskedasticLogNormal
 
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
                      quadrant_search = False,
                      normalize_inputs=True,
                      normalize_outputs=False,
-                     minibatch_frac = 0.5,
+                     minibatch_frac = 0.2,
                      nu_penalty=1e-5)
     sprint["X"] = np.c_[sprint["X"], sprint["w"]]
     X_train, X_test, T_train, T_test, Y_train, Y_test = train_test_split(
@@ -67,10 +67,11 @@ if __name__ == "__main__":
     # truth = sprint["t"] / 365.25
     preds = sb.pred_dist(X_test)
 
-    # pred_means = preds.mean.detach().numpy()
-    # print(calculate_concordance_naive(sb.pred_mean(X_train), T_train, 1 - Y_train))
-    print(calculate_concordance_naive(preds.mean, T_test, 1 - Y_test))
+    c_stat = calculate_concordance_naive(preds.mean, T_test, 1 - Y_test)
+    pred, obs, slope, intercept = calibration_time_to_event(preds, T_test, 1 - Y_test)
     print("Censorship rate:", 1-np.mean(sprint["y"]))
     print("True mean:", T_test.mean())
-    print("Pred mean:", preds.mean.mean())
+    print("Pred mean:", preds.mean.mean().detach().numpy())
+    print("Calibration slope: %.4f, intercept: %.4f" % (slope, intercept))
+    print("Predicted: %s\nObserved:%s" % (pred, obs))
 

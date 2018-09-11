@@ -9,7 +9,7 @@ from torch.distributions.constraint_registry import transform_to
 from torch.distributions.transforms import AffineTransform
 from torch.optim import LBFGS
 
-from distns import AffineDistribution
+from ngboost.distns import AffineDistribution
 from ngboost.scores import MLE, MLE_surv
 from ngboost.learners import default_tree_learner
 

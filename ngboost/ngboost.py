@@ -21,6 +21,7 @@ class NGBoost(object):
                  natural_gradient=True, second_order=True,
                  quadrant_search=False, nu_penalty=0.0001,
                  normalize_inputs=True, normalize_outputs=True, verbose=True):
+        np.seterr("raise")
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
@@ -40,6 +41,8 @@ class NGBoost(object):
         self.init_params = []
         self.base_models = []
         self.scalings = []
+        self.X_scaler = None
+        self.Y_Scaler = None
 
     def pred_param(self, X):
         m, n = X.shape
@@ -88,9 +91,9 @@ class NGBoost(object):
             nu = [float(n) for n in np.exp(lognu)]
             return float(fn(self.sub(start, self.mul(resids, nu)))) + \
                    self.nu_penalty * np.linalg.norm(nu) ** 2
-        lognu0 = np.array([0. for _ in resids])
+        lognu0 = np.array([-10 for _ in resids])
         res = sp.optimize.minimize(lossfn, lognu0, method='Nelder-Mead',
-                                   tol=1e-6)
+                                    tol=1e-6)
         scale = [float(np.exp(f)) for f in res.x]
         self.scalings.append(scale)
         return scale
@@ -176,14 +179,6 @@ class NGBoost(object):
             dist = AffineDistribution(dist, transform)
         return dist
 
-    # def pred_mean(self, X):
-    #     dist = self.pred_dist(X)
-    #     return dist.mean.data.numpy()
-
-    # def pred_median(self, X):
-    #     dist = self.pred_dist(X)
-    #     return dist.icdf(torch.tensor(0.5)).data.numpy()
-
     def write_to_disk(self, filename):
         if not self.base_models:
             raise ValueError("NGBoost model has not yet been fit!")
@@ -193,6 +188,10 @@ class NGBoost(object):
             "scalings": self.scalings,
             "learning_rate": self.learning_rate,
             "init_params": self.init_params,
+            "normalize_inputs": self.normalize_inputs,
+            "normalize_outputs": self.normalize_outputs,
+            "X_scaler": self.X_scaler,
+            "Y_scaler": self.Y_scaler
         }, file)
         file.close()
 
@@ -213,6 +212,14 @@ class SurvNGBoost(NGBoost):
         return idxs, X[idxs, :], Y[idxs], C[idxs]
 
     def fit(self, X, Y, C):
+
+        if self.normalize_inputs:
+            self.X_scaler = StandardScaler(copy=True)
+            X = self.X_scaler.fit_transform(X)
+        if self.normalize_outputs:
+            self.Y_scaler = StandardScaler(copy=True)
+            Y = self.Y_scaler.fit_transform(np.log(Y[:,np.newaxis]))[:,0]
+            Y = np.exp(Y)
 
         loss_list = []
         Y = torch.tensor(Y, dtype=torch.float32)
@@ -251,4 +258,15 @@ class SurvNGBoost(NGBoost):
                 break
 
         return loss_list
+
+    def pred_dist(self, X):
+        if self.normalize_inputs:
+            X = self.X_scaler.transform(X)
+        params = self.pred_param(X)
+        dist = self.D(params)
+        if self.normalize_outputs:
+            transform = AffineTransform(torch.tensor(self.Y_scaler.mean_[0]),
+                                        torch.tensor(self.Y_scaler.scale_[0]))
+            dist = AffineDistribution(dist, transform)
+        return dist
 

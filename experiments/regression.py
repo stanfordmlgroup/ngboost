@@ -8,12 +8,11 @@ from argparse import ArgumentParser
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from distns import HomoskedasticNormal
 from torch.distributions import Normal, LogNormal
-from distns import HomoskedasticNormal
 from ngboost.ngboost import NGBoost, SurvNGBoost
+from ngboost.scores import MLE, CRPS
+from ngboost.learners import default_tree_learner, default_linear_learner
 from experiments.evaluation import *
-from ngboost import *
 
 np.random.seed(123)
 

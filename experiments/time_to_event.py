@@ -7,9 +7,9 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
 from torch.distributions import LogNormal, Exponential, Weibull
 
-from ngboost import SurvNGBoost, CRPS_surv, MLE_surv
+from ngboost import *
 from experiments.evaluation import calculate_concordance_naive
-from distns import HomoskedasticLogNormal
+from ngboost.distns import HomoskedasticLogNormal
 
 
 def load_data(dataset):
@@ -47,28 +47,30 @@ def load_data(dataset):
 if __name__ == "__main__":
 
     sprint = load_data("sprint")
-    sb = SurvNGBoost(Base = lambda : DecisionTreeRegressor(criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3),
-                     Dist = HomoskedasticLogNormal,
+    sb = SurvNGBoost(Base = default_tree_learner,
+                     Dist = LogNormal,
                      Score = CRPS_surv,
                      n_estimators = 50,
                      learning_rate = 0.05,
                      natural_gradient = True,
                      second_order = True,
                      quadrant_search = False,
+                     normalize_inputs=True,
+                     normalize_outputs=False,
                      minibatch_frac = 0.5,
                      nu_penalty=1e-5)
     sprint["X"] = np.c_[sprint["X"], sprint["w"]]
     X_train, X_test, T_train, T_test, Y_train, Y_test = train_test_split(
-        sprint["X"], sprint["t"] / 365.25, sprint["y"],
-        test_size = 0.2)
-    sb.fit(X_train, T_train, 1 - Y_train, X_test, T_test, 1 - Y_test)
+        sprint["X"], sprint["t"] / 365.25, sprint["y"], test_size = 0.2)
+    sb.fit(X_train, T_train, 1 - Y_train)
 
     # truth = sprint["t"] / 365.25
-    # preds = sb.pred_dist(sprint["X"])
+    preds = sb.pred_dist(X_test)
 
     # pred_means = preds.mean.detach().numpy()
-    print(calculate_concordance_naive(sb.pred_mean(X_train), T_train, 1 - Y_train))
-    print(calculate_concordance_naive(sb.pred_mean(X_test), T_test, 1 - Y_test))
+    # print(calculate_concordance_naive(sb.pred_mean(X_train), T_train, 1 - Y_train))
+    print(calculate_concordance_naive(preds.mean, T_test, 1 - Y_test))
+    print("Censorship rate:", 1-np.mean(sprint["y"]))
     print("True mean:", T_test.mean())
-    print("Pred mean:", sb.pred_mean(X_test).mean())
+    print("Pred mean:", preds.mean.mean())
 

@@ -150,7 +150,6 @@ class CRPS_surv(CRPS):
             left = self.I_normal(Forecast, Y)
             right = self.I_normal(Normal(-Forecast.mean, Forecast.scale), -Y)
         else:
-            import objgraph
             left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
             right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
         return (left + (1 - C) * right)

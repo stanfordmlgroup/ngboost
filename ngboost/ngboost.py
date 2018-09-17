@@ -4,9 +4,9 @@ import torch
 import pickle
 
 from sklearn.preprocessing import StandardScaler
-from torch.distributions import Normal
+from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.constraint_registry import transform_to
-from torch.distributions.transforms import AffineTransform
+from torch.distributions.transforms import AffineTransform, ExpTransform
 from torch.optim import LBFGS
 
 from ngboost.distns import AffineDistribution
@@ -265,8 +265,12 @@ class SurvNGBoost(NGBoost):
         params = self.pred_param(X)
         dist = self.D(params)
         if self.normalize_outputs:
-            transform = AffineTransform(torch.tensor(self.Y_scaler.mean_[0]),
-                                        torch.tensor(self.Y_scaler.scale_[0]))
-            dist = AffineDistribution(dist, transform)
+            transforms = [
+                ExpTransform().inv,
+                AffineTransform(torch.tensor(self.Y_scaler.mean_[0]),
+                                torch.tensor(self.Y_scaler.scale_[0])),
+                ExpTransform(),
+            ]
+            dist = TransformedDistribution(dist, transforms)
         return dist
 

@@ -56,7 +56,7 @@ if __name__ == "__main__":
                      second_order = True,
                      quadrant_search = False,
                      normalize_inputs=True,
-                     normalize_outputs=False,
+                     normalize_outputs=True,
                      minibatch_frac = 0.2,
                      nu_penalty=1e-5)
     sprint["X"] = np.c_[sprint["X"], sprint["w"]]
@@ -67,11 +67,13 @@ if __name__ == "__main__":
     # truth = sprint["t"] / 365.25
     preds = sb.pred_dist(X_test)
 
-    c_stat = calculate_concordance_naive(preds.mean, T_test, 1 - Y_test)
+    c_stat = calculate_concordance_naive(preds.icdf(torch.tensor(0.5)),
+                                         T_test, 1 - Y_test)
     pred, obs, slope, intercept = calibration_time_to_event(preds, T_test, 1 - Y_test)
+    print("C stat: %.4f" % c_stat)
     print("Censorship rate:", 1-np.mean(sprint["y"]))
-    print("True mean:", T_test.mean())
-    print("Pred mean:", preds.mean.mean().detach().numpy())
+    print("True median [uncens]:", np.median(T_test[Y_test == 1]))
+    print("True median [cens]:", np.median(T_test[Y_test == 0]))
+    print("Pred median:", preds.icdf(torch.tensor(0.5)).mean().detach().numpy())
     print("Calibration slope: %.4f, intercept: %.4f" % (slope, intercept))
-    print("Predicted: %s\nObserved:%s" % (pred, obs))
 

@@ -119,21 +119,20 @@ if __name__ == "__main__":
     for rep in range(args.n_reps):
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
-        results = []
 
         ngb = NGBoost(Base=base_name_to_learner[args.base],
-                    Dist=Normal,
-                    Score=score_name_to_score[args.score],
-                    n_estimators=args.n_est,
-                    learning_rate=args.lr,
-                    natural_gradient=True,
-                    second_order=True,
-                    quadrant_search=True,
-                    minibatch_frac=args.minibatch_frac,
-                    nu_penalty=1e-5,
-                    normalize_inputs=True,
-                    normalize_outputs=True,
-                    verbose=args.verbose)
+                      Dist=Normal,
+                      Score=score_name_to_score[args.score],
+                      n_estimators=args.n_est,
+                      learning_rate=args.lr,
+                      natural_gradient=True,
+                      second_order=True,
+                      quadrant_search=True,
+                      minibatch_frac=args.minibatch_frac,
+                      nu_penalty=1e-5,
+                      normalize_inputs=True,
+                      normalize_outputs=True,
+                      verbose=args.verbose)
 
         ngb.fit(X_train, y_train)
         forecast = ngb.pred_dist(X_test)

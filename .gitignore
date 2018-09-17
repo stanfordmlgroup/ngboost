@@ -106,6 +106,9 @@ venv.bak/
 *.csv
 *.Rdata
 *.npy
+*.txt
+*.xlsx
 
 # IDEs
 .idea
+.Rhistory

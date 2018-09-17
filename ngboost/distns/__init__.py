@@ -1,3 +1,4 @@
 from .affine_distribution import AffineDistribution
+from .categorical_distribution import get_categorical_distn
 from .homoskedastic_normal import HomoskedasticNormal
 from .homoskedastic_log_normal import HomoskedasticLogNormal

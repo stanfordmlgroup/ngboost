@@ -4,7 +4,7 @@ import torch
 import pickle
 
 from sklearn.preprocessing import StandardScaler
-from torch.distributions import Normal, TransformedDistribution
+from torch.distributions import Normal, Categorical, TransformedDistribution
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions.transforms import AffineTransform, ExpTransform
 from torch.optim import LBFGS
@@ -42,7 +42,7 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.X_scaler = None
-        self.Y_Scaler = None
+        self.Y_scaler = None
 
     def pred_param(self, X):
         m, n = X.shape
@@ -273,4 +273,3 @@ class SurvNGBoost(NGBoost):
             ]
             dist = TransformedDistribution(dist, transforms)
         return dist
-

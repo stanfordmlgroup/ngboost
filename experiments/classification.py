@@ -2,15 +2,13 @@ from __future__ import division, print_function
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_iris
+from sklearn.datasets import *
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from torch.distributions import Categorical, Bernoulli
+from torch.distributions import Bernoulli
 
 from ngboost import *
 from experiments.evaluation import *
-from ngboost.distns import HomoskedasticLogNormal
-from ngboost.distns import get_categorical_distn
+from ngboost.distns import get_categorical_distn, get_beta_distn
 
 
 np.random.seed(123)
@@ -22,15 +20,16 @@ if __name__ == "__main__":
     sb = NGBoost(Base = default_tree_learner,
                  Dist = get_categorical_distn(3),
                  Score = MLE,
-                 n_estimators = 50,
+                 n_estimators = 10,
                  learning_rate = 0.05,
                  natural_gradient = True,
                  second_order = True,
                  quadrant_search = False,
                  normalize_inputs=True,
-                 normalize_outputs=True,
+                 normalize_outputs=False,
                  minibatch_frac = 0.2,
-                 nu_penalty=1e-5)
+                 nu_penalty=1e-5,
+                 tol=1e-4)
     X_train, X_test, y_train, y_test = train_test_split(X, y)
     sb.fit(X_train, y_train)
 

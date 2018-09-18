@@ -4,12 +4,12 @@ import torch
 import pickle
 
 from sklearn.preprocessing import StandardScaler
-from torch.distributions import Normal, Categorical, TransformedDistribution
+from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.constraint_registry import transform_to
 from torch.distributions.transforms import AffineTransform, ExpTransform
 from torch.optim import LBFGS
 
-from ngboost.distns import AffineDistribution
+from ngboost.distns import AffineWrapper
 from ngboost.scores import MLE, MLE_surv
 from ngboost.learners import default_tree_learner
 
@@ -180,7 +180,7 @@ class NGBoost(object):
         if self.normalize_outputs:
             transform = AffineTransform(torch.tensor(self.Y_scaler.mean_[0]),
                                         torch.tensor(self.Y_scaler.scale_[0]))
-            dist = AffineDistribution(dist, transform)
+            dist = AffineWrapper(dist, transform)
         return dist
 
     def write_to_disk(self, filename):

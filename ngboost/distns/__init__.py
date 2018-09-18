@@ -1,4 +1,5 @@
-from .affine_distribution import AffineDistribution
-from .categorical_distribution import get_categorical_distn
+from .affine_wrapper import AffineWrapper
+from .beta_wrapper import get_beta_distn
+from .categorical_wrapper import get_categorical_distn
 from .homoskedastic_normal import HomoskedasticNormal
 from .homoskedastic_log_normal import HomoskedasticLogNormal

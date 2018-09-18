@@ -139,34 +139,3 @@ if __name__ == "__main__":
         logger.tick(forecast, y_test)
 
     logger.save()
-
-    # with open("./results/regression_experiment.csv", "w") as csvfile:
-    #     writer = csv.writer(csvfile)
-    #     writer.writerow(["n_learners", "lr", "score", "base", "r2", "mse",
-    #                      "val_slope", "val_int", "tr_slope", "tr_int"])
-    #     for row in results:
-    #         writer.writerow(row)
-
-    # print("Homoskedastic")
-    # ngb = NGBoost(Base=base_learner,
-    #               Dist=HomoskedasticNormal,
-    #               Score=CRPS,
-    #               n_estimators=400,
-    #               learning_rate=0.1,
-    #               natural_gradient=True,
-    #               second_order=True,
-    #               quadrant_search=False,
-    #               minibatch_frac=1.0,
-    #               nu_penalty=1e-5,
-    #               verbose=False)
-    #
-    # ngb.fit(X_train, y_train, X_test, y_test)
-    # y_pred = ngb.pred_mean(X_test)
-    # print("R2: %.4f" % r2_score(y_test, y_pred))
-    # print("MSE: %.4f" % mean_squared_error(y_test, y_pred))
-    #
-    # print("Scikit-Learn GBM")
-    # gbr = GradientBoostingRegressor()
-    # gbr.fit(X_train, y_train)
-    # print("R2: %.4f" % r2_score(y_test, gbr.predict(X_test)))
-    # print("MSE: %.4f" % mean_squared_error(y_test, gbr.predict(X_test)))

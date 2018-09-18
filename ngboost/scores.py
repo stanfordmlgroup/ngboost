@@ -43,6 +43,14 @@ class Score(object):
                           in zip(matrices, vecs)], dim=0)
 
 
+class Brier(Score):
+
+    def __call__(self, Forecast, Y):
+        return self.loss(Forecast, Y)
+
+    def loss(self, Forecast, Y):
+        pass
+
 class MLE(Score):
 
     def __init__(self, K=32):

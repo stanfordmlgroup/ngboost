@@ -20,7 +20,8 @@ class NGBoost(object):
                  n_estimators=1000, learning_rate=0.1, minibatch_frac=1.0,
                  natural_gradient=True, second_order=True,
                  quadrant_search=False, nu_penalty=0.0001,
-                 normalize_inputs=True, normalize_outputs=True, verbose=True):
+                 normalize_inputs=True, normalize_outputs=True,
+                 verbose=True, tol=1e-5):
         np.seterr("raise")
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
@@ -43,6 +44,7 @@ class NGBoost(object):
         self.scalings = []
         self.X_scaler = None
         self.Y_scaler = None
+        self.tol = tol
 
     def pred_param(self, X):
         m, n = X.shape
@@ -79,8 +81,9 @@ class NGBoost(object):
         scale = [10. for _ in resids]
         half = [0.5 for _ in resids]
         while True:
-            loss = float(fn(self.sub(start, self.mul(resids, scale))))
-            if loss < loss_init or self.norm(self.mul(resids, scale)) < 1e-5:
+            scaled_resids = self.mul(resids, scale)
+            loss = float(fn(self.sub(start, scaled_resids)))
+            if loss < loss_init or self.norm(scaled_resids) < self.tol:
                 break
             scale = self.mul(scale, half)
         self.scalings.append(scale)
@@ -139,7 +142,7 @@ class NGBoost(object):
                 scale = self.line_search(S_batch, params, resids)
 
             loss_list.append(score.detach().numpy())
-            if self.norm(self.mul(resids, scale)) < 1e-5:
+            if self.norm(self.mul(resids, scale)) < self.tol:
                 break
 
         return loss_list
@@ -163,9 +166,10 @@ class NGBoost(object):
                 continue
             loss.backward(retain_graph=True)
             opt.step(lambda: loss)
-            if np.abs(prev_loss - curr_loss) < 1e-5:
+            if np.abs(prev_loss - curr_loss) < self.tol:
                 break
             prev_loss = curr_loss
+            print(curr_loss)
         self.init_params = [p.detach().numpy() for p in init_params]
 
     def pred_dist(self, X):

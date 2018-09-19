@@ -169,7 +169,6 @@ class NGBoost(object):
             if np.abs(prev_loss - curr_loss) < self.tol:
                 break
             prev_loss = curr_loss
-            print(curr_loss)
         self.init_params = [p.detach().numpy() for p in init_params]
 
     def pred_dist(self, X):

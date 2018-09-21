@@ -84,7 +84,6 @@ class MLE(Score):
         for _ in range(self.K):
             X = Forecast.sample()
             score = Forecast.log_prob(X).mean()
-            breakpoint()
             grads = torch.autograd.grad(score, params, retain_graph=True)
             grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1)
             cov += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)

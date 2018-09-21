@@ -49,7 +49,23 @@ class Brier(Score):
         return self.loss(Forecast, Y)
 
     def loss(self, Forecast, Y):
-        pass
+        probs = Forecast.probs
+        if len(probs.shape) == 1:
+            return 0.5 * probs.pow(2).sum() - probs[Y.long()]
+        else:
+            return 0.5 * probs.pow(2).sum(dim=1) - \
+                   torch.stack([p[y] for p, y in zip(probs, Y.long())])
+
+    def metric(self, params, Forecast):
+        probs = Forecast.probs
+        m, n = int(params[0].shape[0]), len(params)
+        result = 0.
+        for i in range(probs.shape[1]):
+            pred_prob = probs[:,i].mean()
+            grads = torch.autograd.grad(pred_prob, params, retain_graph=True)
+            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim=1)
+            result += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
+        return result
 
 class MLE(Score):
 

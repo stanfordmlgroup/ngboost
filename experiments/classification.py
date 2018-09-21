@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from torch.distributions import Bernoulli
 
 from ngboost import *
+from ngboost.scores import *
 from experiments.evaluation import *
 from ngboost.distns import get_categorical_distn, get_beta_distn
 
@@ -19,7 +20,7 @@ if __name__ == "__main__":
     X, y = load_iris(return_X_y=True)
     sb = NGBoost(Base = default_tree_learner,
                  Dist = get_categorical_distn(3),
-                 Score = MLE,
+                 Score = Brier,
                  n_estimators = 10,
                  learning_rate = 0.05,
                  natural_gradient = True,

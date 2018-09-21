@@ -46,6 +46,7 @@ class RegressionLogger(object):
         self.r2s = []
         self.mses = []
         self.nlls = []
+        self.calib_scores = []
         self.calib_slopes = []
 
     def tick(self, forecast, y_test):
@@ -58,6 +59,7 @@ class RegressionLogger(object):
         self.r2s.append(r2)
         self.mses.append(mse)
         self.nlls.append(nll)
+        self.calib_scores.append(np.sum((pred - obs) ** 2))
         self.calib_slopes.append(slope)
         if self.verbose:
             print("R2: %.4f\tMSE:%.4f\tNLL:%.4f\tSlope:%.4f" %
@@ -73,6 +75,8 @@ class RegressionLogger(object):
             "nll_sd": [np.std(self.nlls)],
             "r2s_mean": [np.mean(self.r2s)],
             "r2s_sd": [np.std(self.r2s)],
+            "calib_mean": [np.mean(self.calib_scores)],
+            "calib_sd": [np.std(self.calib_scores)],
             "slope_mean": [np.mean(self.calib_slopes)],
             "slope_sd": [np.std(self.calib_slopes)],
         })
@@ -81,6 +85,8 @@ class RegressionLogger(object):
         print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
         print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
         print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
+        print("Calib: %.4f +/- %.4f" % (np.mean(self.calib_scores),
+                                        np.std(self.calib_scores)))
         print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
                                         np.std(self.calib_slopes)))
 

@@ -45,7 +45,7 @@ if __name__ == "__main__":
     for rep in range(args.n_reps):
 
         print('Iter %d' % rep)
-        X, y = load_data(m=500, n=25)
+        X, y = load_data(m=500, n=25, alpha=args.alpha)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 
         ngb = NGBoost(Base=base_name_to_learner[args.base],

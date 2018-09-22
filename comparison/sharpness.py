@@ -19,8 +19,8 @@ def load_data(m=500, n=25, alpha=1.0):
     mu = X.dot(theta_mu)
     logs = X.dot(theta_logs)
     s = np.exp(logs)
-    y = norm.rvs(size=m) * s + mu
-    y += norm.rvs(size=m) * np.mean(s) * np.sqrt((1 / alpha - 1))
+    y = np.random.normal(size=m) * s + mu
+    y += np.random.normal(size=m) * np.mean(s) * np.sqrt((1 / alpha - 1))
     print('Mean MU/STDV: %.3f, %.3f' % (np.mean(mu), np.mean(s)))
     return X, y
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--n_reps", type=int, default=10)
-    argparser.add_argument("--minibatch_frac", type=float, default=None)
+    argparser.add_argument("--minibatch_frac", type=float, default=1.0)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
     args.dataset = "%s_alpha_%.1f" % (args.dataset, args.alpha)

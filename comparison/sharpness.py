@@ -40,6 +40,8 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     args.dataset = "%s_alpha_%.1f" % (args.dataset, args.alpha)
 
+    logger = RegressionLogger(args)
+
     for rep in range(args.n_reps):
 
         print('Iter %d' % rep)

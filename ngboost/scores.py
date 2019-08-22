@@ -1,183 +1,117 @@
-import torch
-import numpy as np
-from torch.distributions import Normal
+import jax.numpy as np
+import jax.random as random
+import jax.scipy as sp
+from jax import grad, vmap, jacfwd, jit
+from jax.lax import stop_gradient
+
+from ngboost.distns import Normal, LogNormal
 
 
 class Score(object):
 
-    def grad(self, D, params, grads, natural_gradient=True, second_order=True):
-
-        if not natural_gradient and not second_order:
-            return grads
-
-        grads = torch.cat([g.reshape(-1, 1) for g in grads], dim=1)
-
-        if second_order:
-            M, P = len(grads), len(params)
-            hessians = torch.zeros((M, P, P))
-            for i in range(P):
-                second_derivs = torch.autograd.grad(grads[:,i].split(1),
-                                                    params, retain_graph=True)
-                for j, g in enumerate(second_derivs):
-                    hessians[:,i,j] = g
-            for k in range(M):
-                L, U = torch.eig(hessians[k,:,:], eigenvectors=True)
-                L = torch.diag(torch.abs(L[:,0]))
-                hessians[k,:,:] = U @ L @ torch.transpose(U, 1, 0)
-            grads = self.matmul_inv(hessians, grads)
-
-        if natural_gradient:
-            Forecast = D(params)
-            metrics = self.metric(params, Forecast)
-            grads = self.matmul_inv(metrics, grads)
-
-        grad = [g.reshape(-1) for g in torch.split(grads, 1, dim=1)]
-        return grad
-
-    def inverse(self, matrix):
-        m = int(matrix.shape[0])
-        return torch.inverse(matrix + 1e-2 * torch.eye(m))
-
-    def matmul_inv(self, matrices, vecs):
-        return torch.cat([torch.mv(self.inverse(m), v).unsqueeze(0) for m, v
-                          in zip(matrices, vecs)], dim=0)
-
-
-class Brier(Score):
+    def __init__(self, seed=123):
+        self.key = random.PRNGKey(seed=seed)
 
     def __call__(self, Forecast, Y):
-        return self.loss(Forecast, Y)
+        raise NotImplementedError
 
-    def loss(self, Forecast, Y):
-        probs = Forecast.probs
-        if len(probs.shape) == 1:
-            return 0.5 * probs.pow(2).sum() - probs[Y.long()]
-        else:
-            return 0.5 * probs.pow(2).sum(dim=1) - \
-                   torch.stack([p[y] for p, y in zip(probs, Y.long())])
+    def setup_distn(self, distn):
+        self.distn = distn
 
-    def metric(self, params, Forecast):
-        probs = Forecast.probs
-        m, n = int(params[0].shape[0]), len(params)
-        result = 0.
-        for i in range(probs.shape[1]):
-            pred_prob = probs[:,i].mean()
-            grads = torch.autograd.grad(pred_prob, params, retain_graph=True)
-            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim=1)
-            result += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
-        return result
 
 class MLE(Score):
 
-    def __init__(self, K=32):
+    def __init__(self, seed=123, K=128):
+        super().__init__(seed=seed)
+        self.metric_fn = jit(vmap(lambda p: self.distn(p).fisher_info()))
+        self.sample_grad_fn = jit(vmap(grad(self._loglik_fn)))
+        self.outer_product_fn = jit(vmap(lambda v: np.outer(v, v)))
         self.K = K
 
-    def __call__(self, Forecast, Y):
-        return self.loss(Forecast, Y)
+    def __call__(self, forecast, Y):
+        return -forecast.logpdf(Y.squeeze())
 
-    def loss(self, Forecast, Y):
-        return -Forecast.log_prob(Y)
-
-    def metric(self, params, Forecast):
-        cov = 0
-        m, n = int(params[0].shape[0]), len(params)
+    def metric(self, params, Y):
+        if self.distn.has_fisher_info:
+            return self.metric_fn(params)
+        batch_size = len(params)
+        var = 0
         for _ in range(self.K):
-            X = Forecast.sample()
-            score = Forecast.log_prob(X).mean()
-            grads = torch.autograd.grad(score, params, retain_graph=True)
-            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1)
-            cov += grads.reshape(m, 1, n) * grads.reshape(m, n, 1)
-        return cov / self.K
+            self.key, subkey = random.split(self.key)
+            grad = self.sample_grad_fn(params, random.split(subkey, batch_size))
+            var += self.outer_product_fn(grad)
+        return var / self.K
+
+    def _loglik_fn(self, params, key):
+        sample = stop_gradient(self.distn(params).sample(key=key))
+        return self.distn(params).logpdf(sample)
 
 
-class MLE_surv(MLE):
+class MLE_SURV(MLE):
 
-    def loss(self, Forecast, Y, C):
-        return - ((1 - C) * Forecast.log_prob(Y) +
-                  C * (1 - Forecast.cdf(Y) + 1e-5).log())
+    def __init__(self, seed=123):
+        super().__init__(seed=seed)
+        def metric_cens_fn(params, Y):
+            return Y[1] * self.distn(params).fisher_info() + \
+                   (1 - Y[1]) * self.distn(params).fisher_info()
+        self.metric_fn = jit(vmap(metric_cens_fn))
 
-    def __call__(self, Forecast, Y, C):
-        return self.loss(Forecast, Y, C)
+    def __call__(self, forecast, Y, eps=1e-5):
+        C = Y[:,1] if len(Y.shape) > 1 else Y[1]
+        T = Y[:,0] if len(Y.shape) > 1 else Y[0]
+        return -(1-C) * forecast.logpdf(T) - C * np.log(1-forecast.cdf(T)+eps)
 
+    def metric(self, params, Y):
+        return self.metric_fn(params, Y)
 
 class CRPS(Score):
 
     def __init__(self, K=32):
+        super().__init__()
+        self.metric_fn = jit(vmap(lambda p: self.distn(p).crps_metric()))
         self.K = K
+        self.I_pos = jit(self._I_pos)
+        self.I_neg = jit(self._I_neg)
 
-    def __call__(self, Forecast, Y):
-        return self.loss(Forecast, Y)
+    def _I_pos(self, params, U):
+        axis = np.outer(np.linspace(0, 1, self.K)[1:], U)
+        evals = self.distn(params).cdf(axis) ** 2
+        return 0.5 * np.sum(evals[:self.K - 2] + evals[1:]) * U / self.K
 
-    def I(self, F, U):
-        I_sum = 0.
-        for th in np.linspace(0, 1., self.K):
-            if th == 0:
-                prev_F = 0.
-                prev_x = 0.
-                continue
-            this_x = U * th
-            this_F = F(this_x)
-            Fdiff = 0.5 * (this_F + prev_F)
-            xdiff = this_x - prev_x
-            I_sum += (Fdiff * xdiff)
-            prev_F = this_F
-            prev_x = this_x
-        return I_sum
+    def _I_neg(self, params, U):
+        axis = np.outer(np.linspace(0, 1, self.K)[1:], U)
+        evals = (1 - self.distn(params).cdf(1 / axis) ** 2) / axis ** 2
+        return 0.5 * np.sum(evals[:self.K - 2] + evals[1:]) * U / self.K
 
     def I_normal(self, Forecast, Y):
         S = Forecast.scale
-        Y_std = (Y - Forecast.mean) / Forecast.scale
-        norm2 = Normal(Forecast.mean, Forecast.scale / float(np.sqrt(2.)))
+        Y_std = (Y - Forecast.loc) / Forecast.scale
+        norm2 = Normal([Forecast.loc, Forecast.scale / np.sqrt(2.)])
         ncdf = Forecast.cdf(Y)
-        npdf = Forecast.log_prob(Y).exp()
+        npdf = np.exp(Forecast.logpdf(Y))
         n2cdf = norm2.cdf(Y)
-        return S * (Y_std * ncdf.pow(2) + 2 * ncdf * npdf * S -
-               float(1./np.sqrt(np.pi)) * n2cdf)
+        return S * (Y_std * np.power(ncdf, 2) + 2 * ncdf * npdf * S -
+               n2cdf / np.sqrt(np.pi))
 
-    def loss(self, Forecast, Y):
+    def __call__(self, forecast, Y):
+        return forecast.crps(Y.squeeze())
 
-        if isinstance(Forecast, Normal):
-            left = self.I_normal(Forecast, Y)
-            right = self.I_normal(Normal(-Forecast.mean, Forecast.scale), -Y)
+    def metric(self, params, Y):
+        if self.distn.has_crps_metric:
+            return self.metric_fn(params)
+        raise NotImplementedError
+
+
+class CRPS_SURV(CRPS):
+
+    def __call__(self, forecast, Y):
+        C = Y[:,1] if len(Y.shape) > 1 else Y[1]
+        T = Y[:,0] if len(Y.shape) > 1 else Y[0]
+        if isinstance(forecast, Normal):
+            left = self.I_normal(forecast, T)
+            right = self.I_normal(Normal((-forecast.loc, forecast.scale)), -T)
         else:
-            left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
-            right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
-        return left + right
-
-    def metric(self, params, Forecast):
-        m, n = int(params[0].shape[0]), len(params)
-        I_sum = 0.
-        for th in np.linspace(0, 1., self.K):
-            if th == 0:
-                prev_F = 0.
-                prev_x = 0.
-                continue
-            this_x = 1. / th
-            xdiff = this_x - prev_x
-
-            loss = Forecast.cdf(torch.Tensor([this_x])).mean()
-            grads = torch.autograd.grad(loss, params, retain_graph=True)
-            grads = torch.cat([g.reshape(-1, 1) for g in grads], dim = 1)
-            this_F = grads.reshape(m, 1, n) * grads.reshape(m, n, 1) / (th ** 2)
-            Fdiff = 0.5 * (this_F + prev_F)
-            I_sum += Fdiff * 1./self.K
-
-            prev_F = this_F
-            prev_x = this_x
-        return 2 * I_sum
-
-
-class CRPS_surv(CRPS):
-
-    def loss(self, Forecast, Y, C):
-        if isinstance(Forecast, Normal):
-            left = self.I_normal(Forecast, Y)
-            right = self.I_normal(Normal(-Forecast.mean, Forecast.scale), -Y)
-        else:
-            left = self.I(lambda y: Forecast.cdf(y).pow(2), Y)
-            right = self.I(lambda y: ((1 - Forecast.cdf(1/y)) / y).pow(2), 1/Y)
+            left = self.I_pos(forecast.params, T)
+            right = self.I_neg(forecast.params, 1/T)
         return (left + (1 - C) * right)
-
-    def __call__(self, Forecast, Y, C):
-        return self.loss(Forecast, Y, C)
 

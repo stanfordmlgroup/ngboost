@@ -1,5 +1,4 @@
-from .affine_wrapper import AffineWrapper
-from .beta_wrapper import get_beta_distn
-from .categorical_wrapper import get_categorical_distn
-from .homoskedastic_normal import HomoskedasticNormal
-from .homoskedastic_log_normal import HomoskedasticLogNormal
+from .normal import Normal, HomoskedasticNormal
+from .laplace import Laplace
+from .lognormal import LogNormal, HomoskedasticLogNormal
+from .loglaplace import LogLaplace

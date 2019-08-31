@@ -103,12 +103,8 @@ venv.bak/
 .mypy_cache/
 
 # Get rid of data
-*.csv
-*.Rdata
-*.npy
-*.txt
-*.xlsx
-
-# IDEs
-.idea
-.Rhistory
+#*.csv
+#*.Rdata
+#*.npy
+#*.txt
+#*.xlsx

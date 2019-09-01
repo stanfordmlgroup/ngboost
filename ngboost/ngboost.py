@@ -132,9 +132,16 @@ class NGBoost(object):
         for itr in range(iters):
             loss = self.marginal_loss(params, Y).mean()
             grads = self.marginal_grad(params, Y).mean(axis=0)
-            scale = 5.0
-            while self.marginal_loss(params - scale * grads, Y).mean() > loss:
+            metric = self.Score.metric(params, Y).mean(axis=0)
+            #grads = self.matmul_inv_fn(metric, grads)
+            grads = np.linalg.inv(metric).dot(grads)
+            scale = 1
+            while True:
+                test_loss = self.marginal_loss(params - scale * grads, Y).mean()
+                if test_loss <= loss:
+                    break
                 scale *= 0.5
+
             params -= scale * grads
             if self.verbose:
                 print("[iter %d] loss=%.4f" % (itr, loss))

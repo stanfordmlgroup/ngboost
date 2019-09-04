@@ -14,8 +14,12 @@ class ConstantLearner(object):
 
 
 tree_learner_with_depth = lambda d: DecisionTreeRegressor(
-    criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0, max_depth=d)
+    criterion='friedman_mse',
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_depth=d,
+    splitter='best')
 
 default_tree_learner = lambda: tree_learner_with_depth(3)
 # default_linear_learner = LinearRegression

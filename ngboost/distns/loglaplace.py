@@ -35,6 +35,9 @@ class LogLaplace(object):
             (self.scale / (4 - self.scale ** 2) + A)
         return L * (Y < np.exp(self.loc)) + R * (Y >= np.exp(self.loc))
 
+    def fit(Y):
+        m, s = osp.stats.laplace.fit(np.log(Y))
+        return np.array([m, np.log(s ** 2)])
 
 class HomoskedasticLogLaplace(LogLaplace):
 
@@ -44,3 +47,7 @@ class HomoskedasticLogLaplace(LogLaplace):
         self.loc = params[0]
         self.scale = np.ones_like(self.loc)
         self.params = params
+
+    def fit(Y):
+        m, s = osp.stats.laplace.fit(np.log(Y))
+        return m

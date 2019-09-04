@@ -39,6 +39,10 @@ class Laplace(object):
         M = np.diag(np.array([0.5 / self.scale, 0.25 / self.scale]))
         return M + 1e-4 * np.eye(2)
 
+    def fit(Y):
+        m, s = osp.stats.laplace.fit(Y)
+        return np.array([m, np.log(s ** 2)])
+
 
 class HomoskedasticLaplace(Laplace):
 
@@ -49,3 +53,7 @@ class HomoskedasticLaplace(Laplace):
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
 
+
+    def fit(Y):
+        m, s = osp.stats.laplace.fit(Y)
+        return m

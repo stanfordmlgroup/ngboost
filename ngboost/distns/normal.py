@@ -13,7 +13,7 @@ class Normal(object):
 
     def __init__(self, params, temp_scale = 1.0):
         self.loc = params[0]
-        self.var = np.exp(params[1] / temp_scale)
+        self.var = np.exp(params[1] / temp_scale) + 1e-20
         self.scale = self.var ** 0.5
         self.shp = self.loc.shape
 
@@ -37,6 +37,12 @@ class Normal(object):
         return self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
                2 * sp.stats.norm.pdf(Z) - 1 / np.sqrt(np.pi))
 
+    def crps_debug(self, Y):
+        print('Y=%.4f loc=%.4f, scale=%.4f' % (Y, self.loc, self.scale))
+        Z = (Y - self.loc) / self.scale
+        return self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
+               2 * sp.stats.norm.pdf(Z) - 1 / np.sqrt(np.pi))
+
     def crps_metric(self):
         I = np.diag(np.array([1 / np.sqrt(np.pi) / self.scale,
                               0.5 / np.sqrt(np.pi) / self.scale]))
@@ -51,6 +57,11 @@ class Normal(object):
                           (T - self.loc) / self.scale * self.pdf(T)])
         return np.outer(nabla, nabla) / (self.cdf(T) * (1 - self.cdf(T))) + 1e-2 * np.eye(2)
 
+    def fit(Y):
+        m, s = osp.stats.norm.fit(Y)
+        print(m, s)
+        return np.array([m, np.log(s ** 2)])
+
 
 class HomoskedasticNormal(Normal):
 
@@ -62,3 +73,7 @@ class HomoskedasticNormal(Normal):
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
 
+
+    def fit(Y):
+        m, s = osp.stats.norm.fit(Y)
+        return m

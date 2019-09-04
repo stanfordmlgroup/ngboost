@@ -56,10 +56,10 @@ class NGBoost(object):
             params -= self.learning_rate * resids * s
         return params
 
-    def sample(self, X, Y):
+    def sample(self, X, Y, params):
         sample_size = int(self.minibatch_frac * len(Y))
         idxs = np_rnd.choice(np.arange(len(Y)), sample_size, replace=False)
-        return idxs, X[idxs,:], Y[idxs,:]
+        return idxs, X[idxs,:], Y[idxs,:], params[idxs, :]
 
     def fit_base(self, X, grads):
         models = [self.Base().fit(X, g) for g in grads.T]
@@ -69,7 +69,7 @@ class NGBoost(object):
 
     def line_search(self, resids, start, Y):
         loss_init = self.loss_fn(start, Y).mean()
-        scale = 1.0
+        scale = 1
         while True:
             scaled_resids = resids * scale
             loss = self.loss_fn(start - scaled_resids, Y).mean()
@@ -87,69 +87,71 @@ class NGBoost(object):
         val_loss_list = []
         self.fit_init_params_to_marginal(Y)
 
+        params = self.pred_param(X)
+        if X_val is not None and Y_val is not None:
+            val_params = self.pred_param(X_val)
+
         for itr in range(self.n_estimators):
+            _, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
 
-            _, X_batch, Y_batch = self.sample(X, Y)
-            params = self.pred_param(X_batch)
-            loss = self.loss_fn(params, Y_batch).mean()
-            grads = self.grad_fn(params, Y_batch)
-
-            if self.natural_gradient:
-                metric = self.Score.metric(params, Y_batch)
-                grads = self.matmul_inv_fn(metric, grads)
-
-            if np.any(np.isnan(grads)) or loss > 1/self.tol:
+            losses = self.loss_fn(P_batch, Y_batch)
+            loss = losses.mean()
+            if np.isinf(loss) or np.isnan(loss):
+                for i, (p, l, y) in enumerate(zip(P_batch, losses, Y_batch)):
+                    if np.isinf(l) or np.isnan(l):
+                        print('[%d] Params=[%.4f,%.4f], loss=%.4f, y=%.4f' % (i, p[0], p[1], l, y))
+                        print('Loss=%.4f' % self.Dist(p).crps_debug(y))
                 breakpoint()
 
-            resids = self.fit_base(X_batch, grads)
-            scale = self.line_search(resids, params, Y_batch)
+            grads = self.grad_fn(P_batch, Y_batch)
+
+            if self.natural_gradient:
+                metric = self.Score.metric(P_batch, Y_batch)
+                grads = self.matmul_inv_fn(metric, grads)
+
+            if np.any(np.isnan(grads)) or np.any(np.isinf(grads)): # or loss > 1/self.tol:
+                print(grads)
+                grads = self.grad_fn(P_batch, Y_batch)
+                print('recalculated')
+                print(grads)
+                print('params')
+                print(grads)
+                pass
+                #breakpoint()
+
+            proj_grad = self.fit_base(X_batch, grads)
+            scale = self.line_search(proj_grad, P_batch, Y_batch)
+
             loss_list += [loss]
 
-            if self.verbose:
-                grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
-                print(f"[iter {itr}] loss={loss:.4f} scale={scale:.4f} " +
-                      f"norm={grad_norm:.4f}")
+            params -= self.learning_rate * scale * np.array([m.predict(X) for m in self.base_models[-1]]).T
 
-            if np.linalg.norm(resids * scale, axis=1).mean() < self.tol:
-                print(f"== Quitting at iteration / GRAD {itr}")
-                break
-
+            val_loss = 0
             if X_val is not None and Y_val is not None:
-                val_loss = self.loss_fn(self.pred_param(X_val), Y_val).mean()
+                val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
+                val_loss = self.loss_fn(val_params, Y_val).mean()
                 val_loss_list += [val_loss]
                 if np.mean(np.array(val_loss_list[-5:])) > \
                    np.mean(np.array(val_loss_list[-10:-5])):
-                    print(f"== Quitting at iteration / VAL {itr}")
-                    break
+                    print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
+                    pass
+
+
+            if self.verbose:
+                grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
+                print(f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} " +
+                      f"norm={grad_norm:.4f}")
+
+            if np.linalg.norm(proj_grad, axis=1).mean() < self.tol:
+                print(f"== Quitting at iteration / GRAD {itr}")
+                break
 
         return loss_list, val_loss_list
 
     def fit_init_params_to_marginal(self, Y, iters=1000):
-        if self.verbose:
-            print("== Fitting marginal distribution to convergence")
-        params = np.zeros((Y.shape[0], self.Dist.n_params))
-        prev_loss = float("inf")
-        for itr in range(iters):
-            loss = self.marginal_loss(params, Y).mean()
-            grads = self.marginal_grad(params, Y).mean(axis=0)
-            metric = self.Score.metric(params, Y).mean(axis=0)
-            #grads = self.matmul_inv_fn(metric, grads)
-            grads = np.linalg.inv(metric).dot(grads)
-            scale = 1
-            while True:
-                test_loss = self.marginal_loss(params - scale * grads, Y).mean()
-                if test_loss <= loss:
-                    break
-                scale *= 0.5
+        self.init_params = self.Dist.fit(Y)
+        return
 
-            params -= scale * grads
-            if self.verbose:
-                print("[iter %d] loss=%.4f" % (itr, loss))
-            if prev_loss - loss <= self.tol:
-                break
-            prev_loss = loss
-        print("== Found:", params[0])
-        self.init_params = params[0]
 
     def pred_dist(self, X, max_iter=None):
         params = self.pred_param(X, max_iter)

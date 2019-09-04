@@ -42,6 +42,9 @@ class LogNormal(object):
                               0.5 / np.sqrt(np.pi) / self.scale]))
         return I + 1e-4 * np.eye(2)
 
+    def fit(Y):
+        m, s = osp.stats.norm.fit(np.log(Y))
+        return np.array([m, np.log(s ** 2)])
 
 
 class HomoskedasticLogNormal(LogNormal):
@@ -52,3 +55,8 @@ class HomoskedasticLogNormal(LogNormal):
         self.loc = params[0]
         self.scale = np.ones_like(self.loc)
         self.params = params
+
+
+    def fit(Y):
+        m, s = osp.stats.norm.fit(np.log(Y))
+        return m

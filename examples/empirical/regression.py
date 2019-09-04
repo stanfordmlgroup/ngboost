@@ -4,12 +4,13 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
-from ngboost.distns import Normal, Laplace
+from ngboost.distns import Normal, Laplace, HomoskedasticNormal
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from examples.loggers.loggers import RegressionLogger
 
+from sklearn.ensemble import GradientBoostingRegressor as GBR
 
 np.random.seed(123)
 
@@ -41,9 +42,9 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=200)
+    argparser.add_argument("--n-est", type=int, default=500)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=1.0)
+    argparser.add_argument("--lr", type=float, default=0.1)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -57,6 +58,8 @@ if __name__ == "__main__":
 
     print("Dataset size:", X.shape)
     logger = RegressionLogger(args)
+    gbrlog = RegressionLogger(args)
+    gbrlog.distn = 'GBR'
 
     # set default minibatch fraction based on dataset size
     if not args.minibatch_frac:
@@ -80,5 +83,15 @@ if __name__ == "__main__":
         forecast = ngb.pred_dist(X_test)
         logger.tick(forecast, y_test)
 
+
+        gbr = GBR(n_estimators=args.n_est,
+                  learning_rate=args.lr,
+                  subsample=args.minibatch_frac,
+                  verbose=args.verbose)
+        gbr.fit(X_train, y_train)
+        forecast = HomoskedasticNormal(gbr.predict(X_test).reshape((1, -1)))
+        gbrlog.tick(forecast, y_test)
+
     logger.save()
+    gbrlog.save()
 

@@ -57,14 +57,11 @@ if __name__ == "__main__":
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values[:,np.newaxis]
 
-
     logger = RegressionLogger(args)
     gbrlog = RegressionLogger(args)
     gbrlog.distn = 'GBR'
 
-    # set default minibatch fraction based on dataset size
     if not args.minibatch_frac:
-        #args.minibatch_frac = min(1.0, 5000 / len(X))
         args.minibatch_frac = 1.0
 
     print('== Dataset=%s X.shape=%s' % (args.dataset, str(X.shape)))

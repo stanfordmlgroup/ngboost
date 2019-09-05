@@ -8,44 +8,31 @@ class RegressionLogger(object):
 
     def __init__(self, args):
         self.args = args
-        self.r2s = []
-        self.mses = []
-        self.nlls = []
-        self.crps = []
-        self.calib_slopes = []
-        self.calib_errors = []
+        self.log = pd.DataFrame()
 
     def tick(self, forecast, y_test):
         pred, obs, slope, intercept = calibration_regression(forecast, y_test)
-        self.r2s += [r2_score(y_test, forecast.loc)]
-        self.mses += [mean_squared_error(y_test, forecast.loc)]
-        self.nlls += [-np.diag(forecast.logpdf(y_test)).mean()]
-        self.crps += [np.diag(forecast.crps(y_test)).mean()]
-        self.calib_slopes.append(slope)
-        self.calib_errors.append(calculate_calib_error(pred, obs))
+        self.log = self.log.append([{
+            "r2": r2_score(y_test, forecast.loc),
+            "mse": mean_squared_error(y_test, forecast.loc),
+            "nll": -np.diag(forecast.logpdf(y_test)).mean(),
+            "crps": np.diag(forecast.crps(y_test)).mean(),
+            "slope": slope,
+            "calib": calculate_calib_error(pred, obs)
+        }])
 
     def to_row(self):
-        self.calib_errors = np.array(self.calib_errors) * 100.0
         return pd.DataFrame({
             "dataset": [self.args.dataset],
             "distn": [self.args.distn],
             "score": [self.args.score],
-            "rmse": [f"{np.mean(np.sqrt(self.mses)):.2f} $\pm$ {np.std(np.sqrt(self.mses)):.2f}"],
-            "nll": [f"{np.mean(np.array(self.nlls)):.2f} $\pm$ {np.std(np.array(self.nlls)):.2f}"],
-            "crps": [f"{np.mean(np.array(self.crps)):.2f} $\pm$ {np.std(np.array(self.crps)):.2f}"],
-            "r2": [f"{np.mean(self.r2s):.2f} $\pm$ {np.std(self.r2s):.2f}"],
-            "calib": [f"{np.mean(self.calib_errors):.2f} $\pm$ {np.std(self.calib_errors):.2f}"],
-            "slope": [f"{np.mean(self.calib_slopes):.2f} $\pm$ {np.std(self.calib_slopes):.2f}"],
+            "rmse": ["{:.2f} \pm {:.2f}".format(np.mean(np.sqrt(self.log["mse"])), np.std(np.sqrt(self.log["mse"])) / self.args.reps)],
+            "nll": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["nll"]), np.std(self.log["nll"]) / self.args.reps)],
+            "crps": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["crps"]), np.std(self.log["crps"]) / self.args.reps)],
+            "r2": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["r2"]), np.std(self.log["r2"]) / self.args.reps)],
+            "calib": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["calib"]), np.std(self.log["calib"]) / self.args.reps)],
+            "slope": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["slope"]), np.std(self.log["slope"]) / self.args.reps)],
         })
-
-    def print_results(self):
-        print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
-        print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
-        print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
-        print("Calib: %.4f +/- %.4f" % (np.mean(self.calib_scores),
-                                        np.std(self.calib_scores)))
-        print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
-                                        np.std(self.calib_slopes)))
 
     def save(self):
         outfile = open("results/regression/logs_%s_%s_%s_%s.pkl" %
@@ -58,52 +45,31 @@ class SurvivalLogger(object):
 
     def __init__(self, args):
         self.args = args
-        self.r2s = []
-        self.mses = []
-        self.nlls = []
-        self.crps = []
-        self.calib_slopes = []
-        self.calib_errors = []
+        self.log = pd.DataFrame()
 
     def tick(self, forecast, y_test):
-        pred, obs, slope, intercept = calibration_regression(forecast, y_test)
-        self.r2s += [r2_score(y_test, forecast.loc)]
-        self.mses += [mean_squared_error(y_test, forecast.loc)]
-        self.nlls += [-np.diag(forecast.logpdf(y_test)).mean()]
-        self.crps += [np.diag(forecast.crps(y_test)).mean()]
-        self.calib_slopes.append(slope)
-        self.calib_errors.append(calculate_calib_error(pred, obs))
+        pred, obs, slope, intercept = calibration_time_to_event(forecast, y_test[:,0], y_test[:,1])
+        self.log = self.log.append([{
+            "cstat_naive": calculate_concordance_naive(forecast.ppf(0.5), y_test[:,0], y_test[:,1]),
+            "cstat_dead": calculate_concordance_dead_only(forecast.ppf(0.5), y_test[:,0], y_test[:,1]),
+            "cov": np.mean(np.sqrt(forecast.var) / forecast.loc),
+            "slope": slope,
+            "calib": calculate_calib_error(pred, obs)
+        }])
 
     def to_row(self):
         return pd.DataFrame({
             "dataset": [self.args.dataset],
             "score": [self.args.score],
             "natural": [self.args.natural],
-            "rmse_mean": [np.mean(np.sqrt(self.mses))],
-            "rmse_sd": [np.std(np.sqrt(self.mses))],
-            "nll_mean": [np.mean(np.array(self.nlls))],
-            "nll_sd": [np.std(np.array(self.nlls))],
-            "crps_mean": [np.mean(np.array(self.crps))],
-            "crps_sd": [np.std(np.array(self.crps))],
-            "r2s_mean": [np.mean(self.r2s)],
-            "r2s_sd": [np.std(self.r2s)],
-            "calib_mean": [np.mean(self.calib_errors)],
-            "calib_sd": [np.std(self.calib_errors)],
-            "slope_mean": [np.mean(self.calib_slopes)],
-            "slope_sd": [np.std(self.calib_slopes)],
+            "cstat_naive": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["cstat_naive"]), np.std(self.log["cstat_naive"]) / self.args.reps)],
+            "cstat_dead": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["cstat_dead"]), np.std(self.log["cstat_dead"]) / self.args.reps)],
+            "calib": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["calib"]), np.std(self.log["calib"]) / self.args.reps)],
+            "slope": ["{:.2f} \pm {:.2f}".format(np.mean(self.log["slope"]), np.std(self.log["slope"]) / self.args.reps)],
         })
 
-    def print_results(self):
-        print("R2: %.4f +/- %.4f" % (np.mean(self.r2s), np.std(self.r2s)))
-        print("MSE: %.4f +/- %.4f" % (np.mean(self.mses), np.std(self.mses)))
-        print("NLL: %.4f +/- %.4f" % (np.mean(self.nlls), np.std(self.nlls)))
-        print("Calib: %.4f +/- %.4f" % (np.mean(self.calib_scores),
-                                        np.std(self.calib_scores)))
-        print("Slope: %.4f +/- %.4f" % (np.mean(self.calib_slopes),
-                                        np.std(self.calib_slopes)))
-
     def save(self):
-        outfile = open("results/regression/logs_%s_%s_%s_%s.pkl" %
+        outfile = open("results/survival/logs_%s_%s_%s_%s.pkl" %
             (self.args.dataset, self.args.score, self.args.natural,
              self.args.distn), "wb")
         pickle.dump(self, outfile)

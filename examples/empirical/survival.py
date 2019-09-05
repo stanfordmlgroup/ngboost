@@ -11,7 +11,13 @@ from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE_SURV, CRPS_SURV
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.evaluation import *
+from examples.loggers.loggers import *
 
+
+base_name_to_learner = {
+    "tree": default_tree_learner,
+    "linear": default_linear_learner,
+}
 
 if __name__ == "__main__":
 
@@ -19,9 +25,12 @@ if __name__ == "__main__":
     argparser.add_argument("--dataset", type=str, default="flchain")
     argparser.add_argument("--distn", type=str, default="Normal")
     argparser.add_argument("--n-est", type=int, default=100)
+    argparser.add_argument("--reps", type=int, default=1)
     argparser.add_argument("--lr", type=float, default=1.0)
-    argparser.add_argument("--score", type=str, default="CRPS_SURV")
+    argparser.add_argument("--score", type=str, default="MLE_SURV")
     argparser.add_argument("--natural", action="store_true")
+    argparser.add_argument("--base", type=str, default="linear")
+    argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
     # processing strategy from [chapfuwa et al 2019]
@@ -73,39 +82,27 @@ if __name__ == "__main__":
         Y = np.c_[np.log(T) - np.mean(np.log(T)), C]
         X = (df >> drop("cvd", "t_cvds", "INTENSIVE")).values
 
-    #poly_transform = PolynomialFeatures(2)
-    #X = poly_transform.fit_transform(X)
-
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2)
+    logger = SurvivalLogger(args)
 
     print("Shape:", X.shape)
     print("Censorship rate:", np.mean(C))
 
-    ngb = NGBoost(Dist=eval(args.distn),
-                  n_estimators=args.n_est,
-                  learning_rate=args.lr,
-                  natural_gradient=args.natural,
-                  verbose=True,
-                  minibatch_frac=1.0,
-                  Base=default_linear_learner,
-                  Score=MLE_SURV())
+    for itr in range(args.reps):
 
-    train_losses = ngb.fit(X_train, Y_train)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2)
+        X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.2)
 
-    preds = ngb.pred_dist(X_test)
-    print("Scale: %.4f" % preds.scale.mean())
-    c_stat = calculate_concordance_naive(preds.ppf(0.5), Y_test[:,0], Y_test[:,1])
-    print("C stat: %.4f" % c_stat)
-    c_stat = calculate_concordance_dead_only(preds.ppf(0.5), Y_test[:,0], Y_test[:,1])
-    print("C stat: %.4f" % c_stat)
-    print("Mean CoV:", np.mean(np.sqrt(preds.var) / preds.loc))
+        ngb = NGBoost(Dist=eval(args.distn),
+                      n_estimators=args.n_est,
+                      learning_rate=args.lr,
+                      natural_gradient=args.natural,
+                      verbose=args.verbose,
+                      minibatch_frac=1.0,
+                      Base=base_name_to_learner[args.base],
+                      Score=eval(args.score)())
 
-    pred, obs, _, _ = calibration_time_to_event(preds, Y_test[:,0], Y_test[:,1])
-    plot_calibration_curve(pred, obs)
-    plt.show()
-    plot_pit_histogram(pred, obs)
-    plt.show()
-    print("True median [uncens]:", np.median(Y_test[:,0][Y_test[:,1] == 0]))
-    print("True median [cens]:", np.median(Y_test[:,0][Y_test[:,1] == 1]))
-    print("Pred median:", preds.ppf(0.5).mean())
-    print("Calibration slope: %.4f, intercept: %.4f" % (slope, intercept))
+        train_losses = ngb.fit(X_train, Y_train, X_val, Y_val)
+        forecast = ngb.pred_dist(X_test)
+        logger.tick(forecast, Y_test)
+        
+    logger.save()

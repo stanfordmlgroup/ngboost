@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     for (dataset, dist) in itertools.product(datasets, dists):
 
-        name = f"logs_{dataset}_CRPS_True_{dist}"
+        name = f"logs_{dataset}_CRPS_False_{dist}"
         logs = pickle.load(open(f"./results/regression/{name}.pkl", "rb"))
         rows += [logs.to_row()]
 

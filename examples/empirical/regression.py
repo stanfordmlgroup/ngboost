@@ -11,6 +11,7 @@ from ngboost.learners import default_tree_learner, default_linear_learner
 from examples.loggers.loggers import RegressionLogger
 
 from sklearn.ensemble import GradientBoostingRegressor as GBR
+from sklearn.metrics import mean_squared_error
 
 np.random.seed(123)
 
@@ -42,9 +43,9 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=500)
+    argparser.add_argument("--n-est", type=int, default=200)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=0.1)
+    argparser.add_argument("--lr", type=float, default=1.0)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -56,16 +57,19 @@ if __name__ == "__main__":
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values[:,np.newaxis]
 
-    print("Dataset size:", X.shape)
+
     logger = RegressionLogger(args)
     gbrlog = RegressionLogger(args)
     gbrlog.distn = 'GBR'
 
     # set default minibatch fraction based on dataset size
     if not args.minibatch_frac:
-        args.minibatch_frac = min(1.0, 5000 / len(X))
+        #args.minibatch_frac = min(1.0, 5000 / len(X))
+        args.minibatch_frac = 1.0
 
-    for _ in range(args.reps):
+    print('== Dataset=%s X.shape=%s' % (args.dataset, str(X.shape)))
+    
+    for itr in range(args.reps):
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
         X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
@@ -81,15 +85,21 @@ if __name__ == "__main__":
 
         train_loss, val_loss = ngb.fit(X_train, y_train, X_val, y_val)
         forecast = ngb.pred_dist(X_test)
-        logger.tick(forecast, y_test)
 
+        print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.reps, args.score, args.distn,
+                                           np.sqrt(mean_squared_error(forecast.loc, y_test))))
+        
+        logger.tick(forecast, y_test)
 
         gbr = GBR(n_estimators=args.n_est,
                   learning_rate=args.lr,
                   subsample=args.minibatch_frac,
                   verbose=args.verbose)
-        gbr.fit(X_train, y_train)
-        forecast = HomoskedasticNormal(gbr.predict(X_test).reshape((1, -1)))
+        gbr.fit(X_train, y_train.flatten())
+        y_pred = gbr.predict(X_test)
+        forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
+        print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.reps,
+                                         np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
         gbrlog.tick(forecast, y_test)
 
     logger.save()

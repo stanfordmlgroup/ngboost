@@ -103,6 +103,8 @@ venv.bak/
 .mypy_cache/
 
 # Get rid of data
+*.swp
+*.pkl
 #*.csv
 #*.Rdata
 #*.npy

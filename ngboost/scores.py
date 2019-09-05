@@ -59,7 +59,8 @@ class MLE_SURV(MLE):
     def __call__(self, forecast, Y, eps=1e-5):
         C = Y[:,1] if len(Y.shape) > 1 else Y[1]
         T = Y[:,0] if len(Y.shape) > 1 else Y[0]
-        return -(1-C) * forecast.logpdf(T) - C * np.log(1-forecast.cdf(T)+eps)
+        return -(1 - C) * forecast.logpdf(T) - \
+                C * np.log(1 - forecast.cdf(T) + eps)
 
     def metric(self, params, Y):
         return self.metric_fn(params, Y)

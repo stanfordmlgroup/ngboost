@@ -109,7 +109,7 @@ class NGBoost(object):
                 metric = self.Score.metric(P_batch, Y_batch)
                 grads = self.matmul_inv_fn(metric, grads)
 
-            if np.any(np.isnan(grads)) or np.any(np.isinf(grads)): # or loss > 1/self.tol:
+            if np.any(np.isnan(grads)) or np.any(np.isinf(grads)):
                 print(grads)
                 grads = self.grad_fn(P_batch, Y_batch)
                 print('recalculated')
@@ -117,7 +117,6 @@ class NGBoost(object):
                 print('params')
                 print(grads)
                 pass
-                #breakpoint()
 
             proj_grad = self.fit_base(X_batch, grads)
             scale = self.line_search(proj_grad, P_batch, Y_batch)
@@ -137,10 +136,9 @@ class NGBoost(object):
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
                     pass
 
-
             if self.verbose:
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
-                print(f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} " +
+                print(f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} "
                       f"norm={grad_norm:.4f}")
 
             if np.linalg.norm(proj_grad, axis=1).mean() < self.tol:

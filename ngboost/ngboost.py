@@ -1,4 +1,5 @@
 import jax.numpy as np
+import numpy as onp
 import jax.scipy as sp
 import scipy.optimize as optim
 import pickle
@@ -30,10 +31,11 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
-        self.loss_fn = lambda P, Y: self.Score(self.Dist(P), Y)
-        self.grad_fn = jit(vmap(grad(self.loss_fn)))
+        self.loss_fn = lambda P, Y: self.Score(self.Dist(P.T), Y).sum()
+        self.grad_fn = grad(self.loss_fn)
+        #self.grad_fn = jit(vmap(grad(self.loss_fn)))
         self.hessian_fn = jit(vmap(jacrev(grad(self.loss_fn))))
-        self.loss_fn = jit(vmap(self.loss_fn))
+        #self.loss_fn = jit(vmap(self.loss_fn))
         self.Score.setup_distn(self.Dist)
         if isinstance(self.Score, CRPS_SURV):
             self.marginal_score = MLE_SURV()
@@ -59,7 +61,7 @@ class NGBoost(object):
     def sample(self, X, Y, params):
         sample_size = int(self.minibatch_frac * len(Y))
         idxs = np_rnd.choice(np.arange(len(Y)), sample_size, replace=False)
-        return idxs, X[idxs,:], Y[idxs,:], params[idxs, :]
+        return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads):
         models = [self.Base().fit(X, g) for g in grads.T]
@@ -149,11 +151,16 @@ class NGBoost(object):
         return loss_list, val_loss_list
 
     def fit_init_params_to_marginal(self, Y, iters=1000):
-        self.init_params = self.Dist.fit(Y)
+        try:
+            E = Y['Event']
+            T = Y['Time'].reshape((-1, 1))[E == 1]
+        except:
+            T = Y
+        self.init_params = self.Dist.fit(T)
         return
 
 
     def pred_dist(self, X, max_iter=None):
-        params = self.pred_param(X, max_iter)
+        params = onp.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
         return dist

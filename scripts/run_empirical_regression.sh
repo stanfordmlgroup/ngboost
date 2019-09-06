@@ -1,5 +1,6 @@
 #!/bin/sh
-python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --natural
+
+python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --natural --verbose
 python3 -m examples.empirical.regression --dataset=wine  --score=MLE --natural
 python3 -m examples.empirical.regression --dataset=kin8nm  --score=MLE --natural
 python3 -m examples.empirical.regression --dataset=naval  --score=MLE --natural

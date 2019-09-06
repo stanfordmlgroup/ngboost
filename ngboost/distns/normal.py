@@ -3,6 +3,7 @@ import scipy.stats
 import jax.numpy as np
 import jax.scipy as sp
 import jax.random as random
+import numpy as onp
 
 
 class Normal(object):
@@ -52,7 +53,7 @@ class Normal(object):
 
     def fit(Y):
         m, s = osp.stats.norm.fit(Y)
-        return np.array([m, np.log(s)])
+        return onp.array([m, onp.log(s)])
         #return np.array([m, np.log(1e-5)])
 
 class HomoskedasticNormal(Normal):

@@ -48,10 +48,12 @@ class SurvivalLogger(object):
         self.log = pd.DataFrame()
 
     def tick(self, forecast, y_test):
-        pred, obs, slope, intercept = calibration_time_to_event(forecast, y_test[:,0], y_test[:,1])
+        C = 1-y_test['Event']
+        T = y_test['Time']
+        pred, obs, slope, intercept = calibration_time_to_event(forecast, T, C)
         self.log = self.log.append([{
-            "cstat_naive": calculate_concordance_naive(forecast.ppf(0.5), y_test[:,0], y_test[:,1]),
-            "cstat_dead": calculate_concordance_dead_only(forecast.ppf(0.5), y_test[:,0], y_test[:,1]),
+            "cstat_naive": calculate_concordance_naive(forecast.loc, T, C),
+            "cstat_dead": calculate_concordance_dead_only(forecast.loc, T, C),
             "cov": np.mean(np.sqrt(forecast.var) / forecast.loc),
             "slope": slope,
             "calib": calculate_calib_error(pred, obs)

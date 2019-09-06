@@ -1,4 +1,5 @@
 import jax.numpy as np
+import numpy as onp
 import jax.random as random
 import jax.scipy as sp
 from jax import grad, vmap, jacfwd, jit
@@ -51,19 +52,13 @@ class MLE_SURV(MLE):
 
     def __init__(self, seed=123):
         super().__init__(seed=seed)
-        def metric_cens_fn(params, Y):
-            return Y[1] * self.distn(params).fisher_info() + \
-                   (1 - Y[1]) * self.distn(params).fisher_info()
-        self.metric_fn = jit(vmap(metric_cens_fn))
 
     def __call__(self, forecast, Y, eps=1e-5):
-        C = Y[:,1] if len(Y.shape) > 1 else Y[1]
-        T = Y[:,0] if len(Y.shape) > 1 else Y[0]
-        return -(1 - C) * forecast.logpdf(T) - \
-                C * np.log(1 - forecast.cdf(T) + eps)
-
-    def metric(self, params, Y):
-        return self.metric_fn(params, Y)
+        E = Y['Event']
+        T = Y['Time']
+        cens = (1-E) * np.log(1 - forecast.cdf(T) + eps)
+        uncens = E * forecast.logpdf(T)
+        return -(cens + uncens)
 
 class CRPS(Score):
 
@@ -71,8 +66,10 @@ class CRPS(Score):
         super().__init__()
         self.metric_fn = jit(vmap(lambda p: self.distn(p).crps_metric()))
         self.K = K
-        self.I_pos = jit(self._I_pos)
-        self.I_neg = jit(self._I_neg)
+        self.I_pos = self._I_pos
+        self.I_neg = self._I_neg
+        #self.I_pos = jit(self._I_pos)
+        #self.I_neg = jit(self._I_neg)
 
     def _I_pos(self, params, U):
         axis = np.outer(np.linspace(0, 1, self.K)[1:], U)
@@ -106,13 +103,13 @@ class CRPS(Score):
 class CRPS_SURV(CRPS):
 
     def __call__(self, forecast, Y):
-        C = Y[:,1] if len(Y.shape) > 1 else Y[1]
-        T = Y[:,0] if len(Y.shape) > 1 else Y[0]
-        if isinstance(forecast, Normal):
-            left = self.I_normal(forecast, T)
-            right = self.I_normal(Normal((-forecast.loc, forecast.scale)), -T)
+        E = Y['Event']
+        T = Y['Time']
+        if isinstance(forecast, LogNormal):
+            left = self.I_normal(Normal((forecast.loc, forecast.scale)), onp.log(T))
+            right = self.I_normal(Normal((-forecast.loc, forecast.scale)), -onp.log(T))
         else:
             left = self.I_pos(forecast.params, T)
             right = self.I_neg(forecast.params, 1/T)
-        return (left + (1 - C) * right)
+        return (left + E * right)
 

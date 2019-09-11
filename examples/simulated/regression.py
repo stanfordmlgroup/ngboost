@@ -35,17 +35,14 @@ if __name__ == '__main__':
     Y_train, Y_test = Y[:1000], Y[1000:]
 
     ngb = NGBoost(n_estimators=150, learning_rate=args.lr,
-                  Dist=eval(args.distn),
+                  Dist=Laplace,
                   Base=default_linear_learner,
                   natural_gradient=args.natural,
                   minibatch_frac=1.0,
                   Score=eval(args.score)())
 
     losses = ngb.fit(X_train, Y_train)
-
-    preds = ngb.pred_dist(X_test)
+    forecast = ngb.pred_dist(X_test)
     logger = RegressionLogger(args)
-    for itr in tqdm(range(len(ngb.scalings))):
-        forecast = ngb.pred_dist(X_test, itr)
-        logger.tick(forecast, Y_test)
+    logger.tick(forecast, Y_test)
     logger.save()

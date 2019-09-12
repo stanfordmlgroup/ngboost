@@ -7,6 +7,7 @@ import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal, Laplace
 from jax import grad, vmap, jacrev, jit
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 
@@ -45,18 +46,18 @@ if __name__ == "__main__":
     plt.figure(figsize = (8, 3))
     plt.subplot(1, 2, 1)
     plt.contourf(loc, scale, crps, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.55 * grads_x, 0.55 * grads_y,
+    plt.quiver(loc, scale, 0.14 * grads_x, 0.14 * grads_y,
                color = "white", angles='xy', scale_units='xy', scale=1)
     plt.xlabel("$\mu$")
-    plt.ylabel("$\log\sigma^2$")
+    plt.ylabel("$\log\sigma$")
     plt.title("CRPS: gradients")
     plt.subplot(1, 2, 2)
     plt.contourf(loc, scale, crps, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.15 * grads_metric_x, 0.15 * grads_metric_y,
+    plt.quiver(loc, scale, 0.07 * grads_metric_x, 0.07 * grads_metric_y,
                color = "white", angles='xy', scale_units='xy', scale=1)
     plt.title("CRPS: natural gradients")
     plt.xlabel("$\mu$")
-    plt.ylabel("$\log\sigma^2$")
+    plt.ylabel("$\log\sigma$")
     plt.tight_layout()
-    plt.savefig("./figures/vis_crps.png")
+    plt.savefig("./figures/vis_crps.pdf")
     plt.show()

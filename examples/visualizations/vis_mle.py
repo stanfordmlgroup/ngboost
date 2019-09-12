@@ -48,18 +48,18 @@ if __name__ == "__main__":
     plt.figure(figsize = (8, 3))
     plt.subplot(1, 2, 1)
     plt.contourf(loc, scale, nlls, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.2 * grads_x, 0.2 * grads_y,
+    plt.quiver(loc, scale, 0.07 * grads_x, 0.07 * grads_y,
                color = "white", angles='xy', scale_units='xy', scale=1)
     plt.xlabel("$\mu$")
-    plt.ylabel("$\log\sigma^2$")
+    plt.ylabel("$\log\sigma$")
     plt.title("MLE: gradients")
     plt.subplot(1, 2, 2)
     plt.contourf(loc, scale, nlls, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.03 * grads_fisher_x, 0.03 * grads_fisher_y,
+    plt.quiver(loc, scale, 0.07 * grads_fisher_x, 0.07 * grads_fisher_y,
                color = "white", angles='xy', scale_units='xy', scale=1)
     plt.title("MLE: natural gradients")
     plt.xlabel("$\mu$")
-    plt.ylabel("$\log\sigma^2$")
+    plt.ylabel("$\log\sigma$")
     plt.tight_layout()
-    plt.savefig("./figures/vis_mle.png")
+    plt.savefig("./figures/vis_mle.pdf")
     plt.show()

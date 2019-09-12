@@ -17,7 +17,7 @@ if __name__ == "__main__":
     rvs = np.exp(random.normal(key=key, shape=(500,)))
 
     logscale_axis = np.linspace(-3, 3, 1000)
-    lognorm_axis = np.linspace(0, 5, 1000)
+    lognorm_axis = np.linspace(1e-8, 5, 1000)
     logscale_cdf = Normal(np.array([0, 0]), temp_scale = 1.0).cdf(logscale_axis)
     lognorm_cdf = LogNormal(np.array([0, 1]), temp_scale = 1.0).cdf(lognorm_axis)
 

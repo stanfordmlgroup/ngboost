@@ -108,8 +108,7 @@ class NGBoost(object):
             grads = self.grad_fn(P_batch, Y_batch)
 
             if self.natural_gradient:
-                metric = self.Score.metric(P_batch, Y_batch)
-                grads = self.matmul_inv_fn(metric, grads)
+                grads = self.Score.naturalize(P_batch, grads)
 
             if np.any(np.isnan(grads)) or np.any(np.isinf(grads)):
                 print(grads)

@@ -13,6 +13,8 @@ from examples.loggers.loggers import RegressionLogger
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.metrics import mean_squared_error
 
+from sklearn.model_selection import KFold
+
 np.random.seed(123)
 
 dataset_name_to_loader = {
@@ -43,9 +45,10 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=200)
+    argparser.add_argument("--n-est", type=int, default=300)
+    argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=1.0)
+    argparser.add_argument("--lr", type=float, default=0.1)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -64,12 +67,15 @@ if __name__ == "__main__":
     if not args.minibatch_frac:
         args.minibatch_frac = 1.0
 
-    print('== Dataset=%s X.shape=%s' % (args.dataset, str(X.shape)))
-    
-    for itr in range(args.reps):
+    print('== Dataset=%s X.shape=%s %s/%s' % (args.dataset, str(X.shape), args.score, args.distn))
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
+    ngb_rmse, gbm_rmse = [], []
+    
+    kf = KFold(n_splits=args.n_splits)
+    
+    for itr, (train_index, test_index) in enumerate(kf.split(X)):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
@@ -80,11 +86,14 @@ if __name__ == "__main__":
                       minibatch_frac=args.minibatch_frac,
                       verbose=args.verbose)
 
-        train_loss, val_loss = ngb.fit(X_train, y_train, X_val, y_val)
+        train_loss, val_loss = ngb.fit(X_train, y_train) #, X_val, y_val)
         forecast = ngb.pred_dist(X_test)
 
-        print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.reps, args.score, args.distn,
-                                           np.sqrt(mean_squared_error(forecast.loc, y_test))))
+        ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
+
+        if args.verbose or True:
+            print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.n_splits, args.score, args.distn,
+                                               np.sqrt(mean_squared_error(forecast.loc, y_test))))
         
         logger.tick(forecast, y_test)
 
@@ -95,10 +104,17 @@ if __name__ == "__main__":
         gbr.fit(X_train, y_train.flatten())
         y_pred = gbr.predict(X_test)
         forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
-        print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.reps,
-                                         np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
+
+        gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
+        
+        if args.verbose or True:
+            print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.n_splits,
+                                             np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
         gbrlog.tick(forecast, y_test)
+
+    print('== RMSE GBM=%.4f, NGB=%.4f' % (np.mean(gbm_rmse), np.mean(ngb_rmse)))
 
     logger.save()
     gbrlog.save()
+
 

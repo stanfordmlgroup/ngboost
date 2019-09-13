@@ -43,6 +43,13 @@ class MLE(Score):
             var += self.outer_product_fn(grad)
         return var / self.K
 
+    def naturalize(self, params, grads):
+        metric = self.metric_fn(params)
+        nat_grads = onp.linalg.solve(metric, grads)
+        weights = onp.power((grads * nat_grads).sum(axis=1, keepdims=True), -0.5)
+        #return weights * nat_grads
+        return nat_grads
+        
     def _loglik_fn(self, params, key):
         sample = stop_gradient(self.distn(params).sample(key=key))
         return self.distn(params).logpdf(sample)

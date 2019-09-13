@@ -27,6 +27,7 @@ dataset_name_to_loader = {
     "energy": lambda: pd.read_excel("https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx").iloc[:,:-1],
     "protein": lambda: pd.read_csv("data/uci/protein.csv")[['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'RMSD']],
     "yacht": lambda: pd.read_csv("http://archive.ics.uci.edu/ml/machine-learning-databases/00243/yacht_hydrodynamics.data", header=None, delim_whitespace=True),
+    "msd": lambda: pd.read_csv("data/uci/YearPredictionMSD.txt").iloc[:, ::-1],
 }
 
 base_name_to_learner = {
@@ -70,10 +71,16 @@ if __name__ == "__main__":
     print('== Dataset=%s X.shape=%s %s/%s' % (args.dataset, str(X.shape), args.score, args.distn))
 
     ngb_rmse, gbm_rmse = [], []
-    
-    kf = KFold(n_splits=args.n_splits)
-    
-    for itr, (train_index, test_index) in enumerate(kf.split(X)):
+
+    if args.dataset == "msd":
+        folds = [(np.arange(463715), np.arange(463715, len(X)))]
+    else:
+        kf = KFold(n_splits=args.n_splits)
+        folds = kf.split(X)
+
+    breakpoint()
+
+    for itr, (train_index, test_index) in enumerate(folds):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
@@ -94,7 +101,7 @@ if __name__ == "__main__":
         if args.verbose or True:
             print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.n_splits, args.score, args.distn,
                                                np.sqrt(mean_squared_error(forecast.loc, y_test))))
-        
+
         logger.tick(forecast, y_test)
 
         gbr = GBR(n_estimators=args.n_est,
@@ -106,7 +113,7 @@ if __name__ == "__main__":
         forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
 
         gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
-        
+
         if args.verbose or True:
             print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))

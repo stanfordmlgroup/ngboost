@@ -106,6 +106,13 @@ class CRPS(Score):
             return self.metric_fn(params)
         raise NotImplementedError
 
+    def naturalize(self, params, grads):
+        metric = self.metric_fn(params)
+        nat_grads = onp.linalg.solve(metric, grads)
+        weights = onp.power((grads * nat_grads).sum(axis=1, keepdims=True), -0.5)
+        #return weights * nat_grads
+        return nat_grads
+
 
 class CRPS_SURV(CRPS):
 

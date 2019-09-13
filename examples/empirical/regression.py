@@ -70,8 +70,8 @@ if __name__ == "__main__":
 
     print('== Dataset=%s X.shape=%s %s/%s' % (args.dataset, str(X.shape), args.score, args.distn))
 
-    ngb_rmse, gbm_rmse = [], []
-
+    y_gbm, y_ngb, y_true = [], [], []
+    
     if args.dataset == "msd":
         folds = [(np.arange(463715), np.arange(463715, len(X)))]
     else:
@@ -84,6 +84,8 @@ if __name__ == "__main__":
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
+        y_true += list(y_test.flatten())
+        
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
                       Score=score_name_to_score[args.score](64),
@@ -96,7 +98,7 @@ if __name__ == "__main__":
         train_loss, val_loss = ngb.fit(X_train, y_train) #, X_val, y_val)
         forecast = ngb.pred_dist(X_test)
 
-        ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
+        y_ngb += list(forecast.loc)
 
         if args.verbose or True:
             print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.n_splits, args.score, args.distn,
@@ -112,14 +114,16 @@ if __name__ == "__main__":
         y_pred = gbr.predict(X_test)
         forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
 
-        gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
-
+        y_gbm += list(y_pred.flatten())
+        
         if args.verbose or True:
             print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
         gbrlog.tick(forecast, y_test)
 
-    print('== RMSE GBM=%.4f, NGB=%.4f' % (np.mean(gbm_rmse), np.mean(ngb_rmse)))
+    print('== RMSE GBM=%.4f, NGB=%.4f' % (np.sqrt(mean_squared_error(y_gbm, y_true)),
+                                          np.sqrt(mean_squared_error(y_ngb, y_true))))
+
 
     logger.save()
     gbrlog.save()

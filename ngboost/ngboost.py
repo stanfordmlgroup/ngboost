@@ -9,7 +9,7 @@ from jax import jit, grad, vmap, jacfwd, jacrev
 from ngboost.distns import Normal
 
 from ngboost.scores import MLE, MLE_SURV, CRPS_SURV, CRPS
-from ngboost.learners import default_tree_learner
+from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 
 

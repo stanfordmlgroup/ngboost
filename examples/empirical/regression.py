@@ -49,7 +49,7 @@ if __name__ == "__main__":
     argparser.add_argument("--n-est", type=int, default=200)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=0.1)
+    argparser.add_argument("--lr", type=float, default=0.03)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -71,6 +71,8 @@ if __name__ == "__main__":
     print('== Dataset=%s X.shape=%s %s/%s' % (args.dataset, str(X.shape), args.score, args.distn))
 
     y_gbm, y_ngb, y_true = [], [], []
+    gbm_rmse, ngb_rmse = [], []
+    ngb_nll = []
     
     if args.dataset == "msd":
         folds = [(np.arange(463715), np.arange(463715, len(X)))]
@@ -78,16 +80,29 @@ if __name__ == "__main__":
         kf = KFold(n_splits=args.n_splits)
         folds = kf.split(X)
 
+        # Follow https://github.com/yaringal/DropoutUncertaintyExps/blob/master/UCI_Datasets/concrete/data/split_data_train_test.py
+        n = X.shape[0]
+        np.random.seed(1)
+        folds = []
+        for i in range(args.n_splits):
+            permutation = np.random.choice(range(n), n, replace = False)
+            end_train = round(n * 9.0 / 10)
+            end_test = n
+
+            train_index = permutation[ 0 : end_train ]
+            test_index = permutation[ end_train : n ]
+            folds.append( (train_index, test_index) )
         #breakpoint()
 
     for itr, (train_index, test_index) in enumerate(folds):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        y_true += list(y_test.flatten())
 
         X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
         
+        y_true += list(y_test.flatten())
+
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
                       Score=score_name_to_score[args.score](64),
@@ -102,15 +117,22 @@ if __name__ == "__main__":
         y_preds = ngb.staged_predict(X_val)
         val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
         best_itr = np.argmin(val_rmse) + 1
-        print('[%d] Best itr: %d (%.4f)' % (itr+1, best_itr, np.sqrt(val_rmse[best_itr-1])))
-        
+
         forecast = ngb.pred_dist(X_test, max_iter=best_itr)
 
         y_ngb += list(forecast.loc)
+        ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
+        ngb_nll += [-np.diag(forecast.logpdf(y_test)).mean()]
+        
+        #print(np.sqrt(mean_squared_error(forecast.loc, y_test)))
+        #for idx, y_p, y_t in zip(test_index, list(forecast.loc), y_test):
+        #    print(idx, y_t, y_p, np.abs(y_p - y_t))
 
         if args.verbose:
-            print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.n_splits, args.score, args.distn,
-                                               np.sqrt(mean_squared_error(forecast.loc, y_test))))
+            print("[%d/%d] BestIter=%d RMSE: Val=%.4f Test=%.4f NLL: Test=%.4f" % (itr+1, args.n_splits,
+                                                                                   best_itr, np.sqrt(val_rmse[best_itr-1]),
+                                                                                   np.sqrt(mean_squared_error(forecast.loc, y_test)),
+                                                                                   ngb_nll[-1]))
 
         logger.tick(forecast, y_test)
 
@@ -123,15 +145,16 @@ if __name__ == "__main__":
         forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
 
         y_gbm += list(y_pred.flatten())
-        
+        gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
+    
         if args.verbose:
             print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
         gbrlog.tick(forecast, y_test)
 
-    print('== RMSE GBM=%.4f, NGB=%.4f' % (np.sqrt(mean_squared_error(y_gbm, y_true)),
-                                          np.sqrt(mean_squared_error(y_ngb, y_true))))
-
+    print('== RMSE GBM=%.4f +/- %.4f, NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % (np.mean(gbm_rmse), np.std(gbm_rmse),
+                                                                                  np.mean(ngb_rmse), np.std(ngb_rmse),
+                                                                                  np.mean(ngb_nll), np.std(ngb_nll)))
 
     logger.save()
     gbrlog.save()

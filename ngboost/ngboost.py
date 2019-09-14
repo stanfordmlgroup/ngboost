@@ -69,9 +69,9 @@ class NGBoost(object):
         self.base_models.append(models)
         return fitted
 
-    def line_search(self, resids, start, Y):
+    def line_search(self, resids, start, Y, scale_init=1):
         loss_init = self.loss_fn(start, Y).mean()
-        scale = 1
+        scale = scale_init
         while True:
             scaled_resids = resids * scale
             loss = self.loss_fn(start - scaled_resids, Y).mean()
@@ -109,6 +109,9 @@ class NGBoost(object):
 
             if self.natural_gradient:
                 grads = self.Score.naturalize(P_batch, grads)
+
+            #scale = self.line_search(grads, P_batch, Y_batch, scale_init=1)
+            #grads = grads * scale
 
             if np.any(np.isnan(grads)) or np.any(np.isinf(grads)):
                 print(grads)
@@ -163,3 +166,20 @@ class NGBoost(object):
         params = onp.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
         return dist
+
+    def predict(self, X):
+        dists = self.pred_dist(X)
+        return list(dist.loc.flatten())
+
+    def staged_predict(self, X, max_iter=None):
+        predictions = []
+        m, n = X.shape
+        params = np.ones((m, self.Dist.n_params)) * self.init_params
+        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
+            if max_iter and i == max_iter:
+                break
+            resids = np.array([model.predict(X) for model in models]).T
+            params -= self.learning_rate * resids * s
+            dists = self.Dist(onp.asarray(params).T)
+            predictions.append(dists.loc.flatten())
+        return predictions

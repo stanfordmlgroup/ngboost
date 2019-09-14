@@ -15,7 +15,7 @@ from sklearn.metrics import mean_squared_error
 
 from sklearn.model_selection import KFold
 
-np.random.seed(123)
+np.random.seed(1)
 
 dataset_name_to_loader = {
     "housing": lambda: pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data', header=None, delim_whitespace=True),
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=300)
+    argparser.add_argument("--n-est", type=int, default=200)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
     argparser.add_argument("--lr", type=float, default=0.1)
@@ -78,13 +78,15 @@ if __name__ == "__main__":
         kf = KFold(n_splits=args.n_splits)
         folds = kf.split(X)
 
-    breakpoint()
+        #breakpoint()
 
     for itr, (train_index, test_index) in enumerate(folds):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
         y_true += list(y_test.flatten())
+
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
         
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
@@ -96,11 +98,17 @@ if __name__ == "__main__":
                       verbose=args.verbose)
 
         train_loss, val_loss = ngb.fit(X_train, y_train) #, X_val, y_val)
-        forecast = ngb.pred_dist(X_test)
+
+        y_preds = ngb.staged_predict(X_val)
+        val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
+        best_itr = np.argmin(val_rmse) + 1
+        print('[%d] Best itr: %d (%.4f)' % (itr+1, best_itr, np.sqrt(val_rmse[best_itr-1])))
+        
+        forecast = ngb.pred_dist(X_test, max_iter=best_itr)
 
         y_ngb += list(forecast.loc)
 
-        if args.verbose or True:
+        if args.verbose:
             print("[%d/%d] %s/%s RMSE=%.4f" % (itr+1, args.n_splits, args.score, args.distn,
                                                np.sqrt(mean_squared_error(forecast.loc, y_test))))
 
@@ -116,8 +124,8 @@ if __name__ == "__main__":
 
         y_gbm += list(y_pred.flatten())
         
-        if args.verbose or True:
-            print("[%d/%d] GBR RMSE=%.4f" % (itr+1, args.n_splits,
+        if args.verbose:
+            print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
         gbrlog.tick(forecast, y_test)
 

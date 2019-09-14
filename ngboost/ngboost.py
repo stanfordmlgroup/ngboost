@@ -183,3 +183,16 @@ class NGBoost(object):
             dists = self.Dist(onp.asarray(params).T)
             predictions.append(dists.loc.flatten())
         return predictions
+
+    def staged_pred_dist(self, X, max_iter=None):
+        predictions = []
+        m, n = X.shape
+        params = np.ones((m, self.Dist.n_params)) * self.init_params
+        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
+            if max_iter and i == max_iter:
+                break
+            resids = np.array([model.predict(X) for model in models]).T
+            params -= self.learning_rate * resids * s
+            dists = self.Dist(onp.asarray(params).T)
+            predictions.append(dists)
+        return predictions

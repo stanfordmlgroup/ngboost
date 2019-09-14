@@ -46,10 +46,10 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=200)
+    argparser.add_argument("--n-est", type=int, default=500)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=0.03)
+    argparser.add_argument("--lr", type=float, default=0.01)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="CRPS")
     argparser.add_argument("--base", type=str, default="tree")
@@ -115,8 +115,11 @@ if __name__ == "__main__":
         train_loss, val_loss = ngb.fit(X_train, y_train) #, X_val, y_val)
 
         y_preds = ngb.staged_predict(X_val)
+        y_forecasts = ngb.staged_pred_dist(X_val)
         val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
-        best_itr = np.argmin(val_rmse) + 1
+        val_nll = [-np.diag(y_forecast.logpdf(y_val)).mean() for y_forecast in y_forecasts]
+        #best_itr = np.argmin(val_rmse) + 1
+        best_itr = np.argmin(val_nll) + 1
 
         forecast = ngb.pred_dist(X_test, max_iter=best_itr)
 

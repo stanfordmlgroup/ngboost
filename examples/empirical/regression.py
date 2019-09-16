@@ -46,7 +46,7 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=500)
+    argparser.add_argument("--n-est", type=int, default=1000)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
     argparser.add_argument("--lr", type=float, default=0.01)
@@ -76,6 +76,7 @@ if __name__ == "__main__":
     
     if args.dataset == "msd":
         folds = [(np.arange(463715), np.arange(463715, len(X)))]
+        args.minibatch_frac = 0.1
     else:
         kf = KFold(n_splits=args.n_splits)
         folds = kf.split(X)
@@ -95,11 +96,11 @@ if __name__ == "__main__":
         #breakpoint()
 
     for itr, (train_index, test_index) in enumerate(folds):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
+        X_trainall, X_test = X[train_index], X[test_index]
+        y_trainall, y_test = y[train_index], y[test_index]
 
 
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
+        X_train, X_val, y_train, y_val = train_test_split(X_trainall, y_trainall, test_size=0.2)
         
         y_true += list(y_test.flatten())
 
@@ -118,8 +119,20 @@ if __name__ == "__main__":
         y_forecasts = ngb.staged_pred_dist(X_val)
         val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
         val_nll = [-np.diag(y_forecast.logpdf(y_val)).mean() for y_forecast in y_forecasts]
-        #best_itr = np.argmin(val_rmse) + 1
+        best_itr = np.argmin(val_rmse) + 1
         best_itr = np.argmin(val_nll) + 1
+
+        full_retrain = True
+        if full_retrain:
+            ngb = NGBoost(Base=base_name_to_learner[args.base],
+                      Dist=eval(args.distn),
+                      Score=score_name_to_score[args.score](64),
+                      n_estimators=args.n_est,
+                      learning_rate=args.lr,
+                      natural_gradient=args.natural,
+                      minibatch_frac=args.minibatch_frac,
+                      verbose=args.verbose)
+            ngb.fit(X_trainall, y_trainall)
 
         forecast = ngb.pred_dist(X_test, max_iter=best_itr)
 

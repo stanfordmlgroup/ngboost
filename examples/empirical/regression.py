@@ -46,12 +46,12 @@ if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("--dataset", type=str, default="concrete")
     argparser.add_argument("--reps", type=int, default=5)
-    argparser.add_argument("--n-est", type=int, default=1000)
+    argparser.add_argument("--n-est", type=int, default=2000)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=0.01)
+    argparser.add_argument("--lr", type=float, default=0.02)
     argparser.add_argument("--natural", action="store_true")
-    argparser.add_argument("--score", type=str, default="CRPS")
+    argparser.add_argument("--score", type=str, default="MLE")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--minibatch-frac", type=float, default=None)
     argparser.add_argument("--verbose", action="store_true")
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         y_preds = ngb.staged_predict(X_val)
         y_forecasts = ngb.staged_pred_dist(X_val)
         val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
-        val_nll = [-np.diag(y_forecast.logpdf(y_val)).mean() for y_forecast in y_forecasts]
+        val_nll = [-y_forecast.logpdf(y_val.flatten()).mean() for y_forecast in y_forecasts]
         best_itr = np.argmin(val_rmse) + 1
         best_itr = np.argmin(val_nll) + 1
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
         y_ngb += list(forecast.loc)
         ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
-        ngb_nll += [-np.diag(forecast.logpdf(y_test)).mean()]
+        ngb_nll += [-forecast.logpdf(y_test.flatten()).mean()]
         
         #print(np.sqrt(mean_squared_error(forecast.loc, y_test)))
         #for idx, y_p, y_t in zip(test_index, list(forecast.loc), y_test):

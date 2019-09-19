@@ -15,8 +15,8 @@ class RegressionLogger(object):
         self.log = self.log.append([{
             "r2": r2_score(y_test, forecast.loc),
             "mse": mean_squared_error(y_test, forecast.loc),
-            "nll": -np.diag(forecast.logpdf(y_test)).mean(),
-            "crps": np.diag(forecast.crps(y_test)).mean(),
+            "nll": -forecast.logpdf(y_test.flatten()).mean(),
+            "crps": forecast.crps(y_test.flatten()).mean(),
             "slope": slope,
             "calib": calculate_calib_error(pred, obs)
         }])

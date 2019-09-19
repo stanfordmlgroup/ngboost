@@ -1,10 +1,10 @@
-### NGBoost: Probabilistic Boosting in Python
+### NGBoost: Natural Gradient Boosting for Probabilistic Prediction
 
-Last update: May 2019.
+Last update: Sep 2019.
 
 ---
 
-NGBoost is a Python library to use boosting for probabilistic forecasting of classification, regression, and survival predictions, built on top of [Jax](https://github.com/google/jax/tree/master/jax) and [Scikit-Learn](https://scikit-learn.org/stable/). It is designed to be scalable and modular with respect to choice of proper scoring rule, distribution, and base learners.
+NGBoost is a Python library to use boosting for probabilistic prediction (regression, and survival predictions) built on top of [Jax](https://github.com/google/jax/tree/master/jax) and [Scikit-Learn](https://scikit-learn.org/stable/). It is designed to be scalable and modular with respect to choice of proper scoring rule, distribution, and base learners.
 
 #### Gradient Boosting
 

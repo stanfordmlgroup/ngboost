@@ -24,8 +24,8 @@ def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
 if __name__ == "__main__":
 
     argparser = ArgumentParser()
-    argparser.add_argument("--n-estimators", type=int, default=401)
-    argparser.add_argument("--lr", type=float, default=0.01)
+    argparser.add_argument("--n-estimators", type=int, default=301)
+    argparser.add_argument("--lr", type=float, default=0.03)
     argparser.add_argument("--minibatch-frac", type=float, default=0.1)
     argparser.add_argument("--natural", action="store_true")
     args = argparser.parse_args()
@@ -52,28 +52,18 @@ if __name__ == "__main__":
 
     pctles, obs, _, _ = calibration_regression(preds, y_te)
 
-    filenames = []
     all_preds = ngb.staged_pred_dist(x_te)
-    for i, preds in enumerate(all_preds):
-        if i % 20 != 0:
-            continue
-        plt.figure(figsize = (6, 3))
-        plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
-        plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1)
-        plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
-        plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
-        plt.ylim([-60, 60])
-        plt.axis("off")
-        plt.tight_layout()
-
-        filenames.append("./figures/anim/toy%d.png" % i)
-        print("Saving ./figures/anim/toy%d" % i)
-        plt.savefig("./figures/anim/toy%d.png" % i)
-        if i % 100 == 0:
-            plt.savefig("./figures/anim/toy%d.pdf" % i)
-
-    import imageio
-    images = []
-    for filename in filenames:
-        images.append(imageio.imread(filename))
-    imageio.mimsave('./figures/toy.gif', images)
+    preds = all_preds[-1]
+    plt.figure(figsize = (6, 3))
+    plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
+    plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1, label="Predicted mean")
+    plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3, label="95\% prediction interval")
+    plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
+    plt.ylim([-60, 60])
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+    plt.xticks([])
+    plt.yticks([])
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("./figures/anim/toy_single.pdf")

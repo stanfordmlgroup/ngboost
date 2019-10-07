@@ -62,7 +62,7 @@ if __name__ == "__main__":
         plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1)
         plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
         plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
-        plt.ylim([-60, 60])
+        plt.ylim([-75, 75])
         plt.axis("off")
         plt.tight_layout()
 

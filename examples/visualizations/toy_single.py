@@ -59,7 +59,7 @@ if __name__ == "__main__":
     plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1, label="Predicted mean")
     plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3, label="95\% prediction interval")
     plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
-    plt.ylim([-60, 60])
+    plt.ylim([-75, 75])
     plt.xlabel("$x$")
     plt.ylabel("$y$")
     plt.xticks([])

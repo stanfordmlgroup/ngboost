@@ -20,12 +20,12 @@ def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     y = 50 * (x ** deg) + h * beta + noise * e + intcpt
     return x, y, np.c_[h, np.ones_like(h)]
 
-
+BLK = 2
 if __name__ == "__main__":
 
     argparser = ArgumentParser()
-    argparser.add_argument("--n-estimators", type=int, default=401)
-    argparser.add_argument("--lr", type=float, default=0.01)
+    argparser.add_argument("--n-estimators", type=int, default=(1 + BLK * 100))
+    argparser.add_argument("--lr", type=float, default=0.03)
     argparser.add_argument("--minibatch-frac", type=float, default=0.1)
     argparser.add_argument("--natural", action="store_true")
     args = argparser.parse_args()
@@ -44,6 +44,7 @@ if __name__ == "__main__":
                   minibatch_frac=args.minibatch_frac,
                   verbose=True)
 
+    blk = int(args.n_estimators / 100)
     train_loss, val_loss = ngb.fit(x_tr, y_tr)
 
     x_te, y_te, _ = gen_data(n=1000, bound=1.3)
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     filenames = []
     all_preds = ngb.staged_pred_dist(x_te)
     for i, preds in enumerate(all_preds):
-        if i % 20 != 0:
+        if i % blk != 0:
             continue
         plt.figure(figsize = (6, 3))
         plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
         plt.ylim([-75, 75])
         plt.axis("off")
+        plt.title("%s Gradient: %02d%% fit" % ("Natural" if args.natural else "Ordinary", i/blk))
         plt.tight_layout()
 
         filenames.append("./figures/anim/toy%d.png" % i)
@@ -76,4 +78,6 @@ if __name__ == "__main__":
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
-    imageio.mimsave('./figures/toy.gif', images)
+    for _ in range(10):
+        images.append(imageio.imread(filename))
+    imageio.mimsave('./figures/toy.gif', images, fps=5)

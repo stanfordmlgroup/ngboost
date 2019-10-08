@@ -30,7 +30,7 @@ if __name__ == "__main__":
     argparser.add_argument("--natural", action="store_true")
     args = argparser.parse_args()
 
-    x_tr, y_tr, _ = gen_data(n=100)
+    x_tr, y_tr, _ = gen_data(n=50)
 
     poly_transform = PolynomialFeatures(1)
     x_tr = poly_transform.fit_transform(x_tr)

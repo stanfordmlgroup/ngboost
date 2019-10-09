@@ -20,6 +20,7 @@ from ngboost.distns import Normal
 
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
 
 X, Y = load_boston(True)

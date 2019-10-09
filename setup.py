@@ -8,7 +8,7 @@ setuptools.setup(
     description="Library for probabilistic predictions via gradient boosting.",
     long_description="Please see Github for full description.",
     long_description_content_type="text/markdown",
-    url="https://github.com/avati/ngboost",
+    url="https://github.com/stanfordmlgroup/ngboost",
     license='Apache License 2.0',
     packages=setuptools.find_packages(),
     classifiers=[

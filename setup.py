@@ -2,17 +2,26 @@ import setuptools
 
 setuptools.setup(
     name="ngboost",
-    version="0.0.1",
+    version="0.1.3",
     author="Stanford ML Group",
-    author_email="{avati,tonyduan}@cs.stanford.edu",
-    description="NGBoost.",
+    author_email="avati@cs.stanford.edu",
+    description="Library for probabilistic predictions via gradient boosting.",
     long_description="Please see Github for full description.",
     long_description_content_type="text/markdown",
     url="https://github.com/avati/ngboost",
+    license='Apache License 2.0',
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    install_requires=[
+        "numpy>=1.17.2",
+        "scipy>=1.3.1",
+        "jax>=0.1.46",
+        "jaxlib>=0.1.29",
+        "scikit-learn>=0.21.3",
+        "tqdm>=4.36.1",
+        "lifelines>=0.22.8",
+    ]
 )

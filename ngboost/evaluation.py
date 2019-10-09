@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib as mpl
-import seaborn as sns
 from tqdm import tqdm
 from lifelines import KaplanMeierFitter, NelsonAalenFitter
 from matplotlib import pyplot as plt

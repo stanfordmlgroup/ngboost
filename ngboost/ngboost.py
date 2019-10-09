@@ -168,7 +168,7 @@ class NGBoost(object):
         return dist
 
     def predict(self, X):
-        dists = self.pred_dist(X)
+        dist = self.pred_dist(X)
         return list(dist.loc.flatten())
 
     def staged_predict(self, X, max_iter=None):

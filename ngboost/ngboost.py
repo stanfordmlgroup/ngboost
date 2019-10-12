@@ -138,7 +138,7 @@ class NGBoost(object):
                    np.mean(np.array(val_loss_list[-10:-5])):
                     if self.verbose:
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
-                    pass
+                    break
 
             if self.verbose:
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale

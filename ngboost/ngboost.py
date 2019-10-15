@@ -33,20 +33,7 @@ class NGBoost(object):
         self.tol = tol
         self.loss_fn = lambda P, Y: self.Score(self.Dist(P.T), Y).sum()
         self.grad_fn = grad(self.loss_fn)
-        #self.grad_fn = jit(vmap(grad(self.loss_fn)))
-        self.hessian_fn = jit(vmap(jacrev(grad(self.loss_fn))))
-        #self.loss_fn = jit(vmap(self.loss_fn))
         self.Score.setup_distn(self.Dist)
-        if isinstance(self.Score, CRPS_SURV):
-            self.marginal_score = MLE_SURV()
-        elif isinstance(self.Score, CRPS):
-            self.marginal_score = MLE()
-        else:
-            self.marginal_score = self.Score
-        self.marginal_loss = lambda P, Y: self.marginal_score(self.Dist(P), Y)
-        self.marginal_grad = jit(vmap(grad(self.marginal_loss)))
-        self.marginal_loss = jit(vmap(self.marginal_loss))
-        self.matmul_inv_fn = jit(vmap(lambda A, b: np.linalg.solve(A, b)))
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -102,7 +89,6 @@ class NGBoost(object):
                 for i, (p, l, y) in enumerate(zip(P_batch, losses, Y_batch)):
                     if np.isinf(l) or np.isnan(l):
                         print('[%d] Params=[%.4f,%.4f], loss=%.4f, y=%.4f' % (i, p[0], p[1], l, y))
-                        print('Loss=%.4f' % self.Dist(p).crps_debug(y))
                 breakpoint()
 
             grads = self.grad_fn(P_batch, Y_batch)
@@ -165,7 +151,7 @@ class NGBoost(object):
     def pred_dist(self, X, max_iter=None):
         params = onp.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
-        return dist
+        return dist.obj()
 
     def predict(self, X):
         dist = self.pred_dist(X)

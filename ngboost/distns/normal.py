@@ -56,6 +56,9 @@ class Normal(object):
         return onp.array([m, onp.log(s)])
         #return np.array([m, np.log(1e-5)])
 
+    def obj(self):
+        return osp.stats.norm(loc=self.loc, scale=self.scale)
+
 class HomoskedasticNormal(Normal):
 
     n_params = 1

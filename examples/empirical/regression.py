@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
-from ngboost.distns import Normal, Laplace, HomoskedasticNormal
+from ngboost.distns import Normal, Laplace, NormalFixedVar
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                   verbose=args.verbose)
         gbr.fit(X_train, y_train.flatten())
         y_pred = gbr.predict(X_test)
-        forecast = HomoskedasticNormal(y_pred.reshape((1, -1)))
+        forecast = NormalFixedVar(y_pred.reshape((1, -1)))
 
         y_gbm += list(y_pred.flatten())
         gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]

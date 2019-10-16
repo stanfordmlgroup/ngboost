@@ -27,16 +27,16 @@ python3 -m examples.empirical.regression --dataset=msd  --score=CRPS --natural
 
 exit
 
-python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=wine  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=kin8nm  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=naval  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=power  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=energy  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=yacht  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=housing  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=msd  --score=MLE --distn=HomoskedasticNormal
-python3 -m examples.empirical.regression --dataset=protein  --score=MLE --distn=HomoskedasticNormal --n-splits=5
+python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=wine  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=kin8nm  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=naval  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=power  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=energy  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=yacht  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=housing  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=msd  --score=MLE --distn=NormalFixedVar
+python3 -m examples.empirical.regression --dataset=protein  --score=MLE --distn=NormalFixedVar --n-splits=5
 
 
 python3 -m examples.empirical.regression --dataset=concrete  --score=CRPS --natural --distn=Laplace

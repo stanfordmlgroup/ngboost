@@ -1,6 +1,6 @@
 import numpy as np
 from ngboost.distns.normal import Normal
-from ngboost.distns.lognormal import HomoskedasticLogNormal, LogNormal
+from ngboost.distns.lognormal import LogNormal
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS, MLE_SURV, CRPS_SURV
 from ngboost.learners import default_tree_learner, default_linear_learner

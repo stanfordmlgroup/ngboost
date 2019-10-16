@@ -44,7 +44,7 @@ class Laplace(object):
         return np.array([m, np.log(s ** 2)])
 
 
-class HomoskedasticLaplace(Laplace):
+class LaplaceFixedVar(Laplace):
 
     n_params = 1
 

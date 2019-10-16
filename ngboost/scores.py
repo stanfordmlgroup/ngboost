@@ -23,7 +23,7 @@ class CRPS:
 
     def natural_grad(self, forecast, Y):
         metric = forecast.crps_metric()
-        grad = forecast.crps(Y)
+        grad = forecast.D_crps(Y)
         nat_grad = np.linalg.solve(metric, grad)
         return nat_grad
 

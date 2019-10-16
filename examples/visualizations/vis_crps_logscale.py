@@ -1,12 +1,10 @@
-import numpy as onp
-import jax.numpy as np
-import jax.scipy as sp
-import jax.scipy.stats
-import jax.random as random
+import numpy as np
+import scipy as sp
+import scipy.stats
+import np.random as random
 import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal, LogNormal
-from jax import grad, vmap, jacrev, jit
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
@@ -51,17 +49,17 @@ if __name__ == "__main__":
     logscale_crps_grad_fn = grad(logscale_crps_fn)
     lognorm_crps_grad_fn = grad(lognorm_crps_fn)
 
-    loc = onp.linspace(-1, 1, 20)
-    scale = onp.linspace(-0.5, 1, 20)
+    loc = np.linspace(-1, 1, 20)
+    scale = np.linspace(-0.5, 1, 20)
 
-    loc, scale = onp.meshgrid(loc, scale)
+    loc, scale = np.meshgrid(loc, scale)
 
-    grads_logscale_x = onp.zeros((20, 20))
-    grads_logscale_y = onp.zeros((20, 20))
-    grads_lognorm_x = onp.zeros((20, 20))
-    grads_lognorm_y = onp.zeros((20, 20))
-    logscale_crps = onp.zeros((20, 20))
-    lognorm_crps = onp.zeros((20, 20))
+    grads_logscale_x = np.zeros((20, 20))
+    grads_logscale_y = np.zeros((20, 20))
+    grads_lognorm_x = np.zeros((20, 20))
+    grads_lognorm_y = np.zeros((20, 20))
+    logscale_crps = np.zeros((20, 20))
+    lognorm_crps = np.zeros((20, 20))
 
     for (i, j) in tqdm(itertools.product(np.arange(20), np.arange(20))):
         #H = np.linalg.inv(np.array(hessian_fn([loc[i, j], scale[i, j]])))

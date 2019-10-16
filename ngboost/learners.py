@@ -1,4 +1,3 @@
-import jax.numpy as np
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression, Ridge
 from scipy.interpolate import UnivariateSpline

@@ -1,14 +1,10 @@
-import jax.numpy as np
-import numpy as onp
-import jax.scipy as sp
-import scipy.optimize as optim
-import pickle
+import numpy as np
+import scipy as sp
 import numpy.random as np_rnd
 
-from jax import jit, grad, vmap, jacfwd, jacrev
 from ngboost.distns import Normal
 
-from ngboost.scores import MLE, MLE_SURV, CRPS_SURV, CRPS
+from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 
@@ -31,9 +27,6 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
-        self.loss_fn = lambda P, Y: self.Score(self.Dist(P.T), Y).sum()
-        self.grad_fn = grad(self.loss_fn)
-        self.Score.setup_distn(self.Dist)
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -57,11 +50,14 @@ class NGBoost(object):
         return fitted
 
     def line_search(self, resids, start, Y, scale_init=1):
-        loss_init = self.loss_fn(start, Y).mean()
+        S = self.Score
+        D_init = self.Dist(start.T)
+        loss_init = S.loss(D_init, Y)
         scale = scale_init
         while True:
             scaled_resids = resids * scale
-            loss = self.loss_fn(start - scaled_resids, Y).mean()
+            D = self.Dist((start - scaled_resids).T)
+            loss = S.loss(D, Y)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if not np.isnan(loss) and (loss < loss_init or norm < self.tol) and\
                np.linalg.norm(scaled_resids, axis=1).mean() < 5.0:
@@ -83,35 +79,15 @@ class NGBoost(object):
         for itr in range(self.n_estimators):
             _, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
 
-            losses = self.loss_fn(P_batch, Y_batch)
-            loss = losses.mean()
-            if np.isinf(loss) or np.isnan(loss):
-                for i, (p, l, y) in enumerate(zip(P_batch, losses, Y_batch)):
-                    if np.isinf(l) or np.isnan(l):
-                        print('[%d] Params=[%.4f,%.4f], loss=%.4f, y=%.4f' % (i, p[0], p[1], l, y))
-                breakpoint()
+            D = self.Dist(P_batch.T)
+            S = self.Score
 
-            grads = self.grad_fn(P_batch, Y_batch)
-
-            if self.natural_gradient:
-                grads = self.Score.naturalize(P_batch, grads)
-
-            #scale = self.line_search(grads, P_batch, Y_batch, scale_init=1)
-            #grads = grads * scale
-
-            if np.any(np.isnan(grads)) or np.any(np.isinf(grads)):
-                print(grads)
-                grads = self.grad_fn(P_batch, Y_batch)
-                print('recalculated')
-                print(grads)
-                print('params')
-                print(grads)
-                pass
+            loss_list += [S.loss(D, Y_batch)]
+            loss = loss_list[-1]
+            grads = S.natural_grad(D, Y_batch)
 
             proj_grad = self.fit_base(X_batch, grads)
             scale = self.line_search(proj_grad, P_batch, Y_batch)
-
-            loss_list += [loss]
 
             params -= self.learning_rate * scale * np.array([m.predict(X) for m in self.base_models[-1]]).T
 
@@ -149,9 +125,9 @@ class NGBoost(object):
 
 
     def pred_dist(self, X, max_iter=None):
-        params = onp.asarray(self.pred_param(X, max_iter))
+        params = np.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
-        return dist.obj()
+        return dist
 
     def predict(self, X):
         dist = self.pred_dist(X)
@@ -166,7 +142,7 @@ class NGBoost(object):
                 break
             resids = np.array([model.predict(X) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(onp.asarray(params).T)
+            dists = self.Dist(np.asarray(params).T)
             predictions.append(dists.loc.flatten())
         return predictions
 
@@ -179,6 +155,6 @@ class NGBoost(object):
                 break
             resids = np.array([model.predict(X) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(onp.asarray(params).T)
+            dists = self.Dist(np.asarray(params).T)
             predictions.append(dists)
         return predictions

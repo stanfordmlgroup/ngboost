@@ -144,13 +144,13 @@ if __name__ == "__main__":
         #for idx, y_p, y_t in zip(test_index, list(forecast.loc), y_test):
         #    print(idx, y_t, y_p, np.abs(y_p - y_t))
 
-        if args.verbose:
+        if args.verbose or True:
             print("[%d/%d] BestIter=%d RMSE: Val=%.4f Test=%.4f NLL: Test=%.4f" % (itr+1, args.n_splits,
                                                                                    best_itr, np.sqrt(val_rmse[best_itr-1]),
                                                                                    np.sqrt(mean_squared_error(forecast.loc, y_test)),
                                                                                    ngb_nll[-1]))
 
-        logger.tick(forecast, y_test)
+        #logger.tick(forecast, y_test)
 
         gbr = GBR(n_estimators=args.n_est,
                   learning_rate=args.lr,
@@ -163,10 +163,10 @@ if __name__ == "__main__":
         y_gbm += list(y_pred.flatten())
         gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
     
-        if args.verbose:
+        if args.verbose or True:
             print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
-        gbrlog.tick(forecast, y_test)
+        #gbrlog.tick(forecast, y_test)
 
     print('== RMSE GBM=%.4f +/- %.4f, NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % (np.mean(gbm_rmse), np.std(gbm_rmse),
                                                                                   np.mean(ngb_rmse), np.std(ngb_rmse),

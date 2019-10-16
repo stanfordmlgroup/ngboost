@@ -1,16 +1,10 @@
-import scipy as osp
-import scipy.stats
-import jax.numpy as np
-import jax.scipy as sp
-import jax.random as random
-import numpy as onp
+import scipy as sp
+import numpy as np
 
+from scipy.stats import norm as dist
 
 class Normal(object):
-
     n_params = 2
-    has_fisher_info = True
-    has_crps_metric = True
 
     def __init__(self, params, temp_scale = 1.0):
         self.loc = params[0]
@@ -18,20 +12,29 @@ class Normal(object):
         self.var = self.scale ** 2  + 1e-8
         self.shp = self.loc.shape
 
-    def pdf(self, Y):
-        return sp.stats.norm.pdf(Y, loc=self.loc, scale=self.scale)
+        self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def logpdf(self, Y):
-        return sp.stats.norm.logpdf(Y, loc=self.loc, scale=self.scale)
+    def __getattr__(self, name):
+        if name in dir(self.dist):
+            return getattr(self.dist, name)
+        return None
 
-    def cdf(self, Y):
-        return sp.stats.norm.cdf(Y, loc=self.loc, scale=self.scale)
+    def nll(self, Y):
+        try:
+            E = Y['Event']
+            T = Y['Time']
+            cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
+            uncens = E * self.dist.logpdf(T)
+            return -(cens + uncens).mean()
+        except:
+            return -self.dist.logpdf(Y).mean()
 
-    def sample(self, key):
-        return random.normal(key=key, shape=self.shp,) * self.scale + self.loc
-
-    def ppf(self, Q):
-        return osp.stats.norm.ppf(Q, loc=self.loc, scale=self.scale)
+    def D_nll(self, Y_):
+        Y = Y_.squeeze()
+        D = np.zeros((self.var.shape[0], 2))
+        D[:, 0] = (self.loc - Y) / self.var
+        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
+        return D
 
     def crps(self, Y):
         Z = (Y - self.loc) / self.scale
@@ -43,8 +46,10 @@ class Normal(object):
         return I + 1e-4 * np.eye(2)
 
     def fisher_info(self):
-        I = np.diag(np.array([1 / self.var, 2]))
-        return I + 1e-4 * np.eye(2)
+        FI = np.zeros((self.var.shape[0], 2, 2))
+        FI[:, 0, 0] = 1/self.var + 1e-5
+        FI[:, 1, 1] = 2
+        return FI
 
     def fisher_info_cens(self, T):
         nabla = np.array([self.pdf(T),
@@ -52,12 +57,9 @@ class Normal(object):
         return np.outer(nabla, nabla) / (self.cdf(T) * (1 - self.cdf(T))) + 1e-2 * np.eye(2)
 
     def fit(Y):
-        m, s = osp.stats.norm.fit(Y)
-        return onp.array([m, onp.log(s)])
+        m, s = sp.stats.norm.fit(Y)
+        return np.array([m, np.log(s)])
         #return np.array([m, np.log(1e-5)])
-
-    def obj(self):
-        return osp.stats.norm(loc=self.loc, scale=self.scale)
 
 class HomoskedasticNormal(Normal):
 
@@ -70,7 +72,7 @@ class HomoskedasticNormal(Normal):
         self.shape = self.loc.shape
 
     def fit(Y):
-        m, s = osp.stats.norm.fit(Y)
+        m, s = sp.stats.norm.fit(Y)
         return m
     
     def crps_metric(self):

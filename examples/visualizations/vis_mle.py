@@ -1,13 +1,10 @@
-import numpy as onp
-import jax.numpy as np
-import jax.scipy as sp
-import jax.scipy.stats
-import jax.random as random
+import numpy as np
+import scipy as sp
+import scipy.stats
+import np.random as random
 import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal, Laplace
-from jax.lax import stop_gradient
-from jax import grad, jit, jacrev
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
@@ -24,15 +21,15 @@ if __name__ == "__main__":
     grad_fn = jit(grad(nll_fn))
     hessian_fn = jit(jacrev(grad_fn))
 
-    loc = onp.linspace(-3, 3, 20)
-    scale = onp.linspace(-0.5, 2, 20)
-    loc, scale = onp.meshgrid(loc, scale)
+    loc = np.linspace(-3, 3, 20)
+    scale = np.linspace(-0.5, 2, 20)
+    loc, scale = np.meshgrid(loc, scale)
 
-    grads_fisher_x = onp.zeros((20, 20))
-    grads_fisher_y = onp.zeros((20, 20))
-    grads_x = onp.zeros((20, 20))
-    grads_y = onp.zeros((20, 20))
-    nlls = onp.zeros((20, 20))
+    grads_fisher_x = np.zeros((20, 20))
+    grads_fisher_y = np.zeros((20, 20))
+    grads_x = np.zeros((20, 20))
+    grads_y = np.zeros((20, 20))
+    nlls = np.zeros((20, 20))
 
     for (i, j) in tqdm(itertools.product(np.arange(20), np.arange(20))):
         #H = np.linalg.inv(np.array(hessian_fn([loc[i, j], scale[i, j]])))

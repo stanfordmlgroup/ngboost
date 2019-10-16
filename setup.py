@@ -18,8 +18,6 @@ setuptools.setup(
     install_requires=[
         "numpy>=1.17.2",
         "scipy>=1.3.1",
-        "jax>=0.1.46",
-        "jaxlib>=0.1.29",
         "scikit-learn>=0.21.3",
         "tqdm>=4.36.1",
         "lifelines>=0.22.8",

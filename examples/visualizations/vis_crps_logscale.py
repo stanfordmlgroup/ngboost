@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
 import scipy.stats
-import np.random as random
 import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal, LogNormal
@@ -11,8 +10,8 @@ from matplotlib import pyplot as plt
 
 if __name__ == "__main__":
 
-    key = random.PRNGKey(seed=123)
-    rvs = np.exp(random.normal(key=key, shape=(500,)))
+    np.random.seed(1)
+    rvs = np.exp(np.random.normal(500,)
 
     logscale_axis = np.linspace(-3, 3, 1000)
     lognorm_axis = np.linspace(1e-8, 5, 1000)
@@ -85,5 +84,5 @@ if __name__ == "__main__":
     plt.xlabel("$\mu$")
     plt.ylabel("$\log\sigma^2$")
     plt.tight_layout()
-    plt.savefig("./figures/vis_crps_logscale.png")
+    plt.savefig("./figures/vis_crps_logscale.pdf")
     plt.show()

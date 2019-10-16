@@ -105,8 +105,3 @@ venv.bak/
 # Get rid of data
 *.swp
 *.pkl
-#*.csv
-#*.Rdata
-#*.npy
-#*.txt
-#*.xlsx

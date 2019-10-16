@@ -21,6 +21,5 @@ tree_learner_with_depth = lambda d: DecisionTreeRegressor(
     splitter='best')
 
 default_tree_learner = lambda: tree_learner_with_depth(3)
-# default_linear_learner = LinearRegression
 default_linear_learner = lambda: Ridge(alpha = 1)
 default_constant_learner = ConstantLearner

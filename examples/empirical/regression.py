@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
-from ngboost.distns import Normal, Laplace, NormalFixedVar
+from ngboost.distns import Normal, NormalFixedVar
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner

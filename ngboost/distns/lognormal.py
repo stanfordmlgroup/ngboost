@@ -3,13 +3,18 @@ import numpy as np
 
 from scipy.stats import lognorm as dist
 
-class Normal(object):
+eps = 1e-6
+
+class LogNormal(object):
     n_params = 2
 
     def __init__(self, params, temp_scale = 1.0):
         mu = params[0]
         logsigma = params[1]
         sigma = np.exp(logsigma)
+
+        self.mu = mu
+        self.sigma = sigma
 
         self.dist = dist(s=sigma, scale=np.exp(mu))
 
@@ -19,16 +24,42 @@ class Normal(object):
         return None
 
     def nll(self, Y):
-        return -self.dist.logpdf(Y).mean()
+        try:
+            E = Y['Event']
+            T = Y['Time']
+            cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
+            uncens = E * self.dist.logpdf(T)
+            return -(cens + uncens)
+        except:
+            return -self.dist.logpdf(Y)
 
-    def D_nll(self, Y_):
-        Y = Y_.squeeze()
-        D = np.zeros((self.var.shape[0], 2))
-        D[:, 0] = (self.loc - Y) / self.var
-        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
-        return D
+    def D_nll(self, Y):
+        if True:
+            E = Y['Event'].reshape((-1, 1))
+            T = Y['Time']
+            lT = np.log(T)
 
-    def crps(self, Y):
+            D_uncens = np.zeros((self.mu.shape[0], 2))
+            D_uncens[:, 0] = (self.mu - lT) / (self.sigma ** 2)
+            D_uncens[:, 1] = 1 - ((self.mu - lT) ** 2) / (self.sigma ** 2)
+
+            D_cens = np.zeros((self.mu.shape[0], 2))
+            Z = (lT - self.mu) / self.sigma
+            D_cens[:, 0] = sp.stats.norm.pdf(lT, loc=self.mu, scale=self.sigma)/(1 - self.dist.cdf(T) + eps)
+            D_cens[:, 0] = Z * sp.stats.norm.pdf(lT, loc=self.mu, scale=self.sigma)/(1 - self.dist.cdf(T) + eps)
+
+            cens = (1-E) * D_cens
+            uncens = -(E * D_uncens)
+            return -(cens + uncens)
+        else:
+            Y = Y_.squeeze()
+            D = np.zeros((self.mu.shape[0], 2))
+            D[:, 0] = (self.mu - np.log(T)) / (self.sigma ** 2)
+            D[:, 1] = 1 - ((self.mu - np.log(T)) ** 2) / (self.sigma ** 2)
+            return D
+
+    def crps(self, Y_):
+        Y = np.log(Y_.squeeze())
         Z = (Y - self.loc) / self.scale
         return self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
                2 * sp.stats.norm.pdf(Z) - 1 / np.sqrt(np.pi))
@@ -38,8 +69,8 @@ class Normal(object):
         return I + 1e-4 * np.eye(2)
 
     def fisher_info(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = 1/self.var + 1e-5
+        FI = np.zeros((self.mu.shape[0], 2, 2))
+        FI[:, 0, 0] = 1/(self.sigma ** 2) + eps
         FI[:, 1, 1] = 2
         return FI
 

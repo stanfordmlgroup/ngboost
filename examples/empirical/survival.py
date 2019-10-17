@@ -6,9 +6,9 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import PolynomialFeatures
 from dfply import *
-from ngboost.distns import Normal, Laplace, LogNormal
+from ngboost.distns import LogNormal, Exponential
 from ngboost.ngboost import NGBoost
-from ngboost.scores import MLE_SURV, CRPS_SURV
+from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.evaluation import *
 from examples.loggers.loggers import *
@@ -16,6 +16,7 @@ from examples.loggers.loggers import *
 from sksurv.ensemble import GradientBoostingSurvivalAnalysis as GBSA
 from sksurv.metrics import concordance_index_censored
 
+np.random.seed(1)
 
 base_name_to_learner = {
     "tree": default_tree_learner,
@@ -38,8 +39,8 @@ if __name__ == "__main__":
     argparser.add_argument("--distn", type=str, default="LogNormal")
     argparser.add_argument("--n-est", type=int, default=200)
     argparser.add_argument("--reps", type=int, default=1)
-    argparser.add_argument("--lr", type=float, default=.1)
-    argparser.add_argument("--score", type=str, default="MLE_SURV")
+    argparser.add_argument("--lr", type=float, default=.01)
+    argparser.add_argument("--score", type=str, default="MLE")
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--minibatch-frac", type=float, default=1.0)
@@ -118,13 +119,13 @@ if __name__ == "__main__":
                       Base=base_name_to_learner[args.base],
                       Score=eval(args.score)())
 
-        train_losses = ngb.fit(X_train, Y_train, X_val, Y_val)
+        train_losses = ngb.fit(X_train, Y_train) #, X_val, Y_val)
         forecast = ngb.pred_dist(X_test)
         train_forecast = ngb.pred_dist(X_train)
-        print('NGB score: %.4f (val), %.4f (train)' % (concordance_index_censored(Y_test['Event'], Y_test['Time'], -forecast.loc)[0],
-                                                       concordance_index_censored(Y_train['Event'], Y_train['Time'], -train_forecast.loc)[0]
+        print('NGB score: %.4f (val), %.4f (train)' % (concordance_index_censored(Y_test['Event'], Y_test['Time'], -forecast.mean())[0],
+                                                       concordance_index_censored(Y_train['Event'], Y_train['Time'], -train_forecast.mean())[0]
         ))
-        logger.tick(forecast, Y_test)
+        #logger.tick(forecast, Y_test)
 
         ##
         ## sksurv
@@ -138,4 +139,4 @@ if __name__ == "__main__":
                                                         gbsa.score(X_train, Y_train)))
 
 
-    logger.save()
+    #logger.save()

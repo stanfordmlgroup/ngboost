@@ -5,7 +5,7 @@ class MLE:
         pass
 
     def loss(self, forecast, Y):
-        return forecast.nll(Y.squeeze())
+        return forecast.nll(Y.squeeze()).mean()
 
     def natural_grad(self, forecast, Y):
         fisher = forecast.fisher_info()

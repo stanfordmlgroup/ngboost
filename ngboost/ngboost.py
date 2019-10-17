@@ -94,7 +94,7 @@ class NGBoost(object):
             val_loss = 0
             if X_val is not None and Y_val is not None:
                 val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
-                val_loss = self.loss_fn(val_params, Y_val).mean()
+                val_loss = S.loss(self.Dist(val_params.T), Y_val).mean()
                 val_loss_list += [val_loss]
                 if np.mean(np.array(val_loss_list[-5:])) > \
                    np.mean(np.array(val_loss_list[-10:-5])):

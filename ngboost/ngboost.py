@@ -13,7 +13,7 @@ class NGBoost(object):
 
     def __init__(self, Dist=Normal, Score=MLE(),
                  Base=default_tree_learner, natural_gradient=False,
-                 n_estimators=100, learning_rate=0.1, minibatch_frac=1.0,
+                 n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
                  verbose=True, tol=1e-4):
         self.Dist = Dist
         self.Score = Score

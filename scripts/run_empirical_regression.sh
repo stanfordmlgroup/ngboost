@@ -1,8 +1,8 @@
 #!/bin/sh
 
-python3 -m examples.empirical.regression --dataset=housing  --score=MLE --natural
-python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --natural
-python3 -m examples.empirical.regression --dataset=energy  --score=MLE --natural
+python3 -m examples.empirical.regression --dataset=housing  --score=MLE --natural --lr=0.0007 --n-est=5000
+python3 -m examples.empirical.regression --dataset=concrete  --score=MLE --natural  --lr=0.002 --n-est=5000
+python3 -m examples.empirical.regression --dataset=energy  --score=MLE --natural  --lr=0.002 --n-est=5000
 python3 -m examples.empirical.regression --dataset=kin8nm  --score=MLE --natural
 python3 -m examples.empirical.regression --dataset=naval  --score=MLE --natural
 python3 -m examples.empirical.regression --dataset=power  --score=MLE --natural

@@ -1,6 +1,5 @@
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression, Ridge
-from scipy.interpolate import UnivariateSpline
 
 
 class ConstantLearner(object):
@@ -12,14 +11,16 @@ class ConstantLearner(object):
         return self.const
 
 
-tree_learner_with_depth = lambda d: DecisionTreeRegressor(
-    criterion='friedman_mse',
-    min_samples_split=2,
-    min_samples_leaf=1,
-    min_weight_fraction_leaf=0.0,
-    max_depth=d,
-    splitter='best')
+def default_tree_learner(depth=3):
+    return DecisionTreeRegressor(
+        criterion='friedman_mse',
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_depth=depth,
+        splitter='best')
 
-default_tree_learner = lambda: tree_learner_with_depth(3)
-default_linear_learner = lambda: Ridge(alpha = 1)
+def default_linear_learner(alpha=1):
+    return Ridge(alpha = 1)
+
 default_constant_learner = ConstantLearner

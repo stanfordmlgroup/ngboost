@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python3 -m examples.empirical.survival --dataset=flchain  --score=MLE --natural --verbose --n-est=500 --lr=0.1  --distn=LogNormal
+python3 -m examples.empirical.survival --dataset=flchain  --score=MLE --natural --verbose --n-est=500 --lr=0.01  --distn=Exponential
 
 exit
 

@@ -126,6 +126,10 @@ class NGBoost(object):
         self.init_params = self.Dist.fit(T)
         return
 
+    def feature_importance(self):
+        importance_base = np.array([[m[i].feature_importances_ for m in self.base_models[:self.best_iteration]]
+                                    for i in range(self.Dist.n_params)])
+        return importance_base.sum(axis=1).transpose()
 
     def pred_dist(self, X, max_iter=None):
         params = np.asarray(self.pred_param(X, max_iter))

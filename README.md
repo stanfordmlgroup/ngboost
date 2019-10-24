@@ -7,7 +7,7 @@ ngboost is a Python library that implements Natural Gradient Boosting, as descri
 Installation:
 
 ```
-pip3 install ngboost
+pip3 install git+https://github.com/stanfordmlgroup/ngboost
 ```
 
 Probabilistic regression example on the Boston housing dataset:

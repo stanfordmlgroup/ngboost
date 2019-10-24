@@ -130,6 +130,11 @@ class NGBoost(object):
         dist = self.Dist(params.T)
         return dist
 
+    def pred_dist_pdf(self, X, y_range, max_iter=None):
+        dist_obj = self.pred_dist(X, max_iter)
+        dist_obj_pdf = [dist_obj.pdf(y) for y in y_range]
+        return [[float(dist_obj_pdf[i][j]) for i in range(len(y_range))] for j in range(len(X))]
+
     def predict(self, X):
         dist = self.pred_dist(X)
         return list(dist.loc.flatten())

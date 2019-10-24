@@ -28,6 +28,7 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+        self.best_iteration = -1
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -101,6 +102,7 @@ class NGBoost(object):
                    np.mean(np.array(val_loss_list[-10:-5])):
                     if self.verbose:
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
+                        self.best_iteration = itr
                     break
 
             if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:

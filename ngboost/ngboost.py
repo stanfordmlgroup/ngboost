@@ -14,7 +14,7 @@ class NGBoost(object):
     def __init__(self, Dist=Normal, Score=MLE(),
                  Base=default_tree_learner, natural_gradient=False,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
-                 verbose=True, tol=1e-4):
+                 verbose=True, verbose_eval=1, tol=1e-4):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
@@ -23,6 +23,7 @@ class NGBoost(object):
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
         self.verbose = verbose
+        self.verbose_eval = verbose_eval
         self.init_params = None
         self.base_models = []
         self.scalings = []
@@ -102,7 +103,7 @@ class NGBoost(object):
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
                     break
 
-            if self.verbose:
+            if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
                 print(f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} "
                       f"norm={grad_norm:.4f}")

@@ -99,7 +99,7 @@ class NGBoost(object):
                 val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
                 val_loss = S.loss(self.Dist(val_params.T), Y_val).mean()
                 val_loss_list += [val_loss]
-                if np.mean(np.array(val_loss_list[-5:])) > \
+                if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
                    np.mean(np.array(val_loss_list[-10:-5])):
                     if self.verbose:
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")

@@ -3,3 +3,4 @@ from .normal import Normal, NormalFixedVar
 from .lognormal import LogNormal
 #from .loglaplace import LogLaplace
 from .exponential import Exponential
+from .bernoulli import Bernoulli

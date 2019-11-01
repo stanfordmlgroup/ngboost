@@ -29,5 +29,18 @@ class Bernoulli(object):
         FI[:, 0, 0] = self.prob * np.exp(-self.logit) / (1 - self.prob)
         return FI
 
+    def crps(self, Y):
+        return ((self.prob - Y) ** 2).mean()
+
+    def D_crps(self, Y):
+        D = 2 * (self.prob - Y) * self.prob ** 2 * np.exp(-self.logit)
+        return D[:,np.newaxis]
+
+    def crps_metric(self):
+        M = np.zeros((self.logit.shape[0], 1, 1))
+        M[:, 0, 0] = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * \
+                     (1 + (self.prob / (1 - self.prob)) ** 2)
+        return M
+
     def fit(Y):
         return np.array([logit(np.mean(Y))])

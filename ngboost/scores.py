@@ -19,7 +19,7 @@ class CRPS:
         self.K = K
 
     def loss(self, forecast, Y):
-        return forecast.crps(Y.squeeze())
+        return forecast.crps(Y.squeeze()).mean()
 
     def natural_grad(self, forecast, Y):
         metric = forecast.crps_metric()

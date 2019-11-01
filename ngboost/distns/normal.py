@@ -20,7 +20,7 @@ class Normal(object):
         return None
 
     def nll(self, Y):
-        return -self.dist.logpdf(Y).mean()
+        return -self.dist.logpdf(Y)
 
     def D_nll(self, Y_):
         Y = Y_.squeeze()
@@ -31,12 +31,23 @@ class Normal(object):
 
     def crps(self, Y):
         Z = (Y - self.loc) / self.scale
-        return self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
-               2 * sp.stats.norm.pdf(Z) - 1 / np.sqrt(np.pi))
+        return (self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
+                2 * sp.stats.norm.pdf(Z) - 1 / np.sqrt(np.pi)))
+
+    def D_crps(self, Y_):
+        Y = Y_.squeeze()
+        Z = (Y - self.loc) / self.scale
+        D = np.zeros((self.var.shape[0], 2))
+        D[:, 0] = -(2 * sp.stats.norm.cdf(Z) - 1)
+        D[:, 1] = self.crps(Y) + (Y - self.loc) * D[:, 0]
+        return D
 
     def crps_metric(self):
-        I = 1/(2*np.sqrt(np.pi)) * np.diag(np.array([1, self.var/2]))
-        return I + 1e-4 * np.eye(2)
+        I = np.c_[2 * np.ones_like(self.var), np.zeros_like(self.var),
+                  np.zeros_like(self.var), self.var]
+        I = I.reshape((self.var.shape[0], 2, 2))
+        I = 1/(2*np.sqrt(np.pi)) * I
+        return I #+ 1e-4 * np.eye(2)
 
     def fisher_info(self):
         FI = np.zeros((self.var.shape[0], 2, 2))
@@ -67,7 +78,7 @@ class NormalFixedVar(Normal):
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return m
-    
+
     def crps_metric(self):
         return 1
 

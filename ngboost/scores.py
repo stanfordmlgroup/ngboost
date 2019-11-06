@@ -7,11 +7,12 @@ class MLE:
     def loss(self, forecast, Y):
         return forecast.nll(Y.squeeze()).mean()
 
-    def natural_grad(self, forecast, Y):
+    def grad(self, forecast, Y, natural=True):
         fisher = forecast.fisher_info()
         grad = forecast.D_nll(Y)
-        nat_grad = np.linalg.solve(fisher, grad)
-        return nat_grad
+        if natural:
+            grad = np.linalg.solve(fisher, grad)
+        return grad
 
 
 class CRPS:
@@ -21,9 +22,10 @@ class CRPS:
     def loss(self, forecast, Y):
         return forecast.crps(Y.squeeze())
 
-    def natural_grad(self, forecast, Y):
+    def grad(self, forecast, Y, natural=True):
         metric = forecast.crps_metric()
         grad = forecast.D_crps(Y)
-        nat_grad = np.linalg.solve(metric, grad)
-        return nat_grad
+        if natural:
+            grad = np.linalg.solve(metric, grad)
+        return grad
 

@@ -12,7 +12,7 @@ from ngboost.distns.normal import Normal
 class NGBoost(object):
 
     def __init__(self, Dist=Normal, Score=MLE(),
-                 Base=default_tree_learner, natural_gradient=False,
+                 Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
                  verbose=True, verbose_eval=100, tol=1e-4):
         self.Dist = Dist
@@ -94,7 +94,7 @@ class NGBoost(object):
 
             loss_list += [train_loss_monitor(D, Y_batch)]
             loss = loss_list[-1]
-            grads = S.natural_grad(D, Y_batch)
+            grads = S.grad(D, Y_batch, natural=self.natural_gradient)
 
             proj_grad = self.fit_base(X_batch, grads)
             scale = self.line_search(proj_grad, P_batch, Y_batch)

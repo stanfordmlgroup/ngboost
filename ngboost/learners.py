@@ -1,5 +1,5 @@
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.linear_model import Ridge
 
 
 def default_tree_learner(depth=3):
@@ -10,6 +10,7 @@ def default_tree_learner(depth=3):
         min_weight_fraction_leaf=0.0,
         max_depth=depth,
         splitter='best')
+
 
 def default_linear_learner(alpha=1):
     return Ridge(alpha = 1)

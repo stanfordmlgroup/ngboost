@@ -1,15 +1,15 @@
 import numpy as np
-import scipy as sp
 import numpy.random as np_rnd
+import scipy as sp
+from sklearn.base import BaseEstimator
 
 from ngboost.distns import Normal
-
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 
 
-class NGBoost(object):
+class NGBoost(BaseEstimator):
 
     def __init__(self, Dist=Normal, Score=MLE(),
                  Base=default_tree_learner, natural_gradient=True,
@@ -168,3 +168,4 @@ class NGBoost(object):
             dists = self.Dist(np.asarray(params).T)
             predictions.append(dists)
         return predictions
+

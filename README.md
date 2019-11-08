@@ -40,3 +40,25 @@ print('Test MSE', test_MSE)
 test_NLL = -Y_dists.logpdf(Y_test.flatten()).mean()
 print('Test NLL', test_NLL)
 ```
+
+Also, you can use NGBoost as Scikit-Learn API.
+
+```python
+from ngboost import NGBRegressor
+from sklearn.datasets import load_boston
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+
+
+if __name__ == "__main__":
+    X, y = load_boston(True)
+    X_train, X_test, y_train, y_train = train_test_split(X, y, test_size=0.2)
+
+    ngb = NGBRegressor()
+    ngb.fit(X_train, y_train)
+    y_pred = ngb.predict(X_test)
+
+    mse = mean_squared_error(y_test, y_pred)
+    print(f'MSE on test data: {mse}')
+
+```

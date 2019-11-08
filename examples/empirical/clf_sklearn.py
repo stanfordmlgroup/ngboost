@@ -1,5 +1,5 @@
 from ngboost.distns import Bernoulli
-from ngboost.sklearn_api import NGBoostClassifier
+from ngboost import NGBClassifier
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import GridSearchCV, train_test_split
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
         'minibatch_frac': [1.0, 0.5],
     }
 
-    ngb = NGBoostClassifier(
+    ngb = NGBClassifier(
         natural_gradient=True,
         verbose=False,
         Dist=Bernoulli

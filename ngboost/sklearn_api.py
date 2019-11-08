@@ -4,12 +4,12 @@ from sklearn.base import ClassifierMixin, RegressorMixin
 from ngboost.ngboost import NGBoost
 
 
-class NGBoostRegressor(NGBoost, RegressorMixin):
+class NGBRegressor(NGBoost, RegressorMixin):
     """NGBoost for regression with Sklean API."""
     pass
 
 
-class NGBoostClassifier(NGBoost, ClassifierMixin):
+class NGBClassifier(NGBoost, ClassifierMixin):
     """NGBoost for classification with Sklean API.
 
     Warning:

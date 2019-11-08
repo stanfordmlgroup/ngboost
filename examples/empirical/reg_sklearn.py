@@ -1,4 +1,4 @@
-from ngboost.sklearn_api import NGBoostRegressor
+from ngboost import NGBRegressor
 from sklearn.datasets import load_boston
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -13,7 +13,7 @@ if __name__ == "__main__":
         'minibatch_frac': [1.0, 0.5],
     }
 
-    ngb = NGBoostRegressor(
+    ngb = NGBRegressor(
         natural_gradient=True,
         verbose=False,
     )

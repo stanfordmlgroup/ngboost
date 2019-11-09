@@ -55,11 +55,6 @@ class Normal(object):
         FI[:, 1, 1] = 2
         return FI
 
-    def fisher_info_cens(self, T):
-        nabla = np.array([self.pdf(T),
-                          (T - self.loc) / self.scale * self.pdf(T)])
-        return np.outer(nabla, nabla) / (self.cdf(T) * (1 - self.cdf(T))) + 1e-2 * np.eye(2)
-
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])

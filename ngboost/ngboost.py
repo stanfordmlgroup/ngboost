@@ -185,7 +185,7 @@ class NGBoost(BaseEstimator):
         if not self.base_models:
             return None
         # Check whether the base model is DecisionTreeRegressor
-        if not 'sklearn.tree.tree.DecisionTreeRegressor' in str(type(self.base_models[0][0])):
+        if not str(type(self.base_models[0][0])).endswith("sklearn.tree.tree.DecisionTreeRegressor'>"):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)

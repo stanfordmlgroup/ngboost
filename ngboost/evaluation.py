@@ -17,6 +17,7 @@ def calibration_regression(Forecast, Y, bins=11, eps=1e-3):
     slope, intercept = np.polyfit(pctles, observed, deg=1)
     return pctles, observed, slope, intercept
 
+
 def calibration_time_to_event(Forecast, T, C, bins=10, eps=1e-3):
     """
     Calculate calibration in the time-to-event setting, using the probability
@@ -33,8 +34,10 @@ def calibration_time_to_event(Forecast, T, C, bins=10, eps=1e-3):
     slope, intercept = np.polyfit(preds, obs, deg=1)
     return preds, obs, slope, intercept
 
+
 def calculate_calib_error(predicted, observed):
     return np.sum((predicted - observed) ** 2) / len(predicted)
+
 
 def plot_pit_histogram(predicted, observed, **kwargs):
     plt.bar(x = predicted[1:], height = np.diff(observed),
@@ -65,7 +68,6 @@ def plot_calibration_curve(predicted, observed):
     plt.ylim((0, 1))
     plt.legend(loc="upper left")
     # plt.show()
-
 
 
 def calculate_concordance_dead_only(preds, ys, cs):
@@ -102,4 +104,3 @@ def calculate_concordance_naive(preds, ys, cs):
                     concordance += 0.5
                 counter += 1
     return concordance / counter
-

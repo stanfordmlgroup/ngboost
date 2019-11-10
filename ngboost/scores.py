@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class MLE:
     def __init__(self, seed=123):
         pass
@@ -28,4 +29,3 @@ class CRPS:
         if natural:
             grad = np.linalg.solve(metric, grad)
         return grad
-

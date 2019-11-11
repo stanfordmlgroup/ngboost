@@ -65,7 +65,21 @@ class MultivariateNormal(object):
         return D
 
 	  def fisher_info(self):
-				pass
+        # reshape Jacobian
+        tril_indices = np.tril_indices(self.p)
+        J = self.dCovdL[:,:,:,tril_indices[0],tril_indices[1]]
+
+        FI = np.zeros((self.N,self.n_params,self.n_params))
+
+        # compute FI mu
+        FI[:,:self.p,:self.p] = self.cov_inv
+
+        # compute FI sigma
+        M = np.einsum('nij,njkl->nikl', self.cov_inv, J)
+        M = np.einsum('nijx,njky->nikxy', M, M)
+        FI[:,self.p:,self.p:] = 0.5 * np.trace(M, axis1=1, axis2=2)
+
+        return FI
 
 		def fit(Y):	
 				pass

@@ -82,4 +82,9 @@ class MultivariateNormal(object):
         return FI
 
 		def fit(Y):	
-				pass
+        N, p = Y.shape
+        m = Y.mean(axis=0)
+        diff = Y - m
+        sigma = 1 / N * (diff[:,:,None] @ diff[:,None,:]).sum(0)
+        L = sp.linalg.cholesky(sigma, lower=True)
+        return np.concatenate([m, L[np.tril_indices(p)]])

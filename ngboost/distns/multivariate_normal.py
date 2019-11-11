@@ -2,14 +2,14 @@ import scipy as sp
 import numpy as np
 
 class MultivariateNormal(object):
-		# TODO: make n_params general
-		n_params = 5
+    # TODO: make n_params general
+    n_params = 5
 
     def __init__(self, params, temp_scale = 1.0):
-        self.N, p = params.shape
-        self.p = int(0.5 * (np.sqrt(8 * p - 3))
+        self.n_params, self.N = params.shape
+        self.p = int(0.5 * (np.sqrt(8 * self.n_params + 9)- 3))
 
-        self.loc = params[0:p, :].T
+        self.loc = params[:self.p, :].T
 
         self.L = np.zeros((self.p, self.p, self.N))
         self.L[np.tril_indices(self.p)] = params[self.p:, :]
@@ -35,7 +35,7 @@ class MultivariateNormal(object):
         dCovdL = dCovdL.reshape(-1,2,2,2,2).swapaxes(-2,-1)
         return dCovdL
 
-		def nll(self, Y):
+    def nll(self, Y):
         diff = Y - self.loc
         M = diff[:,None,:] @ self.cov_inv @ diff[:,:,None]
         half_log_det = np.log(np.diagonal(self.L, axis1=1, axis2=2)).sum(-1)
@@ -43,7 +43,7 @@ class MultivariateNormal(object):
         logpdf = - const - half_log_det - 0.5 * M.flatten()
         return -logpdf
 
-		def D_nll(self, Y_):
+    def D_nll(self, Y_):
         # reshape Jacobian
         tril_indices = np.tril_indices(self.p)
         J = self.dCovdL[:,:,:,tril_indices[0],tril_indices[1]]
@@ -64,7 +64,7 @@ class MultivariateNormal(object):
 
         return D
 
-	  def fisher_info(self):
+    def fisher_info(self):
         # reshape Jacobian
         tril_indices = np.tril_indices(self.p)
         J = self.dCovdL[:,:,:,tril_indices[0],tril_indices[1]]
@@ -81,7 +81,7 @@ class MultivariateNormal(object):
 
         return FI
 
-		def fit(Y):	
+    def fit(Y):	
         N, p = Y.shape
         m = Y.mean(axis=0)
         diff = Y - m

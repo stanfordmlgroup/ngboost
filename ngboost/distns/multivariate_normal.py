@@ -24,9 +24,12 @@ class MultivariateNormal(object):
         return None
 
     def D_cov_D_L(self):
+        # create commutation matrix
         commutation = np.zeros((self.p**2, self.p**2))
         ind = np.arange(self.p**2).reshape(self.p, self.p).T.flatten()
         commutation[np.arange(self.p**2), ind] = 1.
+
+        # compute Jacobian
         dCovdL = (np.identity(self.p**2) + commutation) @\
                  np.kron(self.L, np.identity(self.p))
         dCovdL = dCovdL.reshape(-1,2,2,2,2).swapaxes(-2,-1)
@@ -41,7 +44,25 @@ class MultivariateNormal(object):
         return -logpdf
 
 		def D_nll(self, Y_):
-				pass
+        # reshape Jacobian
+        tril_indices = np.tril_indices(self.p)
+        J = self.dCovdL[:,:,:,tril_indices[0],tril_indices[1]]
+        J = np.transpose(J, (0,3,1,2)).reshape(self.N, -1, self.p**2)
+        J = J.swapaxes(-2,-1)
+
+        # compute grad mu
+        D = np.zeros((self.N, J.shape[-1] + self.p))
+        sigma_inv = np.linalg.inv(self.cov)
+        diff = self.loc - Y_
+        D[:, :self.p] = (sigma_inv @ diff[:,:,None])[...,0]
+
+        # compute grad sigma
+        D_sigma = 0.5*(sigma_inv - sigma_inv @ (diff[:,:,None]*diff[:,None,:]) @ sigma_inv)
+        D_sigma = D_sigma.reshape(self.N, -1)
+        D_L = J.swapaxes(-2,-1) @ D_sigma[:,:,None]
+        D[:, self.p:] = D_L[..., 0]
+
+        return D
 
 	  def fisher_info(self):
 				pass

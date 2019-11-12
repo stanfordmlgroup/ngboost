@@ -125,12 +125,7 @@ class NGBoost(BaseEstimator):
         return self
 
     def fit_init_params_to_marginal(self, Y, iters=1000):
-        try:
-            E = Y['Event']
-            T = Y['Time'].reshape((-1, 1))[E == 1]
-        except:
-            T = Y
-        self.init_params = self.Dist.fit(T)
+        self.init_params = self.Dist.fit(Y)
         return
 
 

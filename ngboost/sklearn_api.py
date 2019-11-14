@@ -14,7 +14,7 @@ class NGBClassifier(NGBoost, ClassifierMixin):
 
     Warning:
         Dist need to be Bernoulli.
-        You can use this model for only banary classification.
+        You can use this model for only binary classification.
     """
 
     def predict(self, X):

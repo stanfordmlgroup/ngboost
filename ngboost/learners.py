@@ -13,4 +13,4 @@ def default_tree_learner(depth=3):
 
 
 def default_linear_learner(alpha=1):
-    return Ridge(alpha = 1)
+    return Ridge(alpha=alpha)

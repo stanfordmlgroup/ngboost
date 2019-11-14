@@ -76,21 +76,46 @@ class MultivariateNormal(object):
             J = J.swapaxes(-2,-1)
 
             # compute grad mu
-            D = np.zeros((self.N, J.shape[-1] + self.p))
+            D = np.zeros((self.N, self.n_params))
+            diff0 = T - mu0
+            diff1 = T - mu1
+            Z0 = diff0 / var0**0.5
+            Z1 = diff1 / var1**0.5
+            Z0_1 = (T - mu0_given_1) / var0_given_1**0.5
+            Z1_0 = (T - mu1_given_0) / var1_given_0**0.5
             pdf0 = dist.pdf(T, loc=mu0_given_1, scale=var0_given_1**0.5)
             cdf0 = dist.cdf(T, loc=mu0_given_1, scale=var0_given_1**0.5)
             pdf1 = dist.pdf(T, loc=mu1_given_0, scale=var1_given_0**0.5)
             cdf1 = dist.cdf(T, loc=mu1_given_0, scale=var1_given_0**0.5)
             cens_mu0 = (1-E) * (pdf0 / (1-cdf0))
-            uncens_mu0 = E * ((T - mu0)/var0 - pdf1 / (1-cdf1) * cov * (1/var0))
-            cens_mu1 = (1-E) * (pdf1 / (1-cdf1))
-            uncens_mu1 = E * ((T - mu1)/var1 - pdf0 / (1-cdf0) * cov * (1/var1))
+            uncens_mu0 = E * (diff0 / var0 - pdf1 / (1-cdf1) * (cov/var0))
+            uncens_mu1 = E * (pdf1 / (1-cdf1))
+            cens_mu1 = (1-E) * (diff1 / var1 - pdf0 / (1-cdf0) * (cov/var1))
             D[:,0] = -(cens_mu0 + uncens_mu0)
             D[:,1] = -(cens_mu1 + uncens_mu1)
       
             # compute grad sigma
-            import pdb
-            pdb.set_trace()
+            D_sigma = np.zeros((self.N, self.p**2))
+
+            cens_var0 = (1-E) * (pdf0 / (1-cdf0) * Z0_1 / (2*var0_given_1**0.5))
+            uncens_var0 = E * (0.5*((Z0**2 - 1)/var0) + \
+                              pdf1 / (1-cdf1) * (-Z0 * (cov/var0**1.5) + \
+                                                 0.5 * Z1_0 / (var1_given_0**0.5) * (cov/var0)**2))
+            D_sigma[:,0] = -(cens_var0 + uncens_var0)
+
+            uncens_var1 = E * (pdf1 / (1-cdf1) * Z1_0 / (2*var1_given_0**0.5))
+            cens_var1 = (1-E) * (0.5*((Z1**2 - 1)/var1) + \
+                                 pdf0 / (1-cdf0) * (-Z1 * (cov/var1**1.5) + \
+                                                    0.5 * Z0_1 / (var0_given_1**0.5) * (cov/var1)**2))
+            D_sigma[:,3] = -(cens_var1 + uncens_var1)
+
+            cens_cov = (1-E) * (pdf1 / (1-cdf1) * (Z0 / var0**0.5 - Z1_0  / (var1_given_0**0.5) * (cov/var0)))
+            uncens_cov = E * (pdf0 / (1-cdf0) * (Z1 / var1**0.5 - Z0_1 / (var0_given_1**0.5) * (cov/var1)))
+            D_sigma[:,1] = -(cens_cov + uncens_cov) * 0.5
+            D_sigma[:,2] = -(cens_cov + uncens_cov) * 0.5
+
+            D_L = J.swapaxes(-2,-1) @ D_sigma[:,:,None]
+            D[:, self.p:] = D_L[..., 0]
 
             return D
 
@@ -152,8 +177,8 @@ class MultivariateNormal(object):
             T = np.log(Y['Time'])
             # place holder
             m = np.array([8., 8.])
-            sigma = np.array([[1., .5],
-                              [.5, 1.]])
+            sigma = np.array([[2., 1.],
+                              [1., 2.]])
             L = sp.linalg.cholesky(sigma, lower=True)
             return np.concatenate([m, L[np.tril_indices(2)]])
         except:

@@ -13,7 +13,7 @@ pip3 install git+https://github.com/stanfordmlgroup/ngboost
 Probabilistic regression example on the Boston housing dataset:
 
 ```python
-from ngboost import NGBRegressor
+from ngboost import NGBoost
 
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
@@ -23,7 +23,7 @@ from sklearn.metrics import mean_squared_error
 X, Y = load_boston(True)
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
-ngb = NGBRegressor().fit(X_train, Y_train)
+ngb = NGBoost().fit(X_train, Y_train)
 Y_preds = ngb.predict(X_test)
 Y_dists = ngb.pred_dist(X_test)
 

@@ -1,12 +1,13 @@
 import unittest
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import roc_auc_score
-from ngboost.ngboost import NGBoost
+from sklearn.model_selection import train_test_split
+
 from ngboost.distns import Bernoulli
 from ngboost.learners import default_tree_learner
+from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE
 
 np.random.seed(1)
@@ -14,6 +15,9 @@ np.random.seed(1)
 
 class TestBasic(unittest.TestCase):
     def test_basic(self):
+        pass
+
+    def test_classification(self):
         data, target = load_breast_cancer(True)
         x_train, x_test, y_train, y_test = train_test_split(data, target,
                                                             test_size=0.2,
@@ -25,3 +29,6 @@ class TestBasic(unittest.TestCase):
         score = roc_auc_score(y_test, preds.prob)
         print(score)
         assert score >= 0.95
+
+    def test_regression(self):
+        pass

@@ -11,7 +11,6 @@ class Normal(object):
         self.scale = np.exp(params[1] / temp_scale) + 1e-8
         self.var = self.scale ** 2  + 1e-8
         self.shp = self.loc.shape
-
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def __getattr__(self, name):
@@ -47,7 +46,7 @@ class Normal(object):
                   np.zeros_like(self.var), self.var]
         I = I.reshape((self.var.shape[0], 2, 2))
         I = 1/(2*np.sqrt(np.pi)) * I
-        return I #+ 1e-4 * np.eye(2)
+        return I
 
     def fisher_info(self):
         FI = np.zeros((self.var.shape[0], 2, 2))
@@ -58,7 +57,6 @@ class Normal(object):
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])
-        #return np.array([m, np.log(1e-5)])
 
 class NormalFixedVar(Normal):
 

@@ -12,5 +12,5 @@ def default_tree_learner(depth=3):
         splitter='best')
 
 
-def default_linear_learner(alpha=1):
+def default_linear_learner(alpha=0.0):
     return Ridge(alpha=alpha)

@@ -2,7 +2,8 @@ import numpy as np
 
 
 class MLE:
-    def __init__(self, seed=123):
+
+    def __init__(self):
         pass
 
     def loss(self, forecast, Y):
@@ -17,8 +18,9 @@ class MLE:
 
 
 class CRPS:
-    def __init__(self, K=32):
-        self.K = K
+
+    def __init__(self):
+        pass
 
     def loss(self, forecast, Y):
         return forecast.crps(Y.squeeze()).mean()

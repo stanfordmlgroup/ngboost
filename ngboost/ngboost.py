@@ -14,7 +14,8 @@ class NGBoost(BaseEstimator):
     def __init__(self, Dist=Normal, Score=MLE(),
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
-                 verbose=True, verbose_eval=100, tol=1e-4):
+                 verbose=True, verbose_eval=100, tol=1e-4,
+                 early_stopping_rounds=None):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
@@ -28,6 +29,7 @@ class NGBoost(BaseEstimator):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+        self.early_stopping_rounds = early_stopping_rounds
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -106,11 +108,20 @@ class NGBoost(BaseEstimator):
                 val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
                 val_loss = val_loss_monitor(self.Dist(val_params.T), Y_val)
                 val_loss_list += [val_loss]
-                if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
-                   np.mean(np.array(val_loss_list[-10:-5])):
-                    if self.verbose:
-                        print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
-                    break
+                if self.early_stopping_rounds is not None:
+                    if np.min(np.array(val_loss_list)) < np.min(np.array(val_loss_list[-self.early_stopping_rounds:])):
+                        best_itr = np.argmin(np.array(val_loss_list))
+                        best_val_loss = np.min(np.array(val_loss_list))
+                        if self.verbose:
+                            print(f"== Early stopping achieved.")
+                            print(f"== Best iteration / VAL {best_itr} (val_loss={best_val_loss:.4f})")
+                        break
+                else:
+                    if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
+                       np.mean(np.array(val_loss_list[-10:-5])):
+                        if self.verbose:
+                            print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
+                        break
 
             if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale

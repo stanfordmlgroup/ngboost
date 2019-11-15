@@ -7,14 +7,24 @@ from ngboost.distns import Normal
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
+from sklearn.utils import check_random_state
 
 
 class NGBoost(BaseEstimator):
+    """
+    Natural Gradient Boosted Regression
 
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+    """
     def __init__(self, Dist=Normal, Score=MLE(),
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
-                 verbose=True, verbose_eval=100, tol=1e-4):
+                 verbose=True, verbose_eval=100, tol=1e-4,
+                 random_state=None):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
@@ -28,6 +38,7 @@ class NGBoost(BaseEstimator):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+        self.random_state = check_random_state(random_state)
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape

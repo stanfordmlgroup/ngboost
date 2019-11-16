@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.random as np_rnd
 import scipy as sp
 from sklearn.base import BaseEstimator
 
@@ -54,7 +53,7 @@ class NGBoost(BaseEstimator):
         if self.minibatch_frac == 1.0:
             return np.arange(len(Y)), X, Y, params
         sample_size = int(self.minibatch_frac * len(Y))
-        idxs = np_rnd.choice(np.arange(len(Y)), sample_size, replace=False)
+        idxs = self.random_state.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads):

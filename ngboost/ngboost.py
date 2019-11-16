@@ -58,7 +58,7 @@ class NGBoost(BaseEstimator):
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads):
-        models = [self.Base().fit(X, g) for g in grads.T]
+        models = [self.Base(random_state=self.random_state).fit(X, g) for g in grads.T]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
         return fitted
@@ -80,7 +80,7 @@ class NGBoost(BaseEstimator):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y, X_val = None, Y_val = None, train_loss_monitor = None, val_loss_monitor = None):
+    def fit(self, X, Y, X_val=None, Y_val=None, train_loss_monitor=None, val_loss_monitor=None):
 
         loss_list = []
         val_loss_list = []
@@ -138,7 +138,6 @@ class NGBoost(BaseEstimator):
     def fit_init_params_to_marginal(self, Y, iters=1000):
         self.init_params = self.Dist.fit(Y)
         return
-
 
     def pred_dist(self, X, max_iter=None):
         params = np.asarray(self.pred_param(X, max_iter))

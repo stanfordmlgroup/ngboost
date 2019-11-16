@@ -2,13 +2,12 @@ import numpy as np
 from sklearn.base import ClassifierMixin, RegressorMixin
 
 from ngboost.ngboost import NGBoost
-from ngboost.distns import Bernoulli, Normal
 
 
 class NGBRegressor(NGBoost, RegressorMixin):
     """NGBoost for regression with Sklean API."""
-    def __init__(self, *args, **kwargs):
-        super(NGBRegressor, self).__init__(Dist=Normal, *args, **kwargs)
+
+    pass
 
 
 class NGBClassifier(NGBoost, ClassifierMixin):

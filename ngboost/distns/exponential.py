@@ -2,7 +2,6 @@ import scipy as sp
 import numpy as np
 from scipy.stats import expon as dist
 
-eps = 1e-5
 
 class Exponential(object):
     n_params = 1
@@ -16,7 +15,7 @@ class Exponential(object):
 
     def nll(self, Y):
         E, T = Y["Event"], Y["Time"]
-        cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
+        cens = (1-E) * np.log(1 - self.dist.cdf(T))
         uncens = E * self.dist.logpdf(T)
         return -(cens + uncens)
 
@@ -31,19 +30,16 @@ class Exponential(object):
         return FI
 
     def crps(self, Y):
-        E = Y['Event']
-        T = Y['Time']
-        c = E == 1
+        E, T = Y["Event"], Y["Time"]
         score = T + self.scale * (2 * np.exp(-T / self.scale) - 1.5)
-        score[c] -= 0.5 * self.scale[c] * np.exp(-2 * T[c] / self.scale[c])
+        score[E == 1] -= 0.5 * self.scale[E == 1] * np.exp(-2 * T[E == 1] / self.scale[E == 1])
         return score
 
     def D_crps(self, Y):
-        E = Y["Event"]
-        T = Y["Time"]
-        c = E == 1
-        d = 2 * np.exp(-T/self.scale) * (self.scale + T) - 1.5 * self.scale
-        d[c] -= np.exp(-2 * T[c] / self.scale[c]) * (0.5 * self.scale[c] - T[c])
+        E, T = Y["Event"], Y["Time"]
+        deriv = 2 * np.exp(-T / self.scale) * (self.scale + T) - 1.5 * self.scale
+        deriv[E == 1] -= np.exp(-2 * T[E == 1] / self.scale[E == 1]) * \
+                         (0.5 * self.scale[E == 1] - T[E == 1])
         return deriv.reshape((-1, 1))
 
     def crps_metric(self):

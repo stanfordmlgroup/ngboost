@@ -1,14 +1,12 @@
 import scipy as sp
 import numpy as np
-
 from scipy.stats import lognorm as dist
 
-eps = 1e-6
 
 class LogNormal(object):
     n_params = 2
 
-    def __init__(self, params, temp_scale = 1.0):
+    def __init__(self, params):
         self.loc = params[0]
         self.scale = np.exp(params[1])
         self.dist = dist(s=self.scale, scale=np.exp(self.loc))
@@ -36,8 +34,10 @@ class LogNormal(object):
         D_uncens[:, 1] = 1 - ((self.loc - lT) ** 2) / (self.scale ** 2)
 
         D_cens = np.zeros((self.loc.shape[0], 2))
-        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
-        D_cens[:, 0] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
+        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + eps)
+        D_cens[:, 0] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + eps)
 
         return (1-E) * D_cens + E * D_uncens
 

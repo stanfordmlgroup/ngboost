@@ -36,8 +36,10 @@ class LogNormal(object):
         D_cens = np.zeros((self.loc.shape[0], 2))
         D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
                         (1 - self.dist.cdf(T) + eps)
-        D_cens[:, 0] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+        D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
                         (1 - self.dist.cdf(T) + eps)
+        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
+        D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
 
         return (1-E) * D_cens + E * D_uncens
 

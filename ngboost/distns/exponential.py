@@ -57,5 +57,6 @@ class Exponential(object):
         pass
 
     def fit(Y):
-        m, s = sp.stats.expon.fit(Y)
+        T = Y["Time"]
+        m, s = sp.stats.expon.fit(T)
         return np.array([np.log(m + s)])

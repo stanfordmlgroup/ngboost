@@ -6,7 +6,6 @@ from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.evaluation import *
-from examples.loggers.loggers import RegressionLogger
 from sklearn.metrics import r2_score
 from matplotlib import pyplot as plt
 from argparse import ArgumentParser
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     noise = np.random.randn(*(m, 1))
     beta1 = np.random.randn(n, 1)
     X = np.random.randn(m, n) / np.sqrt(n)
-    Y = X @ beta1 + args.noise_lvl * noise
+    Y = (X @ beta1 + args.noise_lvl * noise).squeeze()
     print(X.shape, Y.shape)
 
     X_train, X_test = X[:1000,:], X[1000:,]
@@ -42,7 +41,7 @@ if __name__ == '__main__':
                   minibatch_frac=1.0,
                   Score=eval(args.score)(),
                   verbose=True,
-                  verbose_eval=10)
+                  verbose_eval=100)
 
     losses = ngb.fit(X_train, Y_train)
     forecast = ngb.pred_dist(X_test)

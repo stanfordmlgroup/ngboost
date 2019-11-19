@@ -1,17 +1,14 @@
 import numpy as np
-import numpy.random as np_rnd
 import scipy as sp
-from sklearn.base import BaseEstimator
-
 from ngboost.distns import Normal
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 
 
-class NGBoost(BaseEstimator):
+class NGBoost(object):
 
-    def __init__(self, Dist=Normal, Score=MLE(),
+    def __init__(self, Dist=Normal, Score=MLE,
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
                  verbose=True, verbose_eval=100, tol=1e-4):
@@ -43,7 +40,7 @@ class NGBoost(BaseEstimator):
         if self.minibatch_frac == 1.0:
             return np.arange(len(Y)), X, Y, params
         sample_size = int(self.minibatch_frac * len(Y))
-        idxs = np_rnd.choice(np.arange(len(Y)), sample_size, replace=False)
+        idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads):
@@ -128,7 +125,6 @@ class NGBoost(BaseEstimator):
         self.init_params = self.Dist.fit(Y)
         return
 
-
     def pred_dist(self, X, max_iter=None):
         params = np.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
@@ -137,6 +133,9 @@ class NGBoost(BaseEstimator):
     def predict(self, X):
         dist = self.pred_dist(X)
         return list(dist.loc.flatten())
+
+    def score(self, X, Y):
+        return self.Score.loss(self.pred_dist(X), Y)
 
     def staged_predict(self, X, max_iter=None):
         predictions = []

@@ -4,7 +4,9 @@ from scipy.stats import expon as dist
 
 
 class Exponential(object):
+
     n_params = 1
+    problem_type = "survival"
 
     def __init__(self, params):
         self.scale = np.exp(params[0])
@@ -26,8 +28,8 @@ class Exponential(object):
         return -(cens + uncens).reshape((-1, 1))
 
     def fisher_info(self):
-        FI = 2 * np.ones((self.scale.shape[0], 1, 1))
-        return FI
+        FI = 2 * np.ones_like(self.scale)
+        return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):
         E, T = Y["Event"], Y["Time"]

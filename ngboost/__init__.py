@@ -1,4 +1,4 @@
 from .ngboost import NGBoost
-from .sklearn_api import NGBClassifier , NGBRegressor
+from .api import NGBClassifier, NGBRegressor, NGBSurvival
 
 __version__ = "0.1.4dev"

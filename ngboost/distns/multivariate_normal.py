@@ -111,8 +111,8 @@ class MultivariateNormal(object):
                                                     0.5 * Z0_1 / (eps + var0_given_1**0.5) * (cov/(eps + var1))**2))
             D_sigma[:,3] = -(cens_var1 + uncens_var1)
 
-            cens_cov = (1-E) * (pdf1 / (eps + 1-cdf1) * (Z0 / (eps + var0**0.5) - Z1_0  / (eps + var1_given_0**0.5) * (cov/(eps + var0))))
-            uncens_cov = E * (pdf0 / (eps + 1-cdf0) * (Z1 / (eps + var1**0.5) - Z0_1 / (eps + var0_given_1**0.5) * (cov/(eps + var1))))
+            uncens_cov = E * (pdf1 / (eps + 1-cdf1) * (Z0 / (eps + var0**0.5) - Z1_0  / (eps + var1_given_0**0.5) * (cov/(eps + var0))))
+            cens_cov = (1-E) * (pdf0 / (eps + 1-cdf0) * (Z1 / (eps + var1**0.5) - Z0_1 / (eps + var0_given_1**0.5) * (cov/(eps + var1))))
             D_sigma[:,1] = -(cens_cov + uncens_cov) * 0.5
             D_sigma[:,2] = -(cens_cov + uncens_cov) * 0.5
 

@@ -109,9 +109,11 @@ class NGBoost(BaseEstimator):
                 val_loss = val_loss_monitor(self.Dist(val_params.T), Y_val)
                 val_loss_list += [val_loss]
                 if self.early_stopping_rounds is not None:
-                    if np.min(np.array(val_loss_list)) < np.min(np.array(val_loss_list[-self.early_stopping_rounds:])):
-                        best_itr = np.argmin(np.array(val_loss_list))
-                        best_val_loss = np.min(np.array(val_loss_list))
+                    best_val_loss = np.min(np.array(val_loss_list))
+                    best_itr = np.argmin(np.array(val_loss_list))
+                    self.best_val_loss = best_val_loss
+                    self.best_itr = best_itr
+                    if best_val_loss < np.min(np.array(val_loss_list[-self.early_stopping_rounds:])):
                         if self.verbose:
                             print(f"== Early stopping achieved.")
                             print(f"== Best iteration / VAL {best_itr} (val_loss={best_val_loss:.4f})")

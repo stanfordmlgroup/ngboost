@@ -22,7 +22,7 @@ class TestBasic(unittest.TestCase):
         x_train, x_test, y_train, y_test = train_test_split(data, target,
                                                             test_size=0.2,
                                                             random_state=42)
-        ngb = NGBoost(Base=default_tree_learner, Dist=Bernoulli, Score=MLE(),
+        ngb = NGBoost(Base=default_tree_learner, Dist=Bernoulli, Score=MLE,
                       verbose=False)
         ngb.fit(x_train, y_train)
         preds = ngb.pred_dist(x_test)
@@ -34,7 +34,7 @@ class TestBasic(unittest.TestCase):
         x_train, x_test, y_train, y_test = train_test_split(data, target,
                                                             test_size=0.2,
                                                             random_state=42)
-        ngb = NGBoost(Base=default_tree_learner, Dist=Normal, Score=MLE(),
+        ngb = NGBoost(Base=default_tree_learner, Dist=Normal, Score=MLE,
                       natural_gradient=True, verbose=False)
         ngb.fit(x_train, y_train)
         preds = ngb.predict(x_test)

@@ -11,7 +11,7 @@ from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.evaluation import *
-from examples.loggers.loggers import *
+from examples.experiments.loggers import *
 
 from sksurv.ensemble import GradientBoostingSurvivalAnalysis as GBSA
 from sksurv.metrics import concordance_index_censored

@@ -41,6 +41,18 @@ class NGBClassifier(NGBoost, BaseEstimator):
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
 
+    def predict(self, X):
+        dist = self.pred_dist(X)
+        return np.round(dist.prob)
+
+    def predict_proba(self, X):
+        num_classes = 2
+        y_pred = np.zeros((len(X), num_classes))
+        dist = self.pred_dist(X)
+        y_pred[:, 1] = dist.prob
+        y_pred[:, 0] = 1 - dist.prob
+        return y_pred
+
 
 class NGBSurvival(NGBoost, BaseEstimator):
 

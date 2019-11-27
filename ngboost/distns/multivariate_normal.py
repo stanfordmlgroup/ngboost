@@ -22,10 +22,8 @@ class MultivariateNormal(object):
         self.cov_inv = np.linalg.inv(self.cov)
         self.dCovdL = self.D_cov_D_L()
 
-    def __getattr__(self, name):
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
+    def mean(self):
+        return np.exp(self.loc[:,0])
 
     def D_cov_D_L(self):
         # create commutation matrix

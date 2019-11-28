@@ -1,8 +1,7 @@
 import numpy as np
 from tqdm import tqdm
-from lifelines import KaplanMeierFitter, NelsonAalenFitter
+from lifelines import KaplanMeierFitter
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
 
 
 def calibration_regression(Forecast, Y, bins=11, eps=1e-3):

@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import PolynomialFeatures
 from dfply import *
-from ngboost.distns import LogNormal, Exponential
+from ngboost.distns import LogNormal, Exponential, MultivariateNormal
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner

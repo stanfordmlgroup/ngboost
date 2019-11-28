@@ -66,7 +66,7 @@ class NGBoost(object):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y, X_val = None, Y_val = None, train_loss_monitor = None, val_loss_monitor = None):
+    def fit(self, X, Y, X_val=None, Y_val=None, train_loss_monitor=None, val_loss_monitor=None):
 
         loss_list = []
         val_loss_list = []
@@ -84,6 +84,12 @@ class NGBoost(object):
         if not val_loss_monitor:
             val_loss_monitor = S.loss
 
+        evals_result = {}
+        metric = self.Score.__name__.upper()
+        evals_result['train'] = {metric: []}
+        if (X_val is not None) and (Y_val is not None):
+            evals_result['valid'] = {metric: []}
+
         for itr in range(self.n_estimators):
             _, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
 
@@ -91,6 +97,7 @@ class NGBoost(object):
 
             loss_list += [train_loss_monitor(D, Y_batch)]
             loss = loss_list[-1]
+            evals_result['train'][metric].append(loss)
             grads = S.grad(D, Y_batch, natural=self.natural_gradient)
 
             proj_grad = self.fit_base(X_batch, grads)
@@ -103,6 +110,7 @@ class NGBoost(object):
                 val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
                 val_loss = val_loss_monitor(self.Dist(val_params.T), Y_val)
                 val_loss_list += [val_loss]
+                evals_result['valid'][metric].append(val_loss)
                 if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
                    np.mean(np.array(val_loss_list[-10:-5])):
                     if self.verbose:
@@ -119,6 +127,7 @@ class NGBoost(object):
                     print(f"== Quitting at iteration / GRAD {itr}")
                 break
 
+        self.evals_result_ = evals_result
         return self
 
     def fit_init_params_to_marginal(self, Y, iters=1000):

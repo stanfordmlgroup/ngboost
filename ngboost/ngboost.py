@@ -61,7 +61,7 @@ class NGBoost(object):
             D = self.Dist((start - scaled_resids).T)
             loss = S.loss(D, Y)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if np.isnan(loss) or loss > loss_init:
+            if not np.isfinite(loss) or loss > loss_init:
                 break
             scale = scale * 2
 
@@ -71,7 +71,7 @@ class NGBoost(object):
             D = self.Dist((start - scaled_resids).T)
             loss = S.loss(D, Y)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if not np.isnan(loss) and (loss < loss_init or norm < self.tol) and\
+            if np.isfinite(loss) and (loss < loss_init or norm < self.tol) and\
                np.linalg.norm(scaled_resids, axis=1).mean() < 5.0:
                 break
             scale = scale * 0.5

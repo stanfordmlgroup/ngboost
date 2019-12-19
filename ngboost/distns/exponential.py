@@ -2,6 +2,7 @@ import scipy as sp
 import numpy as np
 from scipy.stats import expon as dist
 
+eps = 1e-10
 
 class Exponential(object):
 
@@ -17,7 +18,7 @@ class Exponential(object):
 
     def nll(self, Y):
         E, T = Y["Event"], Y["Time"]
-        cens = (1-E) * np.log(1 - self.dist.cdf(T))
+        cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
         uncens = E * self.dist.logpdf(T)
         return -(cens + uncens)
 

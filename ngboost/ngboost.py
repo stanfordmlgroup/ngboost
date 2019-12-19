@@ -54,6 +54,18 @@ class NGBoost(object):
         D_init = self.Dist(start.T)
         loss_init = S.loss(D_init, Y)
         scale = scale_init
+
+        # first scale up
+        while True:
+            scaled_resids = resids * scale
+            D = self.Dist((start - scaled_resids).T)
+            loss = S.loss(D, Y)
+            norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+            if np.isnan(loss) or loss > loss_init:
+                break
+            scale = scale * 2
+
+        # then scale down
         while True:
             scaled_resids = resids * scale
             D = self.Dist((start - scaled_resids).T)

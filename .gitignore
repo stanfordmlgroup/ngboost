@@ -105,3 +105,4 @@ venv.bak/
 # Get rid of data
 *.swp
 *.pkl
+.DS_Store

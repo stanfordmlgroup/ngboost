@@ -4,7 +4,7 @@ from ngboost.distns import Normal
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
-
+from sklearn.base import clone
 
 class NGBoost(object):
 
@@ -44,7 +44,7 @@ class NGBoost(object):
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads):
-        models = [self.Base().fit(X, g) for g in grads.T]
+        models = [clone(self.Base).fit(X, g) for g in grads.T]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
         return fitted

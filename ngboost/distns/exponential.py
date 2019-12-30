@@ -49,7 +49,7 @@ class Exponential(object):
         M = 0.5 * self.scale[:, np.newaxis, np.newaxis]
         return M
 
-    def fit(Y):
+    def fit(self, Y):
         T = Y["Time"]
         m, s = sp.stats.expon.fit(T)
         return np.array([np.log(m + s)])

@@ -42,5 +42,5 @@ class Bernoulli(object):
         M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)
         return M[:, np.newaxis, np.newaxis]
 
-    def fit(Y):
+    def fit(self, Y):
         return np.array([sp.special.logit(np.mean(Y))])

@@ -67,13 +67,33 @@ class NormalFixedVar(Normal):
         self.var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
+        self.dist = dist(loc=self.loc, scale=self.scale)
+
+    def D_nll(self, Y):
+        D = np.zeros((len(Y), 1))
+        D[:, 0] = (self.loc - Y) / self.var
+        return D
+
+    def D_crps(self, Y):
+        Z = (Y - self.loc) / self.scale
+        D = np.zeros((len(Y), 1))
+        D[:, 0] = -(2 * sp.stats.norm.cdf(Z) - 1)
+        return D
 
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return m
 
-    def crps_metric(self):
-        return 1
+# this needs fixing. Right now NormalFixedVar won't work with CRPS
+    # def crps_metric(self): 
+    #     I = np.c_[2 * np.ones_like(self.var), np.zeros_like(self.var),
+    #               np.zeros_like(self.var), self.var]
+    #     I = I.reshape((self.var.shape[0], 2, 2))
+    #     I = 1 / (2 * np.sqrt(np.pi)) * I
+    #     return I
 
     def fisher_info(self):
-        return 1
+        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI[:, 0, 0] = 1 / self.var + 1e-5
+        return FI
+

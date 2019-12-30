@@ -142,6 +142,11 @@ class NGBoost(object):
                     print(f"== Quitting at iteration / GRAD {itr}")
                 break
 
+        
+        self.evals_result = {}
+        metric = self.Score.__name__.upper()
+        self.evals_result['train'], self.evals_result['val'] = {metric: loss_list}, {metric: val_loss_list}
+
         return self
 
     def fit_init_params_to_marginal(self, Y, iters=1000):

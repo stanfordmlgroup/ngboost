@@ -78,10 +78,18 @@ class NGBoost(object):
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y, X_val = None, Y_val = None, train_loss_monitor = None, val_loss_monitor = None):
+    def fit(self, X, Y, 
+            X_val = None, Y_val = None, 
+            train_loss_monitor = None, val_loss_monitor = None, 
+            early_stopping_rounds = None):
 
         loss_list = []
         val_loss_list = []
+
+        if early_stopping_rounds is not None:
+            best_val_loss = np.inf
+            best_val_loss_itr = 0
+
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
@@ -115,11 +123,14 @@ class NGBoost(object):
                 val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
                 val_loss = val_loss_monitor(self.Dist(val_params.T), Y_val)
                 val_loss_list += [val_loss]
-                if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
-                   np.mean(np.array(val_loss_list[-10:-5])):
-                    if self.verbose:
-                        print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
-                    break
+                if self.early_stopping_rounds is not None:
+                    if val_loss < best_val_loss:
+                        best_val_loss, best_val_loss_itr = val_loss, itr
+                    if best_val_loss < np.min(np.array(val_loss_list[-self.early_stopping_rounds:])):
+                        if self.verbose:
+                            print(f"== Early stopping achieved.")
+                            print(f"== Best iteration / VAL {best_val_loss_itr} (val_loss={best_val_loss:.4f})")
+                        break
 
             if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
@@ -142,7 +153,7 @@ class NGBoost(object):
         dist = self.Dist(params.T)
         return dist
 
-    def predict(self, X):
+    def predict(self, X): # move this and staged_predict to the api
         dist = self.pred_dist(X)
         return list(dist.loc.flatten())
 

@@ -145,7 +145,7 @@ class NGBoost(object):
 
         self.evals_result = {}
         metric = self.Score.__name__.upper()
-        self.evals_result['train'] {metric: loss_list}
+        self.evals_result['train'] = {metric: loss_list}
         if X_val is not None and Y_val is not None:
             self.evals_result['val'] = {metric: val_loss_list}
 

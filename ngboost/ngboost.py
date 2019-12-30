@@ -61,7 +61,7 @@ class NGBoost(object):
             D = self.Dist((start - scaled_resids).T)
             loss = S.loss(D, Y)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if not np.isfinite(loss) or loss > loss_init:
+            if not np.isfinite(loss) or loss > loss_init or scale > 256:
                 break
             scale = scale * 2
 

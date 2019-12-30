@@ -142,10 +142,12 @@ class NGBoost(object):
                     print(f"== Quitting at iteration / GRAD {itr}")
                 break
 
-        
+
         self.evals_result = {}
         metric = self.Score.__name__.upper()
-        self.evals_result['train'], self.evals_result['val'] = {metric: loss_list}, {metric: val_loss_list}
+        self.evals_result['train'] {metric: loss_list}
+        if X_val is not None and Y_val is not None:
+            self.evals_result['val'] = {metric: val_loss_list}
 
         return self
 

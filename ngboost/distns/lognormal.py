@@ -87,7 +87,7 @@ class LogNormal(object):
         FI[:, 1, 1] = 2
         return FI
 
-    def fit(self, Y):
+    def fit(Y):
         T = Y["Time"]
         m, s = sp.stats.norm.fit(np.log(T))
         return np.array([m, np.log(s)])

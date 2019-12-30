@@ -53,7 +53,7 @@ class Normal(object):
         FI[:, 1, 1] = 2
         return FI
 
-    def fit(self, Y):
+    def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])
 
@@ -67,14 +67,13 @@ class NormalFixedVar(Normal):
         self.var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
-        self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def fit(self, Y):
+    def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return m
 
-    # def crps_metric(self):
-    #     return 1
+    def crps_metric(self):
+        return 1
 
-    # def fisher_info(self):
-    #     return 1
+    def fisher_info(self):
+        return 1

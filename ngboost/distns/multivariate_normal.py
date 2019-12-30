@@ -172,7 +172,7 @@ class MultivariateNormal(object):
 
         return mu0_given_1, mu1_given_0, var0_given_1, var1_given_0
 
-    def fit(self, Y):	
+    def fit(Y):	
         try:
             E = Y['Event']
             T = np.log(Y['Time'] + eps)

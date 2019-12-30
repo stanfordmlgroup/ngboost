@@ -3,6 +3,7 @@ import numpy as np
 
 from scipy.stats import norm as dist
 
+
 eps = 1e-6
 
 class MultivariateNormal(object):

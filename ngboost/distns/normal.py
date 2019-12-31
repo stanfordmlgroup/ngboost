@@ -84,13 +84,11 @@ class NormalFixedVar(Normal):
         m, s = sp.stats.norm.fit(Y)
         return m
 
-# this needs fixing. Right now NormalFixedVar won't work with CRPS
-    # def crps_metric(self): 
-    #     I = np.c_[2 * np.ones_like(self.var), np.zeros_like(self.var),
-    #               np.zeros_like(self.var), self.var]
-    #     I = I.reshape((self.var.shape[0], 2, 2))
-    #     I = 1 / (2 * np.sqrt(np.pi)) * I
-    #     return I
+    def crps_metric(self): 
+        I = np.c_[2 * np.ones_like(self.var)]
+        I = I.reshape((self.var.shape[0], 1, 1))
+        I = 1 / (2 * np.sqrt(np.pi)) * I
+        return I
 
     def fisher_info(self):
         FI = np.zeros((self.var.shape[0], 1, 1))

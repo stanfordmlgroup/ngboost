@@ -20,7 +20,7 @@ class CRPS:
 
     @staticmethod
     def loss(forecast, Y, sample_weight=None):
-        returnnp.average(forecast.crps(Y.squeeze()), weights=sample_weight)
+        return np.average(forecast.crps(Y.squeeze()), weights=sample_weight)
 
     @staticmethod
     def grad(forecast, Y, natural=True):

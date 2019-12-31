@@ -27,6 +27,7 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+        self.best_val_loss_itr = None
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
         self.init_params = self.Dist.fit(Y) # would be best to put sample weights here too
@@ -95,7 +96,6 @@ class NGBoost(object):
 
         if early_stopping_rounds is not None:
             best_val_loss = np.inf
-            best_val_loss_itr = 0
 
         self.fit_init_params_to_marginal(Y)
 
@@ -133,11 +133,11 @@ class NGBoost(object):
                 val_loss_list += [val_loss]
                 if early_stopping_rounds is not None:
                     if val_loss < best_val_loss:
-                        best_val_loss, best_val_loss_itr = val_loss, itr
+                        best_val_loss, self.best_val_loss_itr = val_loss, itr
                     if best_val_loss < np.min(np.array(val_loss_list[-early_stopping_rounds:])):
                         if self.verbose:
                             print(f"== Early stopping achieved.")
-                            print(f"== Best iteration / VAL {best_val_loss_itr} (val_loss={best_val_loss:.4f})")
+                            print(f"== Best iteration / VAL {self.best_val_loss_itr} (val_loss={best_val_loss:.4f})")
                         break
 
             if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:
@@ -163,8 +163,13 @@ class NGBoost(object):
         return self.Score.loss(self.pred_dist(X), Y)
 
     def pred_dist(self, X, max_iter=None):
-        params = np.asarray(self.pred_param(X, max_iter))
-        dist = self.Dist(params.T)
+        if max_iter is not None: # get prediction at a particular iteration if asked for
+            dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
+        elif self.best_val_loss_itr is not None: # this will exist if there's a validation set 
+            dist = self.staged_pred_dist(X, max_iter=self.best_val_loss_itr)[-1]
+        else: 
+            params = np.asarray(self.pred_param(X, max_iter))
+            dist = self.Dist(params.T)
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):
@@ -172,12 +177,12 @@ class NGBoost(object):
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
         for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
-            if max_iter and i == max_iter:
-                break
             resids = np.array([model.predict(X) for model in models]).T
             params -= self.learning_rate * resids * s
             dists = self.Dist(np.asarray(params).T)
             predictions.append(dists)
+            if max_iter and i == max_iter:
+                break
         return predictions
 
     # these methods won't work unless the model is either an NGBRegressor, NGBClassifier, or NGBSurvival object,

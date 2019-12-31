@@ -6,6 +6,8 @@ from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 from sklearn.base import clone
 
+# import pdb
+
 class NGBoost(object):
 
     def __init__(self, Dist=Normal, Score=MLE,
@@ -25,6 +27,10 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+
+    def fit_init_params_to_marginal(self, Y, iters=1000):
+        self.init_params = self.Dist.fit(Y)
+        return
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -116,6 +122,7 @@ class NGBoost(object):
             proj_grad = self.fit_base(X_batch, grads)
             scale = self.line_search(proj_grad, P_batch, Y_batch)
 
+            # pdb.set_trace()
             params -= self.learning_rate * scale * np.array([m.predict(X) for m in self.base_models[-1]]).T
 
             val_loss = 0
@@ -151,34 +158,13 @@ class NGBoost(object):
 
         return self
 
-    def fit_init_params_to_marginal(self, Y, iters=1000):
-        self.init_params = self.Dist.fit(Y)
-        return
+    def score(self, X, Y):
+        return self.Score.loss(self.pred_dist(X), Y)
 
     def pred_dist(self, X, max_iter=None):
         params = np.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
         return dist
-
-    def predict(self, X): # move this and staged_predict to the api
-        dist = self.pred_dist(X)
-        return list(dist.loc.flatten())
-
-    def score(self, X, Y):
-        return self.Score.loss(self.pred_dist(X), Y)
-
-    def staged_predict(self, X, max_iter=None):
-        predictions = []
-        m, n = X.shape
-        params = np.ones((m, self.Dist.n_params)) * self.init_params
-        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
-            if max_iter and i == max_iter:
-                break
-            resids = np.array([model.predict(X) for model in models]).T
-            params -= self.learning_rate * resids * s
-            dists = self.Dist(np.asarray(params).T)
-            predictions.append(dists.loc.flatten())
-        return predictions
 
     def staged_pred_dist(self, X, max_iter=None):
         predictions = []
@@ -192,4 +178,12 @@ class NGBoost(object):
             dists = self.Dist(np.asarray(params).T)
             predictions.append(dists)
         return predictions
+
+    # these methods won't work unless the model is either an NGBRegressor, NGBClassifier, or NGBSurvival object,
+    # each of which have the dist_to_prediction() method defined in their own specific way
+    def predict(self, X): 
+        return self.dist_to_prediction(self.pred_dist(X))
+
+    def staged_predict(self, X, max_iter=None):
+        return [self.dist_to_prediction(dist) for dist in self.staged_pred_dist(X, max_iter=None)]
 

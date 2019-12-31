@@ -23,6 +23,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
 
+    def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
+        return dist.mean()
 
 class NGBClassifier(NGBoost, BaseEstimator):
 
@@ -41,14 +43,22 @@ class NGBClassifier(NGBoost, BaseEstimator):
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
 
-    def predict_proba(self, X):
-        num_classes = 2
-        y_pred = np.zeros((len(X), num_classes))
-        dist = self.pred_dist(X)
-        y_pred[:, 1] = dist.prob
-        y_pred[:, 0] = 1 - dist.prob
-        return y_pred
+    def dist_to_prob(self, dist): 
+        num_classes = 2 # will need to change this when categorical distribution is added
+        p_hat_1 = dist.prob
+        p_hat = np.zeros((len(p_hat_1), num_classes))
+        p_hat[:, 1] = dist.prob
+        p_hat[:, 0] = 1 - dist.prob
+        return p_hat
 
+    def predict_proba(self, X, max_iter=None):
+        return self.dist_to_prob(self.pred_dist(X, max_iter=max_iter))
+
+    def staged_predict_proba(self, X, max_iter=None):
+        return [self.dist_to_prob(dist) for dist in self.staged_pred_dist(X, max_iter=max_iter)]
+
+    def dist_to_prediction(self, dist): # returns class assignments
+        return np.argmax(self.dist_to_prob(dist), 1)
 
 class NGBSurvival(NGBoost, BaseEstimator):
 
@@ -66,3 +76,6 @@ class NGBSurvival(NGBoost, BaseEstimator):
         assert Dist.problem_type == "survival"
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
+
+    def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
+        return dist.mean()

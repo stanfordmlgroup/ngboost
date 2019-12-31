@@ -28,8 +28,8 @@ class NGBoost(object):
         self.scalings = []
         self.tol = tol
 
-    def fit_init_params_to_marginal(self, Y, iters=1000):
-        self.init_params = self.Dist.fit(Y)
+    def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
+        self.init_params = self.Dist.fit(Y) # would be best to put sample weights here too
         return
 
     def pred_param(self, X, max_iter=None):
@@ -49,23 +49,23 @@ class NGBoost(object):
         idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
-    def fit_base(self, X, grads):
-        models = [clone(self.Base).fit(X, g) for g in grads.T]
+    def fit_base(self, X, grads, sample_weight=None):
+        models = [clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
         return fitted
 
-    def line_search(self, resids, start, Y, scale_init=1):
+    def line_search(self, resids, start, Y, sample_weight=None, scale_init=1): 
         S = self.Score
         D_init = self.Dist(start.T)
-        loss_init = S.loss(D_init, Y)
+        loss_init = S.loss(D_init, Y, sample_weight)
         scale = scale_init
 
         # first scale up
         while True:
             scaled_resids = resids * scale
             D = self.Dist((start - scaled_resids).T)
-            loss = S.loss(D, Y)
+            loss = S.loss(D, Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if not np.isfinite(loss) or loss > loss_init or scale > 256:
                 break
@@ -75,7 +75,7 @@ class NGBoost(object):
         while True:
             scaled_resids = resids * scale
             D = self.Dist((start - scaled_resids).T)
-            loss = S.loss(D, Y)
+            loss = S.loss(D, Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if np.isfinite(loss) and (loss < loss_init or norm < self.tol) and\
                np.linalg.norm(scaled_resids, axis=1).mean() < 5.0:
@@ -86,6 +86,7 @@ class NGBoost(object):
 
     def fit(self, X, Y, 
             X_val = None, Y_val = None, 
+            sample_weight = None, val_sample_weight = None,
             train_loss_monitor = None, val_loss_monitor = None, 
             early_stopping_rounds = None):
 
@@ -105,10 +106,10 @@ class NGBoost(object):
         S = self.Score
 
         if not train_loss_monitor:
-            train_loss_monitor = S.loss
+            train_loss_monitor = lambda D,Y: S.loss(D, Y, sample_weight=sample_weight)
 
         if not val_loss_monitor:
-            val_loss_monitor = S.loss
+            val_loss_monitor = lambda D,Y: S.loss(D, Y, sample_weight=val_sample_weight)
 
         for itr in range(self.n_estimators):
             _, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
@@ -119,8 +120,8 @@ class NGBoost(object):
             loss = loss_list[-1]
             grads = S.grad(D, Y_batch, natural=self.natural_gradient)
 
-            proj_grad = self.fit_base(X_batch, grads)
-            scale = self.line_search(proj_grad, P_batch, Y_batch)
+            proj_grad = self.fit_base(X_batch, grads, sample_weight)
+            scale = self.line_search(proj_grad, P_batch, Y_batch, sample_weight)
 
             # pdb.set_trace()
             params -= self.learning_rate * scale * np.array([m.predict(X) for m in self.base_models[-1]]).T

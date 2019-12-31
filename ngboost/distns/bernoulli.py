@@ -20,7 +20,7 @@ class Bernoulli(object):
         return None
 
     def nll(self, Y):
-        return -self.dist.logpmf(Y).mean()
+        return -self.dist.logpmf(Y)
 
     def D_nll(self, Y):
         D_1 = -np.exp(-self.logit) * self.prob
@@ -32,7 +32,7 @@ class Bernoulli(object):
         return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):
-        return ((self.prob - Y) ** 2).mean()
+        return ((self.prob - Y) ** 2)
 
     def D_crps(self, Y):
         D = 2 * (self.prob - Y) * self.prob ** 2 * np.exp(-self.logit)

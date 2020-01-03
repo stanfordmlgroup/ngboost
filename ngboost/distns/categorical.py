@@ -10,7 +10,9 @@ def k_categorical(K):
         n_params = K
 
         def __init__(self, params):
-            self.logits = params
+            _, N = params.shape
+            self.logits = np.zeros((K, N))
+            self.logits[1:K,:] = params # default the 0th class logits to 0
             self.probs = sp.special.softmax(self.logits, axis=0)
             # self.dist = dist(n=1, p=self.probs) # scipy doesn't allow vectorized multinomial (!?!?) why allow vectorized versions of the others?
             # this makes me want to refactor all the other code to use lists of distributions, would be more readable imo
@@ -27,14 +29,20 @@ def k_categorical(K):
             return -np.log(self.probs[Y, range(len(Y))])
 
         def D_nll(self, Y):
-            return self.probs.T - np.eye(Y.max() + 1)[Y]
+            return (self.probs.T - np.eye(K)[Y])[:,1:K]
 
         def fisher_info(self):
-            n,K = self.probs.T.shape
-            FI = np.zeros((n,K,K))
+            FI = -np.einsum('ji,ki->ijk', self.probs[1:K,:], self.probs[1:K,:])
             d = np.einsum('jii->ij', FI)
-            d[:] = 1/self.probs
+            d[:] += self.probs[1:K,:]
             return FI
+
+            # a test:
+            # if k==j:
+            #     a= FI[i,j,k] == self.probs[k,i] - self.probs[k,i]*self.probs[j,i]
+            # else:
+            #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
+            # a
 
         # def crps(self, Y):
         #     return ((self.prob - Y) ** 2)
@@ -47,8 +55,10 @@ def k_categorical(K):
         #     M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)
         #     return M[:, np.newaxis, np.newaxis]
 
-        def fit(Y): 
+        def fit(Y):
             _, n = np.unique(Y, return_counts=True)
-            return n/len(Y)    
+            p = n/len(Y)
+            return np.log(p[1:K]) - np.log(p[0]) 
+            # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
 
     return Categorical

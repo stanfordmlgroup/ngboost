@@ -7,7 +7,7 @@ def k_categorical(K):
     class Categorical(object):
 
         problem_type = "classification"
-        n_params = K
+        n_params = K-1
 
         def __init__(self, params):
             _, N = params.shape

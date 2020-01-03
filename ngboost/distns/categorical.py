@@ -20,6 +20,9 @@ def k_categorical(K):
         #         return getattr(self.dist, name)
         #     return None
 
+        def to_prob(self): 
+            return self.probs.T
+
         def nll(self, Y):
             return -np.log(self.probs[Y, range(len(Y))])
 

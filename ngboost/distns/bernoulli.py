@@ -19,6 +19,12 @@ class Bernoulli(object):
             return getattr(self.dist, name)
         return None
 
+    def to_prob(self): 
+        p_hat = np.zeros((len(self.prob), 2))
+        p_hat[:, 1] = self.prob
+        p_hat[:, 0] = 1 - self.prob
+        return p_hat
+
     def nll(self, Y):
         return -self.dist.logpmf(Y)
 

@@ -214,6 +214,6 @@ class NGBoost(object):
         assert self.base_models, "Model has empty `base_models`! Have you called `model.fit`?"
         assert str(type(self.base_models[0][param_idx])).endswith("sklearn.tree.tree.DecisionTreeRegressor'>"), "You must use default_tree_learner!"
         temp_model = copy.deepcopy(self)
-        temp_model.shap_trees = [tree[param_idx] for tree in temp_model.base_models]
+        temp_model.shap_trees = [trees[param_idx] for trees in temp_model.base_models]
         explainer = shap.TreeExplainer(temp_model, **kwargs)
         return explainer

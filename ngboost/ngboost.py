@@ -193,7 +193,7 @@ class NGBoost(object):
     def staged_predict(self, X, max_iter=None):
         return [self.dist_to_prediction(dist) for dist in self.staged_pred_dist(X, max_iter=None)]
 
-    def get_shap_tree_explainer(self, param_idx=0):
+    def get_shap_tree_explainer(self, param_idx=0, **kwargs):
         """
         Return the tree explainer for the param_idx-th parameter in the distribution
 
@@ -201,6 +201,9 @@ class NGBoost(object):
         ----------
         param_idx : int
             The index of parameter.
+        **kwargs :
+            Additional arguments to be passed to shap.TreeExplainer
+            (See https://shap.readthedocs.io/en/latest/#shap.TreeExplainer)
 
         Returns
         -------
@@ -212,5 +215,5 @@ class NGBoost(object):
         assert str(type(self.base_models[0][param_idx])).endswith("sklearn.tree.tree.DecisionTreeRegressor'>"), "You must use default_tree_learner!"
         temp_model = copy.deepcopy(self)
         temp_model.shap_trees = [tree[param_idx] for tree in temp_model.base_models]
-        explainer = shap.TreeExplainer(temp_model)
+        explainer = shap.TreeExplainer(temp_model, **kwargs)
         return explainer

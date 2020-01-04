@@ -29,7 +29,7 @@ class Exponential(object):
         return -(cens + uncens).reshape((-1, 1))
 
     def fisher_info(self):
-        FI = 2 * np.ones_like(self.scale)
+        FI = np.ones_like(self.scale)
         return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):

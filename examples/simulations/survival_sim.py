@@ -41,19 +41,21 @@ if __name__ == '__main__':
     X_tr, X_te, Y_tr, Y_te, T_tr, T_te, C_tr, C_te = train_test_split(
         X, Y, T, C, test_size=0.2)
 
-    ngb = NGBoost(Dist=LogNormal,
+    ngb = NGBoost(Dist=Exponential,
                   n_estimators=args.n_estimators,
                   learning_rate=args.lr,
-                  natural_gradient=False,
+                  natural_gradient=True,
                   Base=default_linear_learner,
-                  Score=MLE())
+                  Score=MLE,
+                  verbose=True,
+                  verbose_eval=1)
     train_losses = ngb.fit(X_tr, Y_join(np.exp(np.minimum(Y_tr, T_tr)), C_tr))
 
     preds = ngb.pred_dist(X_te)
     print(f"R2: {r2_score(Y_te, np.log(preds.mean()))}")
 
-    plt.hist(preds.mean(), range=(-5, 5), bins=30, alpha=0.5, label="Pred")
-    plt.hist(Y_te, range=(-5, 5), bins=30, alpha=0.5, label="True")
+    plt.hist(preds.mean(), range=(0, 10), bins=30, alpha=0.5, label="Pred")
+    plt.hist(np.exp(Y_te), range=(0, 10), bins=30, alpha=0.5, label="True")
     plt.legend()
     plt.show()
 

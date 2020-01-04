@@ -198,6 +198,7 @@ class NGBoost(object):
         """
         Return the feature importances for all parameters in the distribution
             (the higher, the more important the feature).
+
         Returns
         -------
         feature_importances_ : array, shape = [n_params, n_features]

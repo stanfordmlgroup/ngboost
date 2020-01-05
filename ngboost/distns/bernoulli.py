@@ -19,7 +19,7 @@ class Bernoulli(object):
             return getattr(self.dist, name)
         return None
 
-    def to_prob(self): 
+    def to_prob(self):
         p_hat = np.zeros((len(self.prob), 2))
         p_hat[:, 1] = self.prob
         p_hat[:, 0] = 1 - self.prob
@@ -34,7 +34,7 @@ class Bernoulli(object):
         return (Y * D_1 + (1 - Y) * D_0)[:,np.newaxis]
 
     def fisher_info(self):
-        FI = (self.prob * np.exp(-self.logit) / (1 - self.prob))
+        FI = self.prob * (1 - self.prob)
         return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):

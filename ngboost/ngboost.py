@@ -217,3 +217,36 @@ class NGBoost(object):
         temp_model.shap_trees = [trees[param_idx] for trees in temp_model.base_models]
         explainer = shap.TreeExplainer(temp_model, **kwargs)
         return explainer
+
+    @property
+    def feature_importances_(self):
+        """
+        Return the feature importances for all parameters in the distribution
+            (the higher, the more important the feature).
+
+        Returns
+        -------
+        feature_importances_ : array, shape = [n_params, n_features]
+            The summation along second axis of this array is an array of ones, 
+            unless all trees are single node trees consisting of only the root 
+            node, in which case it will be an array of zeros.
+        """
+        # Check whether the model is fitted
+        if not self.base_models:
+            return None
+        # Check whether the base model is DecisionTreeRegressor
+        if not 'sklearn.tree.tree.DecisionTreeRegressor' in str(type(self.base_models[0][0])):
+            return None
+        # Reshape the base_models
+        params_trees = zip(*self.base_models)
+        # Get the feature_importances_ for all the params and all the trees
+        all_params_importances = [[getattr(tree, 'feature_importances_') 
+            for tree in trees if tree.tree_.node_count > 1] 
+                for trees in params_trees]
+
+        if not all_params_importances:
+            return np.zeros(len(self.base_models[0]),self.base_models[0][0].n_features_, dtype=np.float64)
+        # Weighted average of importance by tree scaling factors
+        all_params_importances = np.average(all_params_importances,
+                                  axis=1, weights=self.scalings)
+        return all_params_importances / np.sum(all_params_importances,axis=1,keepdims=True)

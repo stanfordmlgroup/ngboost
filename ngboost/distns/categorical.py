@@ -44,12 +44,10 @@ def k_categorical(K):
             #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
             # a
 
-        # def crps(self, Y):
-        #     return ((self.prob - Y) ** 2)
+        def crps(self, Y):
+            return np.sum((self.probs - np.eye(K)[Y])**2, axis=1)
 
         # def D_crps(self, Y):
-        #     D = 2 * (self.prob - Y) * self.prob ** 2 * np.exp(-self.logit)
-        #     return D[:,np.newaxis]
 
         # def crps_metric(self):
         #     M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)

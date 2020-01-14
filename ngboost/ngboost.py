@@ -179,7 +179,7 @@ class NGBoost(object):
         for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
             resids = np.array([model.predict(X) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(np.asarray(params).T)
+            dists = self.Dist(np.copy(params.T)) # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)
             if max_iter and i == max_iter:
                 break

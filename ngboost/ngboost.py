@@ -5,6 +5,7 @@ from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 from sklearn.base import clone
+from sklearn.tree import DecisionTreeRegressor
 
 # import pdb
 
@@ -235,7 +236,7 @@ class NGBoost(object):
         if not self.base_models:
             return None
         # Check whether the base model is DecisionTreeRegressor
-        if not 'sklearn.tree.tree.DecisionTreeRegressor' in str(type(self.base_models[0][0])):
+        if not isinstance(self.base_models[0][0], DecisionTreeRegressor):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)

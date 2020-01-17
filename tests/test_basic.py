@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from ngboost import NGBClassifier, NGBRegressor
-from ngboost.distns import Bernoulli
+from ngboost.distns import Bernoulli, Normal
 
 np.random.seed(1)
 
@@ -45,5 +45,15 @@ def test_regression():
     ngb = NGBRegressor(verbose=False)
     ngb.fit(x_train, y_train)
     preds = ngb.predict(x_test)
+    score = mean_squared_error(y_test, preds)
+    assert score <= 8.0
+
+    score = ngb.score(x_test, y_test)
+    assert score <= 8.0
+
+    dist = ngb.pred_dist(x_test)
+    assert isinstance(dist, Normal)
+
+    preds = ngb.dist_to_prediction(dist)
     score = mean_squared_error(y_test, preds)
     assert score <= 8.0

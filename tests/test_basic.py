@@ -9,7 +9,7 @@ np.random.seed(1)
 
 def test_classification():
     from sklearn.datasets import load_breast_cancer
-    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import roc_auc_score, log_loss
     data, target = load_breast_cancer(True)
     x_train, x_test, y_train, y_test = train_test_split(data, target,
                                                         test_size=0.2,
@@ -17,6 +17,20 @@ def test_classification():
     ngb = NGBClassifier(Dist=Bernoulli, verbose=False)
     ngb.fit(x_train, y_train)
     preds = ngb.predict(x_test)
+    score = roc_auc_score(y_test, preds)
+    assert score >= 0.95
+
+    preds = ngb.predict_proba(x_test)
+    score = log_loss(y_test, preds)
+    assert score <= 0.20
+
+    score = ngb.score(x_test, y_test)
+    assert score <= 0.20
+
+    dist = ngb.pred_dist(x_test)
+    assert isinstance(dist, Bernoulli)
+
+    preds = ngb.dist_to_prediction(dist)
     score = roc_auc_score(y_test, preds)
     assert score >= 0.95
 

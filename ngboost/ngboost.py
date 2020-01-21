@@ -4,17 +4,27 @@ from ngboost.distns import Normal
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
+from sklearn.utils import check_random_state
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 
 # import pdb
 
 class NGBoost(object):
+    """
+    Natural Gradient Boosted Regression
 
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+    """
     def __init__(self, Dist=Normal, Score=MLE,
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
-                 verbose=True, verbose_eval=100, tol=1e-4):
+                 verbose=True, verbose_eval=100, tol=1e-4,
+                 random_state=None):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
@@ -28,6 +38,7 @@ class NGBoost(object):
         self.base_models = []
         self.scalings = []
         self.tol = tol
+        self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
@@ -48,7 +59,7 @@ class NGBoost(object):
         if self.minibatch_frac == 1.0:
             return np.arange(len(Y)), X, Y, params
         sample_size = int(self.minibatch_frac * len(Y))
-        idxs = np.random.choice(np.arange(len(Y)), sample_size, replace=False)
+        idxs = self.random_state.choice(np.arange(len(Y)), sample_size, replace=False)
         return idxs, X[idxs,:], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads, sample_weight=None):
@@ -85,7 +96,7 @@ class NGBoost(object):
             scale = scale * 0.5
         self.scalings.append(scale)
         return scale
-
+      
     def fit(self, X, Y, 
             X_val = None, Y_val = None, 
             sample_weight = None, val_sample_weight = None,

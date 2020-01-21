@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="ngboost",
-    version="0.1.3",
+    version="0.1.4",
     author="Stanford ML Group",
     author_email="avati@cs.stanford.edu",
     description="Library for probabilistic predictions via gradient boosting.",

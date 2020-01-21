@@ -1,6 +1,6 @@
 from .normal import Normal, NormalFixedVar
-#from .laplace import Laplace, LaplaceFixedVar
+from .multivariate_normal import MultivariateNormal
 from .lognormal import LogNormal
-#from .loglaplace import LogLaplace
 from .exponential import Exponential
 from .bernoulli import Bernoulli
+from .categorical import k_categorical

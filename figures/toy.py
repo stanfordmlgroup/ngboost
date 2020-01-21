@@ -18,7 +18,7 @@ def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     h = np.linspace(-bound, bound, n)[:, np.newaxis]
     e = np.random.randn(*x.shape) * (0.1 + 10 * np.abs(x))
     y = 50 * (x ** deg) + h * beta + noise * e + intcpt
-    return x, y, np.c_[h, np.ones_like(h)]
+    return x, y.squeeze(), np.c_[h, np.ones_like(h)]
 
 BLK = 2
 if __name__ == "__main__":
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                   verbose=True)
 
     blk = int(args.n_estimators / 100)
-    train_loss, val_loss = ngb.fit(x_tr, y_tr)
+    ngb.fit(x_tr, y_tr)
 
     x_te, y_te, _ = gen_data(n=1000, bound=1.3)
     x_te = poly_transform.transform(x_te)

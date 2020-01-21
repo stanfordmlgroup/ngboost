@@ -8,7 +8,7 @@ from ngboost.distns import Normal, NormalFixedVar
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
-from examples.loggers.loggers import RegressionLogger
+from examples.experiments.loggers import RegressionLogger
 
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.metrics import mean_squared_error
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     # load dataset -- use last column as label
     data = dataset_name_to_loader[args.dataset]()
-    X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values[:,np.newaxis]
+    X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
 
     logger = RegressionLogger(args)
     gbrlog = RegressionLogger(args)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     y_gbm, y_ngb, y_true = [], [], []
     gbm_rmse, ngb_rmse = [], []
     ngb_nll = []
-    
+
     if args.dataset == "msd":
         folds = [(np.arange(463715), np.arange(463715, len(X)))]
         args.minibatch_frac = 0.1
@@ -101,12 +101,12 @@ if __name__ == "__main__":
 
 
         X_train, X_val, y_train, y_val = train_test_split(X_trainall, y_trainall, test_size=0.2)
-        
+
         y_true += list(y_test.flatten())
 
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
-                      Score=score_name_to_score[args.score](64),
+                      Score=score_name_to_score[args.score],
                       n_estimators=args.n_est,
                       learning_rate=args.lr,
                       natural_gradient=args.natural,
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         y_ngb += list(forecast.loc)
         ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
         ngb_nll += [-forecast.logpdf(y_test.flatten()).mean()]
-        
+
         #print(np.sqrt(mean_squared_error(forecast.loc, y_test)))
         #for idx, y_p, y_t in zip(test_index, list(forecast.loc), y_test):
         #    print(idx, y_t, y_p, np.abs(y_p - y_t))
@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
         y_gbm += list(y_pred.flatten())
         gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
-    
+
         if args.verbose or True:
             print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))

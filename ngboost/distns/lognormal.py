@@ -1,17 +1,18 @@
 import scipy as sp
 import numpy as np
-
 from scipy.stats import lognorm as dist
 
-eps = 1e-6
 
 class LogNormal(object):
-    n_params = 2
 
-    def __init__(self, params, temp_scale = 1.0):
+    n_params = 2
+    problem_type = "survival"
+
+    def __init__(self, params):
         self.loc = params[0]
         self.scale = np.exp(params[1])
         self.dist = dist(s=self.scale, scale=np.exp(self.loc))
+        self.eps = 1e-5
 
     def __getattr__(self, name):
         if name in dir(self.dist):
@@ -21,7 +22,7 @@ class LogNormal(object):
     def nll(self, Y):
         E = Y['Event']
         T = Y['Time']
-        cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
+        cens = (1-E) * np.log(1 - self.dist.cdf(T) + self.eps)
         uncens = E * self.dist.logpdf(T)
         return -(cens + uncens)
 
@@ -36,8 +37,14 @@ class LogNormal(object):
         D_uncens[:, 1] = 1 - ((self.loc - lT) ** 2) / (self.scale ** 2)
 
         D_cens = np.zeros((self.loc.shape[0], 2))
-        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
-        D_cens[:, 0] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)/(1 - self.dist.cdf(T) + eps)
+        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + self.eps)
+        D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + self.eps)
+        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + self.eps)
+        D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
+                        (1 - self.dist.cdf(T) + self.eps)
 
         return (1-E) * D_cens + E * D_uncens
 
@@ -76,7 +83,7 @@ class LogNormal(object):
 
     def fisher_info(self):
         FI = np.zeros((self.loc.shape[0], 2, 2))
-        FI[:, 0, 0] = 1/(self.scale ** 2) + eps
+        FI[:, 0, 0] = 1/(self.scale ** 2) + self.eps
         FI[:, 1, 1] = 2
         return FI
 

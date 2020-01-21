@@ -1,14 +1,17 @@
 import numpy as np
-from scipy.special import expit, logit
+import scipy as sp
+import scipy.special
 from scipy.stats import bernoulli as dist
 
 
 class Bernoulli(object):
+
     n_params = 1
+    problem_type = "classification"
 
     def __init__(self, params):
         self.logit = params[0]
-        self.prob = expit(self.logit)
+        self.prob = sp.special.expit(self.logit)
         self.dist = dist(p=self.prob)
 
     def __getattr__(self, name):
@@ -16,8 +19,14 @@ class Bernoulli(object):
             return getattr(self.dist, name)
         return None
 
+    def to_prob(self):
+        p_hat = np.zeros((len(self.prob), 2))
+        p_hat[:, 1] = self.prob
+        p_hat[:, 0] = 1 - self.prob
+        return p_hat
+
     def nll(self, Y):
-        return -self.dist.logpmf(Y).mean()
+        return -self.dist.logpmf(Y)
 
     def D_nll(self, Y):
         D_1 = -np.exp(-self.logit) * self.prob
@@ -25,22 +34,19 @@ class Bernoulli(object):
         return (Y * D_1 + (1 - Y) * D_0)[:,np.newaxis]
 
     def fisher_info(self):
-        FI = np.zeros((self.logit.shape[0], 1, 1))
-        FI[:, 0, 0] = self.prob * np.exp(-self.logit) / (1 - self.prob)
-        return FI
+        FI = self.prob * (1 - self.prob)
+        return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):
-        return ((self.prob - Y) ** 2).mean()
+        return ((self.prob - Y) ** 2)
 
     def D_crps(self, Y):
         D = 2 * (self.prob - Y) * self.prob ** 2 * np.exp(-self.logit)
         return D[:,np.newaxis]
 
     def crps_metric(self):
-        M = np.zeros((self.logit.shape[0], 1, 1))
-        M[:, 0, 0] = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * \
-                     (1 + (self.prob / (1 - self.prob)) ** 2)
-        return M
+        M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)
+        return M[:, np.newaxis, np.newaxis]
 
     def fit(Y):
-        return np.array([logit(np.mean(Y))])
+        return np.array([sp.special.logit(np.mean(Y))])

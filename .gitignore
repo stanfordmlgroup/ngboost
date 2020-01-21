@@ -106,4 +106,4 @@ venv.bak/
 *.swp
 *.pkl
 
-.idea/
+.DS_Store

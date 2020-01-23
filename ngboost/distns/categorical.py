@@ -22,9 +22,27 @@ def k_categorical(K):
         #         return getattr(self.dist, name)
         #     return None
 
+        @property
+        def params(self):
+            names = [f'p{j}' for j in range(self.n_params+1)]
+            return {name:p for name, p in zip(names, self.probs)}
+
         def to_prob(self): 
             return self.probs.T
 
+        def __getitem__(self, key):
+            return Categorical(self.logits[1:K,key])
+
+        def __len__(self):
+            return self.logits.shape[1]
+
+        def fit(Y):
+            _, n = np.unique(Y, return_counts=True)
+            p = n/len(Y)
+            return np.log(p[1:K]) - np.log(p[0]) 
+            # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
+
+        # log score methods
         def nll(self, Y):
             return -np.log(self.probs[Y, range(len(Y))])
 
@@ -44,6 +62,7 @@ def k_categorical(K):
             #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
             # a
 
+        # crps methods
         def crps(self, Y):
             return np.sum((self.probs - np.eye(K)[Y])**2, axis=1)
 
@@ -53,10 +72,5 @@ def k_categorical(K):
         #     M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)
         #     return M[:, np.newaxis, np.newaxis]
 
-        def fit(Y):
-            _, n = np.unique(Y, return_counts=True)
-            p = n/len(Y)
-            return np.log(p[1:K]) - np.log(p[0]) 
-            # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
-
     return Categorical
+    

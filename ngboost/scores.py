@@ -4,8 +4,8 @@ import numpy as np
 class MLE:
 
     @staticmethod
-    def loss(forecast, Y):
-        return forecast.nll(Y.squeeze()).mean()
+    def loss(forecast, Y, sample_weight=None):
+        return np.average(forecast.nll(Y.squeeze()), weights=sample_weight)
 
     @staticmethod
     def grad(forecast, Y, natural=True):
@@ -19,8 +19,8 @@ class MLE:
 class CRPS:
 
     @staticmethod
-    def loss(forecast, Y):
-        return forecast.crps(Y.squeeze()).mean()
+    def loss(forecast, Y, sample_weight=None):
+        return np.average(forecast.crps(Y.squeeze()), weights=sample_weight)
 
     @staticmethod
     def grad(forecast, Y, natural=True):

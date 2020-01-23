@@ -19,6 +19,21 @@ class Normal(object):
             return getattr(self.dist, name)
         return None
 
+    @property
+    def params(self):
+        return {'loc':self.loc, 'scale':self.scale}
+
+    def __getitem__(self, key):
+        return Normal(np.stack([self.loc[key], np.log(self.scale[key])]))
+
+    def __len__(self):
+        return len(self.loc)
+
+    def fit(Y):
+        m, s = sp.stats.norm.fit(Y)
+        return np.array([m, np.log(s)])
+
+    # log score methods
     def nll(self, Y):
         return -self.dist.logpdf(Y)
 
@@ -28,6 +43,13 @@ class Normal(object):
         D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
         return D
 
+    def fisher_info(self):
+        FI = np.zeros((self.var.shape[0], 2, 2))
+        FI[:, 0, 0] = 1 / self.var + 1e-5
+        FI[:, 1, 1] = 2
+        return FI
+
+    # crps score methods
     def crps(self, Y):
         Z = (Y - self.loc) / self.scale
         return (self.scale * (Z * (2 * sp.stats.norm.cdf(Z) - 1) + \
@@ -47,17 +69,6 @@ class Normal(object):
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
-    def fisher_info(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / self.var + 1e-5
-        FI[:, 1, 1] = 2
-        return FI
-
-    def fit(Y):
-        m, s = sp.stats.norm.fit(Y)
-        return np.array([m, np.log(s)])
-
-
 class NormalFixedVar(Normal):
 
     n_params = 1
@@ -67,13 +78,32 @@ class NormalFixedVar(Normal):
         self.var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
+        self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return m
 
-    def crps_metric(self):
-        return 1
+    # log score methods
+    def D_nll(self, Y):
+        D = np.zeros((len(Y), 1))
+        D[:, 0] = (self.loc - Y) / self.var
+        return D
 
     def fisher_info(self):
-        return 1
+        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI[:, 0, 0] = 1 / self.var + 1e-5
+        return FI
+
+    # crps methods
+    def D_crps(self, Y):
+        Z = (Y - self.loc) / self.scale
+        D = np.zeros((len(Y), 1))
+        D[:, 0] = -(2 * sp.stats.norm.cdf(Z) - 1)
+        return D
+
+    def crps_metric(self): 
+        I = np.c_[2 * np.ones_like(self.var)]
+        I = I.reshape((self.var.shape[0], 1, 1))
+        I = 1 / (2 * np.sqrt(np.pi)) * I
+        return I

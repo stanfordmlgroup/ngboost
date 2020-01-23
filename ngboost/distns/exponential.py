@@ -2,6 +2,7 @@ import scipy as sp
 import numpy as np
 from scipy.stats import expon as dist
 
+eps = 1e-10
 
 class Exponential(object):
 
@@ -17,7 +18,7 @@ class Exponential(object):
 
     def nll(self, Y):
         E, T = Y["Event"], Y["Time"]
-        cens = (1-E) * np.log(1 - self.dist.cdf(T))
+        cens = (1-E) * np.log(1 - self.dist.cdf(T) + eps)
         uncens = E * self.dist.logpdf(T)
         return -(cens + uncens)
 
@@ -28,7 +29,7 @@ class Exponential(object):
         return -(cens + uncens).reshape((-1, 1))
 
     def fisher_info(self):
-        FI = 2 * np.ones_like(self.scale)
+        FI = np.ones_like(self.scale)
         return FI[:, np.newaxis, np.newaxis]
 
     def crps(self, Y):

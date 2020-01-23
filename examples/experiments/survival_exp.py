@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import PolynomialFeatures
 from dfply import *
-from ngboost.distns import LogNormal, Exponential
+from ngboost.distns import LogNormal, Exponential, MultivariateNormal
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                       verbose=args.verbose,
                       minibatch_frac=1.0,
                       Base=base_name_to_learner[args.base],
-                      Score=eval(args.score)())
+                      Score=eval(args.score))
 
         train_losses = ngb.fit(X_train, Y_train) #, X_val, Y_val)
         forecast = ngb.pred_dist(X_test)

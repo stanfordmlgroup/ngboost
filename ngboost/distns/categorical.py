@@ -27,7 +27,7 @@ def k_categorical(K):
             names = [f'p{j}' for j in range(self.n_params+1)]
             return {name:p for name, p in zip(names, self.probs)}
 
-        def to_prob(self): 
+        def to_prob(self):
             return self.probs.T
 
         def __getitem__(self, key):
@@ -39,7 +39,7 @@ def k_categorical(K):
         def fit(Y):
             _, n = np.unique(Y, return_counts=True)
             p = n/len(Y)
-            return np.log(p[1:K]) - np.log(p[0]) 
+            return np.log(p[1:K]) - np.log(p[0])
             # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
 
         # log score methods
@@ -74,5 +74,4 @@ def k_categorical(K):
 
     return Categorical
 
-    Bernoulli = k_categorical(2)
-    
+Bernoulli = k_categorical(2)

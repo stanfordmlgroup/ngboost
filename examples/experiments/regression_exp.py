@@ -8,7 +8,6 @@ from ngboost.distns import Normal, NormalFixedVar
 from ngboost.ngboost import NGBoost
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
-from examples.experiments.loggers import RegressionLogger
 
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.metrics import mean_squared_error
@@ -35,11 +34,6 @@ base_name_to_learner = {
     "linear": default_linear_learner,
 }
 
-score_name_to_score = {
-    "MLE": MLE,
-    "CRPS": CRPS,
-}
-
 
 if __name__ == "__main__":
 
@@ -60,10 +54,6 @@ if __name__ == "__main__":
     # load dataset -- use last column as label
     data = dataset_name_to_loader[args.dataset]()
     X, y = data.iloc[:,:-1].values, data.iloc[:,-1].values
-
-    logger = RegressionLogger(args)
-    gbrlog = RegressionLogger(args)
-    gbrlog.distn = 'GBR'
 
     if not args.minibatch_frac:
         args.minibatch_frac = 1.0
@@ -106,14 +96,14 @@ if __name__ == "__main__":
 
         ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
-                      Score=score_name_to_score[args.score],
+                      Score=eval(args.score),
                       n_estimators=args.n_est,
                       learning_rate=args.lr,
                       natural_gradient=args.natural,
                       minibatch_frac=args.minibatch_frac,
                       verbose=args.verbose)
 
-        train_loss, val_loss = ngb.fit(X_train, y_train) #, X_val, y_val)
+        ngb.fit(X_train, y_train) #, X_val, y_val)
 
         y_preds = ngb.staged_predict(X_val)
         y_forecasts = ngb.staged_pred_dist(X_val)
@@ -126,7 +116,7 @@ if __name__ == "__main__":
         if full_retrain:
             ngb = NGBoost(Base=base_name_to_learner[args.base],
                       Dist=eval(args.distn),
-                      Score=score_name_to_score[args.score](64),
+                      Score=eval(args.score),
                       n_estimators=args.n_est,
                       learning_rate=args.lr,
                       natural_gradient=args.natural,
@@ -150,8 +140,6 @@ if __name__ == "__main__":
                                                                                    np.sqrt(mean_squared_error(forecast.loc, y_test)),
                                                                                    ngb_nll[-1]))
 
-        #logger.tick(forecast, y_test)
-
         gbr = GBR(n_estimators=args.n_est,
                   learning_rate=args.lr,
                   subsample=args.minibatch_frac,
@@ -166,13 +154,10 @@ if __name__ == "__main__":
         if args.verbose or True:
             print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
                                              np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
-        #gbrlog.tick(forecast, y_test)
 
     print('== RMSE GBM=%.4f +/- %.4f, NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % (np.mean(gbm_rmse), np.std(gbm_rmse),
                                                                                   np.mean(ngb_rmse), np.std(ngb_rmse),
                                                                                   np.mean(ngb_nll), np.std(ngb_nll)))
 
-    logger.save()
-    gbrlog.save()
 
 

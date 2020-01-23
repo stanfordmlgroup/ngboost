@@ -104,7 +104,7 @@ class NGBoost(object):
                 val_loss = val_loss_monitor(self.Dist(val_params.T), Y_val)
                 val_loss_list += [val_loss]
                 if len(val_loss_list) > 10 and np.mean(np.array(val_loss_list[-5:])) > \
-                   np.mean(np.array(val_loss_list[-10:-5])):
+                    np.mean(np.array(val_loss_list[-10:-5])):
                     if self.verbose:
                         print(f"== Quitting at iteration / VAL {itr} (val_loss={val_loss:.4f})")
                     break

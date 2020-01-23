@@ -73,4 +73,6 @@ def k_categorical(K):
         #     return M[:, np.newaxis, np.newaxis]
 
     return Categorical
+
+    Bernoulli = k_categorical(2)
     

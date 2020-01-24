@@ -9,9 +9,9 @@ class MLE:
 
     @staticmethod
     def grad(forecast, Y, natural=True):
-        fisher = forecast.fisher_info()
         grad = forecast.D_nll(Y)
         if natural:
+            fisher = forecast.fisher_info()
             grad = np.linalg.solve(fisher, grad)
         return grad
 
@@ -24,8 +24,8 @@ class CRPS:
 
     @staticmethod
     def grad(forecast, Y, natural=True):
-        metric = forecast.crps_metric()
         grad = forecast.D_crps(Y)
         if natural:
+            metric = forecast.crps_metric()
             grad = np.linalg.solve(metric, grad)
         return grad

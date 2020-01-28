@@ -11,8 +11,8 @@ def k_categorical(K):
         n_params = K-1
 
         def __init__(self, params):
+            super().__init__(params)
             _, N = params.shape
-            self.params_ = params
             self.logits = np.zeros((K, N))
             self.logits[1:K,:] = params # default the 0th class logits to 0
             self.probs = sp.special.softmax(self.logits, axis=0)
@@ -33,7 +33,7 @@ def k_categorical(K):
             return np.log(p[1:K]) - np.log(p[0])
             # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
 
-        def sample1(self):
+        def sample1(self): # this is just a helper for sample()
             cum_p = np.cumsum(self.probs, axis=0)[0:-1]
             interval = cum_p < np.random.random((1,len(self)))
             return np.sum(interval, axis=0)            

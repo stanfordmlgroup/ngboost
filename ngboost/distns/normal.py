@@ -10,7 +10,7 @@ class Normal(Distn):
     problem_type = "regression"
 
     def __init__(self, params):
-        self.params_ = params
+        super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
         self.var = self.scale ** 2

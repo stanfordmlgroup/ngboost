@@ -17,10 +17,6 @@ class Distn(object):
 	def __len__(self):
 		return self.params_.shape[1]
 
-	@property
-	def params(self):
-		return params_
-
 	def fisher_info(self, n_mc_samples=100):
 		grads = np.stack([self.D_nll(Y) for Y in self.sample(n_mc_samples)])
 		return np.mean(np.einsum('sik,sij->sijk', grads, grads), axis=0)

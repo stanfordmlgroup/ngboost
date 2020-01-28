@@ -33,10 +33,13 @@ def k_categorical(K):
             return np.log(p[1:K]) - np.log(p[0])
             # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
 
-        def sample(self, n):
+        def sample1(self):
             cum_p = np.cumsum(self.probs, axis=0)[0:-1]
             interval = cum_p < np.random.random((1,len(self)))
-            return np.sum(interval, axis=0)
+            return np.sum(interval, axis=0)            
+
+        def sample(self, m):
+            return np.array([self.sample1() for i in range(m)])
 
         # log score methods
         def nll(self, Y):

@@ -29,8 +29,8 @@ class Normal(Distn):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])
 
-    def sample(self, n):
-        return np.array([self.rvs() for i in range(n)])
+    def sample(self, m):
+        return np.array([self.rvs() for i in range(m)])
 
     # log score methods
     def nll(self, Y):

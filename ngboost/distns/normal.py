@@ -1,14 +1,16 @@
+from ngboost.distns import Distn
 import scipy as sp
 import numpy as np
 from scipy.stats import norm as dist
 
 
-class Normal(object):
+class Normal(Distn):
 
     n_params = 2
     problem_type = "regression"
 
     def __init__(self, params):
+        self.params_ = params
         self.loc = params[0]
         self.scale = np.exp(params[1])
         self.var = self.scale ** 2
@@ -23,15 +25,12 @@ class Normal(object):
     def params(self):
         return {'loc':self.loc, 'scale':self.scale}
 
-    def __getitem__(self, key):
-        return Normal(np.stack([self.loc[key], np.log(self.scale[key])]))
-
-    def __len__(self):
-        return len(self.loc)
-
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])
+
+    def sample(self, n):
+        return np.array([self.rvs() for i in range(n)])
 
     # log score methods
     def nll(self, Y):

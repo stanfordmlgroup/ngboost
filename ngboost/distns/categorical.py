@@ -1,26 +1,23 @@
+from ngboost.distns import Distn
 import numpy as np
 import scipy as sp
 import scipy.special
 from scipy.stats import multinomial as dist
 
 def k_categorical(K):
-    class Categorical(object):
+    class Categorical(Distn):
 
         problem_type = "classification"
         n_params = K-1
 
         def __init__(self, params):
             _, N = params.shape
+            self.params_ = params
             self.logits = np.zeros((K, N))
             self.logits[1:K,:] = params # default the 0th class logits to 0
             self.probs = sp.special.softmax(self.logits, axis=0)
             # self.dist = dist(n=1, p=self.probs) # scipy doesn't allow vectorized multinomial (!?!?) why allow vectorized versions of the others?
             # this makes me want to refactor all the other code to use lists of distributions, would be more readable imo
-
-        # def __getattr__(self, name):
-        #     if name in dir(self.dist):
-        #         return getattr(self.dist, name)
-        #     return None
 
         @property
         def params(self):
@@ -30,17 +27,16 @@ def k_categorical(K):
         def to_prob(self):
             return self.probs.T
 
-        def __getitem__(self, key):
-            return Categorical(self.logits[1:K,key])
-
-        def __len__(self):
-            return self.logits.shape[1]
-
         def fit(Y):
             _, n = np.unique(Y, return_counts=True)
             p = n/len(Y)
             return np.log(p[1:K]) - np.log(p[0])
             # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
+
+        def sample(self, n):
+            cum_p = np.cumsum(self.probs, axis=0)[0:-1]
+            interval = cum_p < np.random.random((1,len(self)))
+            return np.sum(interval, axis=0)
 
         # log score methods
         def nll(self, Y):

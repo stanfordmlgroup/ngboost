@@ -19,7 +19,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state=None):
         assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
@@ -36,7 +37,8 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state=None):
         assert issubclass(Dist, ClassificationDistn), f'{Dist.__name__} is not useable for classification.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)

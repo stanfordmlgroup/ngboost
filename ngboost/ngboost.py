@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-from ngboost.distns import Normal
+from ngboost.distns import manifold, Normal
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
@@ -28,6 +28,7 @@ class NGBoost(object):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
+        self.Manifold = manifold(Score, Dist)
         self.natural_gradient = natural_gradient
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate

@@ -1,31 +1,23 @@
 import numpy as np
 
+class Score():
+    def total_score(self, Y, sample_weight=None):
+        return np.average(self.score(Y.squeeze()), weights=sample_weight)
 
-class MLE:
-
-    @staticmethod
-    def loss(forecast, Y, sample_weight=None):
-        return np.average(forecast.nll(Y.squeeze()), weights=sample_weight)
-
-    @staticmethod
-    def grad(forecast, Y, natural=True):
-        grad = forecast.D_nll(Y)
+    def grad(Y, natural=True):
+        grad = self.d_score(Y)
         if natural:
-            fisher = forecast.fisher_info()
-            grad = np.linalg.solve(fisher, grad)
-        return grad
-
-
-class CRPS:
-
-    @staticmethod
-    def loss(forecast, Y, sample_weight=None):
-        return np.average(forecast.crps(Y.squeeze()), weights=sample_weight)
-
-    @staticmethod
-    def grad(forecast, Y, natural=True):
-        grad = forecast.D_crps(Y)
-        if natural:
-            metric = forecast.crps_metric()
+            metric = self.metric()
             grad = np.linalg.solve(metric, grad)
         return grad
+
+class LogScore(ScoringRule):
+    def metric(self, n_mc_samples=100):
+        grads = np.stack([self.d_score(Y) for Y in self.sample(n_mc_samples)])
+        return np.mean(np.einsum('sik,sij->sijk', grads, grads), axis=0)
+    # autofit method from d_score?
+MLE = LogScore
+
+class CRPScore(ScoringRule):
+    pass
+CRPS = CRPScore

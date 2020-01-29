@@ -1,11 +1,10 @@
 from ngboost.distns import Distn
-from ngboost import LogScore, CRPScore
+from ngboost.scores import LogScore, CRPScore
 import scipy as sp
 import numpy as np
 from scipy.stats import norm as dist
 
 class NormalLogScore(LogScore):
-            # log score methods
     def score(self, Y):
         return -self.dist.logpdf(Y)
 
@@ -41,10 +40,11 @@ class NormalCRPScore(CRPScore):
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
-class Normal(Score, Distn):
+class Normal(Distn):
 
     n_params = 2
     problem_type = "regression"
+    scores = [NormalLogScore, NormalCRPScore]
 
     def __init__(self, params):
         super().__init__(params)
@@ -69,15 +69,7 @@ class Normal(Score, Distn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-# def Normal(score_name):
-#     Score = {'LogScore':NormalLogScore,
-#              'CRPScore':NormalCRPS}[score_name]
-    # could make a class method of Distn, e.g. Distn.get_score(score, dict) to check score is implemented
-
-
-
 ### Fixed Variance Normal ###
-
 class NormalFixedVarLogScore(NormalLogScore):
     def d_score(self, Y):
         D = np.zeros((len(Y), 1))
@@ -102,12 +94,10 @@ class NormalFixedVarCRPScore(NormalCRPScore):
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
-# def NormalFixedVar(score_name):
-#     Score = {'LogScore':NormalFixedVarLogScore,
-#              'CRPScore':NormalFixedVarCRPScore}[score_name]
 class NormalFixedVar(Normal):
 
     n_params = 1
+    scores = [NormalFixedVarLogScore, NormalFixedVarCRPScore]
 
     def __init__(self, params):
         self.loc = params[0]

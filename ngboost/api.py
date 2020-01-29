@@ -1,7 +1,7 @@
 import numpy as np
 from ngboost.ngboost import NGBoost
 from ngboost.distns import Bernoulli, Normal, LogNormal
-from ngboost.scores import MLE
+from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
 from sklearn.base import BaseEstimator
 
@@ -10,7 +10,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
 
     def __init__(self,
                  Dist=Normal,
-                 Score=MLE,
+                 Score=LogScore,
                  Base=default_tree_learner,
                  natural_gradient=True,
                  n_estimators=500,
@@ -30,7 +30,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
 
     def __init__(self,
                  Dist=Bernoulli,
-                 Score=MLE,
+                 Score=LogScore,
                  Base=default_tree_learner,
                  natural_gradient=True,
                  n_estimators=500,
@@ -56,7 +56,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
 
     def __init__(self,
                  Dist=LogNormal,
-                 Score=MLE,
+                 Score=LogScore,
                  Base=default_tree_learner,
                  natural_gradient=True,
                  n_estimators=500,

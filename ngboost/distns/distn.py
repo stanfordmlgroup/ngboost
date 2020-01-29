@@ -26,14 +26,13 @@ def manifold(Score, Distribution):
 	(thus the name of the function). The resulting object has all the parameters of the distribution 
 	can be sliced and indexed like one, and carries the distributions `fit` and `sample` methods, but 
 	it also carries the appropriate `total_score` and `grad` methods that are inherited through 
-	distribution-specific inheritence of the relevant implementation of the scoring rule.
+	distribution-specific inheritence of the relevant implementation of the scoring rule
 	"""
-   
-    try:
-        DistScore = {S.__base__:S for S in Distribution.scores}[Score]
-    except KeyError as err:
-        raise ValueError(f'''The scoring rule {Score.__name__} is not implemented for the {Distribution.__name__} distribution.''') from err
-        
-    class Manifold(DistScore, Distribution):
-        pass    
-    return Manifold
+	try:
+		DistScore = {S.__base__:S for S in Distribution.scores}[Score]
+	except KeyError as err:
+		raise ValueError(f'''The scoring rule {Score.__name__} is not implemented for the {Distribution.__name__} distribution.''') from err
+
+	class Manifold(DistScore, Distribution):
+		pass
+	return Manifold

@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
+from ngboost.scores import LogScore, CRPScore
 from ngboost.distns import manifold, Normal
-from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
 from ngboost.distns.normal import Normal
 from sklearn.utils import check_random_state
@@ -20,7 +20,7 @@ class NGBoost(object):
         If None, the random number generator is the RandomState instance used
         by `np.random`.
     """
-    def __init__(self, Dist=Normal, Score=MLE,
+    def __init__(self, Dist=Normal, Score=LogScore,
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
                  verbose=True, verbose_eval=100, tol=1e-4,

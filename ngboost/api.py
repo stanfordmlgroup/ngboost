@@ -22,7 +22,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  tol=1e-4):
         assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 
 class NGBClassifier(NGBoost, BaseEstimator):
 
@@ -39,7 +39,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  tol=1e-4):
         assert issubclass(Dist, ClassificationDistn), f'{Dist.__name__} is not useable for classification.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def predict_proba(self, X, max_iter=None):
         return self.pred_dist(X, max_iter=max_iter).class_probs()
@@ -61,6 +61,6 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  verbose_eval=100,
                  tol=1e-4):
     # do something else here to check survival
-        super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+    super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 

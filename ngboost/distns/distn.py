@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 
 class Distn(object):
 	"""
@@ -20,8 +21,10 @@ class Distn(object):
 	def __len__(self):
 		return self._params.shape[1]
 
-	def fisher_info(self, n_mc_samples=100):
-		grads = np.stack([self.D_nll(Y) for Y in self.sample(n_mc_samples)])
-		return np.mean(np.einsum('sik,sij->sijk', grads, grads), axis=0)
-		
-	# autofit method from D_nlls
+class RegressionDistn(Distn):
+	def predict(self): # predictions for regression are typically conditional means
+		return self.mean()
+
+class ClassificationDistn(Distn):
+	def predict(self): # returns class assignments
+		return np.argmax(self.class_probs(), 1)

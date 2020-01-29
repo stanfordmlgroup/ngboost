@@ -172,7 +172,7 @@ class NGBoost(object):
         return self
 
     def score(self, X, Y):
-        return self.pred_dist(X).total_score(Y)
+        return self.Manifold(self.pred_dist(X).params_).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
         if max_iter is not None: # get prediction at a particular iteration if asked for
@@ -181,7 +181,7 @@ class NGBoost(object):
             dist = self.staged_pred_dist(X, max_iter=self.best_val_loss_itr)[-1]
         else: 
             params = np.asarray(self.pred_param(X, max_iter))
-            dist = self.Manifold(params.T)
+            dist = self.Dist(params.T)
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):
@@ -191,7 +191,7 @@ class NGBoost(object):
         for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
             resids = np.array([model.predict(X) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Manifold(np.copy(params.T)) # if the params aren't copied, param changes with stages carry over to dists
+            dists = self.Dist(np.copy(params.T)) # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)
             if max_iter and i == max_iter:
                 break

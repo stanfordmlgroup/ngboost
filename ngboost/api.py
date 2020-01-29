@@ -39,10 +39,11 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state = None):
         assert Dist.problem_type == "classification"
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def predict_proba(self, X, max_iter=None):
         return self.pred_dist(X, max_iter=max_iter).to_prob()
@@ -65,10 +66,11 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state = None):
         assert Dist.problem_type == "survival"
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
         return dist.mean()

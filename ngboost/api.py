@@ -18,10 +18,11 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state = None):
         assert Dist.problem_type == "regression"
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol)
+                         minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
         return dist.mean()

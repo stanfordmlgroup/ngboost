@@ -1,4 +1,4 @@
-from ngboost.distns import Distn
+from ngboost.distns import RegressionDistn
 from ngboost.scores import LogScore, CRPScore
 import scipy as sp
 import numpy as np
@@ -40,10 +40,9 @@ class NormalCRPScore(CRPScore):
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
-class Normal(Distn):
+class Normal(RegressionDistn):
 
     n_params = 2
-    problem_type = "regression"
     scores = [NormalLogScore, NormalCRPScore]
 
     def __init__(self, params):
@@ -53,21 +52,21 @@ class Normal(Distn):
         self.var = self.scale ** 2
         self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def __getattr__(self, name):
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
-
-    @property
-    def params(self):
-        return {'loc':self.loc, 'scale':self.scale}
-
     def fit(Y):
         m, s = sp.stats.norm.fit(Y)
         return np.array([m, np.log(s)])
 
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
+    
+    def __getattr__(self, name): # gives us Normal.mean() required for RegressionDist.predict()
+        if name in dir(self.dist):
+            return getattr(self.dist, name)
+        return None
+    
+    @property
+    def params(self):
+        return {'loc':self.loc, 'scale':self.scale}
 
 ### Fixed Variance Normal ###
 class NormalFixedVarLogScore(NormalLogScore):

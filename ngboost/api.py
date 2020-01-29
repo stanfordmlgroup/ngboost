@@ -1,5 +1,6 @@
 import numpy as np
 from ngboost.ngboost import NGBoost
+from ngboost.distns import RegressionDistn, ClassificationDistn
 from ngboost.distns import Bernoulli, Normal, LogNormal
 from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
@@ -19,12 +20,9 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-        assert Dist.problem_type == "regression"
+        assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
-
-    def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
-        return dist.mean()
 
 class NGBClassifier(NGBoost, BaseEstimator):
 
@@ -39,18 +37,15 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-        assert Dist.problem_type == "classification"
+        assert issubclass(Dist, ClassificationDistn), f'{Dist.__name__} is not useable for classification.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
 
     def predict_proba(self, X, max_iter=None):
-        return self.pred_dist(X, max_iter=max_iter).to_prob()
+        return self.pred_dist(X, max_iter=max_iter).class_probs()
 
     def staged_predict_proba(self, X, max_iter=None):
-        return [dist.to_prob() for dist in self.staged_pred_dist(X, max_iter=max_iter)]
-
-    def dist_to_prediction(self, dist): # returns class assignments
-        return np.argmax(dist.to_prob(), 1)
+        return [dist.class_probs() for dist in self.staged_pred_dist(X, max_iter=max_iter)]
 
 class NGBSurvival(NGBoost, BaseEstimator):
 
@@ -65,9 +60,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-        assert Dist.problem_type == "survival"
+    # do something else here to check survival
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol)
 
-    def dist_to_prediction(self, dist): # predictions for regression are typically conditional means
-        return dist.mean()

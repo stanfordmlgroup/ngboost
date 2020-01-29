@@ -1,4 +1,4 @@
-from ngboost.distns import Distn
+from ngboost.distns import ClassificationDistn
 from ngboost.scores import LogScore, CRPScore
 import numpy as np
 import scipy as sp
@@ -34,7 +34,7 @@ class CategoricalCRPScore(CRPScore):
         return None
 
 def k_categorical(K):
-    class Categorical(Distn):
+    class Categorical(ClassificationDistn):
 
         scores = [CategoricalLogScore]
         problem_type = "classification"
@@ -50,14 +50,6 @@ def k_categorical(K):
             # self.dist = dist(n=1, p=self.probs) # scipy doesn't allow vectorized multinomial (!?!?) why allow vectorized versions of the others?
             # this makes me want to refactor all the other code to use lists of distributions, would be more readable imo
 
-        @property
-        def params(self):
-            names = [f'p{j}' for j in range(self.n_params+1)]
-            return {name:p for name, p in zip(names, self.probs)}
-
-        def to_prob(self):
-            return self.probs.T
-
         def fit(Y):
             _, n = np.unique(Y, return_counts=True)
             p = n/len(Y)
@@ -67,10 +59,17 @@ def k_categorical(K):
         def sample1(self): # this is just a helper for sample()
             cum_p = np.cumsum(self.probs, axis=0)[0:-1]
             interval = cum_p < np.random.random((1,len(self)))
-            return np.sum(interval, axis=0)            
-
+            return np.sum(interval, axis=0)
         def sample(self, m):
             return np.array([self.sample1() for i in range(m)])
+        
+        def class_probs(self): # required for any ClassificationDistn
+            return self.probs.T
+        
+        @property
+        def params(self):
+            names = [f'p{j}' for j in range(self.n_params+1)]
+            return {name:p for name, p in zip(names, self.probs)}
 
     return Categorical
 

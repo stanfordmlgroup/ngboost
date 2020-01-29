@@ -1,9 +1,11 @@
 import numpy as np
 import scipy as sp
-from ngboost.scores import LogScore, CRPScore
-from ngboost.distns import manifold, Normal
+
+from ngboost.scores import LogScore
+from ngboost.distns import Normal
+from ngboost.manifold import manifold
 from ngboost.learners import default_tree_learner, default_linear_learner
-from ngboost.distns.normal import Normal
+
 from sklearn.utils import check_random_state
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
@@ -200,10 +202,10 @@ class NGBoost(object):
     # these methods won't work unless the model is either an NGBRegressor, NGBClassifier, or NGBSurvival object,
     # each of which have the dist_to_prediction() method defined in their own specific way
     def predict(self, X): 
-        return self.dist_to_prediction(self.pred_dist(X))
+        return self.pred_dist(X).predict()
 
     def staged_predict(self, X, max_iter=None):
-        return [self.dist_to_prediction(dist) for dist in self.staged_pred_dist(X, max_iter=None)]
+        return [dist.predict() for dist in self.staged_pred_dist(X, max_iter=None)]
 
     def get_shap_tree_explainer(self, param_idx=0, **kwargs):
         """

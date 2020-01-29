@@ -60,7 +60,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-    # do something else here to check survival
-    super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
+        # do something else here to check survival
+        super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 

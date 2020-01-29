@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 
 class Distn(object):
 	"""
@@ -28,10 +29,14 @@ def manifold(Score, Distribution):
 	it also carries the appropriate `total_score` and `grad` methods that are inherited through 
 	distribution-specific inheritence of the relevant implementation of the scoring rule
 	"""
-	try:
-		DistScore = {S.__base__:S for S in Distribution.scores}[Score]
-	except KeyError as err:
-		raise ValueError(f'''The scoring rule {Score.__name__} is not implemented for the {Distribution.__name__} distribution.''') from err
+	if Score in Distribution.scores:
+		DistScore = Score
+		warn(f'Using Dist={Score.__name__} is unnecessary. NGBoost automatically selects the correct implementation when LogScore or CRPScore is used')
+	else:
+		try:
+			DistScore = {S.__base__:S for S in Distribution.scores}[Score]
+		except KeyError as err:
+			raise ValueError(f'The scoring rule {Score.__name__} is not implemented for the {Distribution.__name__} distribution.') from err
 
 	class Manifold(DistScore, Distribution):
 		pass

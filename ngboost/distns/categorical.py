@@ -1,14 +1,45 @@
 from ngboost.distns import Distn
+from ngboost.scores import LogScore, CRPScore
 import numpy as np
 import scipy as sp
 import scipy.special
-from scipy.stats import multinomial as dist
+
+class CategoricalLogScore(LogScore):
+    def score(self, Y):
+        return -np.log(self.probs[Y, range(len(Y))])
+
+    def d_score(self, Y):
+        return (self.probs.T - np.eye(self.K_)[Y])[:,1:self.K_]
+
+    def metric(self):
+        FI = -np.einsum('ji,ki->ijk', self.probs[1:self.K_,:], self.probs[1:self.K_,:])
+        d = np.einsum('jii->ij', FI)
+        d[:] += self.probs[1:self.K_,:]
+        return FI
+    # a test:
+    # if k==j:
+    #     a= FI[i,j,k] == self.probs[k,i] - self.probs[k,i]*self.probs[j,i]
+    # else:
+    #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
+    # a
+
+class CategoricalCRPScore(CRPScore):
+    def score(self, Y):
+        return np.sum((self.probs - np.eye(self.K_)[Y])**2, axis=1)
+
+    def d_score(self, Y):
+        return None
+
+    def metric(self):
+        return None
 
 def k_categorical(K):
     class Categorical(Distn):
 
+        scores = [CategoricalLogScore]
         problem_type = "classification"
         n_params = K-1
+        K_ = K
 
         def __init__(self, params):
             super().__init__(params)
@@ -40,36 +71,6 @@ def k_categorical(K):
 
         def sample(self, m):
             return np.array([self.sample1() for i in range(m)])
-
-        # log score methods
-        def nll(self, Y):
-            return -np.log(self.probs[Y, range(len(Y))])
-
-        def D_nll(self, Y):
-            return (self.probs.T - np.eye(K)[Y])[:,1:K]
-
-        def fisher_info(self):
-            FI = -np.einsum('ji,ki->ijk', self.probs[1:K,:], self.probs[1:K,:])
-            d = np.einsum('jii->ij', FI)
-            d[:] += self.probs[1:K,:]
-            return FI
-
-            # a test:
-            # if k==j:
-            #     a= FI[i,j,k] == self.probs[k,i] - self.probs[k,i]*self.probs[j,i]
-            # else:
-            #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
-            # a
-
-        # crps methods
-        def crps(self, Y):
-            return np.sum((self.probs - np.eye(K)[Y])**2, axis=1)
-
-        # def D_crps(self, Y):
-
-        # def crps_metric(self):
-        #     M = 2 * self.prob ** 2 * np.exp(-2 * self.logit) * (1 + (self.prob / (1 - self.prob)) ** 2)
-        #     return M[:, np.newaxis, np.newaxis]
 
     return Categorical
 

@@ -117,7 +117,7 @@ if __name__ == "__main__":
                       verbose=args.verbose,
                       minibatch_frac=1.0,
                       Base=base_name_to_learner[args.base],
-                      Score=eval(args.score)())
+                      Score=eval(args.score))
 
         train_losses = ngb.fit(X_train, Y_train) #, X_val, Y_val)
         forecast = ngb.pred_dist(X_test)

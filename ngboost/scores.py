@@ -2,7 +2,7 @@ import numpy as np
 
 class Score():
     def total_score(self, Y, sample_weight=None):
-        return np.average(self.score(Y.squeeze()), weights=sample_weight)
+        return np.average(self.score(Y), weights=sample_weight)
 
     def grad(self, Y, natural=True):
         grad = self.d_score(Y)

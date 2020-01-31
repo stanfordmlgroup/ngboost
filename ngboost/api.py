@@ -1,6 +1,6 @@
 import numpy as np
 from ngboost.ngboost import NGBoost
-from ngboost.distns import RegressionDistn, ClassificationDistn
+from ngboost.distns import RegressionDistn, ClassificationDistn, SurvivalDistn
 from ngboost.distns import Bernoulli, Normal, LogNormal
 from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
@@ -62,7 +62,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-        # do something else here to check survival
+        assert issubclass(Dist, SurvivalDistn), f'{Dist.__name__} is not useable for survival.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 

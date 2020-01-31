@@ -28,3 +28,7 @@ class RegressionDistn(Distn):
 class ClassificationDistn(Distn):
 	def predict(self): # returns class assignments
 		return np.argmax(self.class_probs(), 1)
+
+class SurvivalDistn(Distn):
+	def predict(self): # predictions for regression are typically conditional means
+		return self.mean()

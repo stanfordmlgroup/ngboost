@@ -1,4 +1,4 @@
-from .distn import RegressionDistn, ClassificationDistn
+from .distn import RegressionDistn, ClassificationDistn, SurvivalDistn
 from .normal import Normal, NormalFixedVar
 from .multivariate_normal import MultivariateNormal
 from .lognormal import LogNormal

@@ -47,7 +47,7 @@ class ExponentialCRPScore(CRPScore):
 class Exponential(RegressionDistn):
 
     n_params = 1
-    scores = [ExponentialLogScore, ExponentialCRPScore]
+    censored_scores = [ExponentialLogScore, ExponentialCRPScore]
 
     def __init__(self, params):
         self._params = params

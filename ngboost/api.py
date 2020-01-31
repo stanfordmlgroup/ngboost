@@ -1,11 +1,10 @@
 import numpy as np
 from ngboost.ngboost import NGBoost
-from ngboost.distns import RegressionDistn, ClassificationDistn, SurvivalDistn
+from ngboost.distns import RegressionDistn, ClassificationDistn
 from ngboost.distns import Bernoulli, Normal, LogNormal
 from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
 from sklearn.base import BaseEstimator
-
 
 class NGBRegressor(NGBoost, BaseEstimator):
 
@@ -22,6 +21,10 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  tol=1e-4,
                  random_state=None):
         assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
+
+        if not hasattr(Dist, 'scores'): # user is trying to use a dist that only has censored scores implemented
+            Dist = Dist.uncensor_score_implementation(Score) # implement the uncensored version of the score and make the dist aware of it
+
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
@@ -62,7 +65,12 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4):
-        assert issubclass(Dist, SurvivalDistn), f'{Dist.__name__} is not useable for survival.'
-        super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
+
+        assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
+        if not hasattr(Dist,'censored_scores'):
+            raise ValueError(f'The {Dist.__name__} distribution does not have any censored scores implemented.')
+
+        # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
+        super().__init__(Dist.censor(), Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 

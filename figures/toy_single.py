@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     argparser = ArgumentParser()
     argparser.add_argument("--n-estimators", type=int, default=301)
-    argparser.add_argument("--lr", type=float, default=0.01)
+    argparser.add_argument("--lr", type=float, default=0.03)
     argparser.add_argument("--minibatch-frac", type=float, default=0.1)
     argparser.add_argument("--natural", action="store_true")
     args = argparser.parse_args()
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     ngb = NGBoost(Base=default_tree_learner,
                   Dist=Normal,
-                  Score=MLE(),
+                  Score=MLE,
                   n_estimators=args.n_estimators,
                   learning_rate=args.lr,
                   natural_gradient=args.natural,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     plt.figure(figsize = (6, 3))
     plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
     plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1, label="Predicted mean")
-    plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3, label="95% prediction interval")
+    plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3, label="95\% prediction interval")
     plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
     plt.ylim([-75, 75])
     plt.xlabel("$x$")

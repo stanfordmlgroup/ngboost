@@ -60,11 +60,11 @@ class Distn(object):
 		set to the censored versions of the scores implemente for distand expects a {time, event} 
 		dict as Y instead of a numpy array.
 		"""
-		class CensoredDist(Dist):
-			scores = Dist.censored_scores
+		class CensoredDist(cls):
+			scores = cls.censored_scores
 
-			def fit(self, Y):
-				return super().fit(Y["Time"])
+			def fit(Y):
+				return cls.fit(Y["Time"])
 		return CensoredDist
 
 class RegressionDistn(Distn):

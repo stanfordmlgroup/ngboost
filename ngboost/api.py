@@ -64,7 +64,8 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  minibatch_frac=1.0,
                  verbose=True,
                  verbose_eval=100,
-                 tol=1e-4):
+                 tol=1e-4,
+                 random_state=None):
 
         assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
         if not hasattr(Dist,'censored_scores'):

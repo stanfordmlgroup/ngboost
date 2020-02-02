@@ -1,7 +1,6 @@
 from ngboost import NGBClassifier
 from ngboost.distns import k_categorical
 from ngboost.learners import default_tree_learner
-from ngboost.scores import MLE
 
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split

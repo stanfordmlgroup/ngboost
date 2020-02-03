@@ -113,8 +113,7 @@ ngb_exp.pred_dist(X_reg_test)[0:5].params
 
 ##### Survival Regression
 
-NGBoost supports analyses of right-censored data. Any distribution that can be used for regression in NGBoost can also be used for survival analysis. To do so, use `NGBSurvival` and pass both the time-to-event (or censoring) and event indicator vectors to  `fit()`:
-
+NGBoost supports analyses of right-censored data. Any distribution that can be used for regression in NGBoost can also be used for survival analysis in theory, but this requires the implementation of the right-censored version of the appropriate score. At the moment, `LogNormal` and `Exponential` have these scores implemented. To do survival analysis, use `NGBSurvival` and pass both the time-to-event (or censoring) and event indicator vectors to  `fit()`:
 
 ```python
 import numpy as np
@@ -462,7 +461,7 @@ class LaplaceLogScore(LogScore):
         return D
 ```
 
-Notice that the attributes of an instance of `Laplace` are referenced using the `self.attr` notation even though we haven't said these will be attributes of the loss class. When a user asks NGBoost to use the `Laplace` distribution with the `LogScore`, NGBoost will first find the implmentation of the log score that is compatible with `Laplace`, i.e. `LaplaceLogScore` and dynamically create a new class that has both the attributes of the distribution and the appropriate implementation of the score.
+Notice that the attributes of an instance of `Laplace` are referenced using the `self.attr` notation even though we haven't said these will be attributes of the `LaplaceLogScore` class. When a user asks NGBoost to use the `Laplace` distribution with the `LogScore`, NGBoost will first find the implmentation of the log score that is compatible with `Laplace`, i.e. `LaplaceLogScore` and dynamically create a new class that has both the attributes of the distribution and the appropriate implementation of the score.
 
 The derivatives with respect to [$\log b$](https://www.wolframalpha.com/input/?i=d%2Fdb+-log%281%2F%282e%5Eb%29+e%5E%28-%7Cx-a%7C%2Fe%5Eb%29%29) and [$\mu$](https://www.wolframalpha.com/input/?i=d%2Fda+-log%281%2F%282e%5Eb%29+e%5E%28-%7Cx-a%7C%2Fe%5Eb%29%29) are easily derived using, for instance, WolframAlpha.
 
@@ -544,6 +543,12 @@ print('Test NLL', test_NLL)
 
 
 Dig into the source of `ngboost.distns` to find more examples. If you write and test your own distribution, please contribute it to NGBoost by making a pull request!
+
+#### Censored Scores
+
+You can make your distribution suitable for use in surival analysis if you implement a censored version of the score. The censored score should subclass the score (e.g. `LogNormal`) as usual. The signature for the `score()`, `d_score()` and `metric()` methods should be the same, but they should expect `Y` to be indexable into two arrays like `E, T = Y["Event"], Y["Time"]`. Furthermore, any censored scores should be linked to the distribution class definition via a class attribute called `censored_scores` instead of `scores`. 
+
+Since censored scores are more general than their standard counterparts (fully observed data is a specific case of censored data), if you implement a censored score in NGBoost, it will automatically become available as a useable score for standard regression analysis. No need to implement the regression score seperately or register it in the `scores` class attribute.
 
 ### Adding Scores
 

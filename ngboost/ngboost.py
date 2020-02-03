@@ -174,7 +174,7 @@ class NGBoost(object):
         return self
 
     def score(self, X, Y):
-        return self.Manifold(self.pred_dist(X).params_).total_score(Y)
+        return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
         if max_iter is not None: # get prediction at a particular iteration if asked for

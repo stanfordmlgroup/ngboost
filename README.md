@@ -158,7 +158,7 @@ y[0:15] = 2 # artificially make this a 3-class problem instead of a 2-class prob
 X_cls_train, X_cls_test, Y_cls_train, Y_cls_test  = train_test_split(X, y, test_size=0.2)
 
 ngb_cat = NGBClassifier(Dist=k_categorical(3), verbose=False) # tell ngboost that there are 3 possible outcomes
-_ = ngb_cat.fit(X_cls_train, Y_cls_train) # Y should have only 3 values: {0,1,2}
+ngb_cat.fit(X_cls_train, Y_cls_train) # Y should have only 3 values: {0,1,2}
 ```
 
 When using NGBoost for classification, the outcome vector `Y` must consist only of integers from 0 to K-1, where K is the total number of classes. This is consistent with the classification standards in sklearn.

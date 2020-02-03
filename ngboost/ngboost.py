@@ -205,7 +205,16 @@ class NGBoost(object):
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
+        '''
+        Predict the conditional distribution of Y at the points X=x
 
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : get the prediction at the specified number of boosting iterations
+            
+        Output:
+            A NGBoost distribution object
+        '''
         if max_iter is not None: # get prediction at a particular iteration if asked for
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
         elif self.best_val_loss_itr is not None: # this will exist if there's a validation set 
@@ -216,6 +225,16 @@ class NGBoost(object):
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):
+        '''
+        Predict the conditional distribution of Y at the points X=x at multiple boosting iterations
+
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : largest number of boosting iterations to get the prediction for
+            
+        Output:
+            A list of NGBoost distribution objects, one per boosting stage up to max_iter
+        '''
         predictions = []
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
@@ -228,13 +247,31 @@ class NGBoost(object):
                 break
         return predictions
 
-    # these methods won't work unless the model is either an NGBRegressor, NGBClassifier, or NGBSurvival object,
-    # each of which have the dist_to_prediction() method defined in their own specific way
-    def predict(self, X): 
-        return self.pred_dist(X).predict()
+    def predict(self, X, max_iter=None): 
+        '''
+        Point prediction of Y at the points X=x
+
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : largest number of boosting iterations to get the prediction for
+            
+        Output:
+            Numpy array of the estimates of Y
+        '''
+        return self.pred_dist(X, max_iter=max_iter).predict()
 
     def staged_predict(self, X, max_iter=None):
-        return [dist.predict() for dist in self.staged_pred_dist(X, max_iter=None)]
+                '''
+        Point prediction of Y at the points X=x at multiple boosting iterations
+
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : largest number of boosting iterations to get the prediction for
+            
+        Output:
+            A list of numpy arrays of the estimates of Y, one per boosting stage up to max_iter
+        '''
+        return [dist.predict() for dist in self.staged_pred_dist(X, max_iter=max_iter)]
 
     def get_shap_tree_explainer(self, param_idx=0, **kwargs):
         """

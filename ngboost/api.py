@@ -86,9 +86,29 @@ class NGBClassifier(NGBoost, BaseEstimator):
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def predict_proba(self, X, max_iter=None):
+        '''
+        Probability prediction of Y at the points X=x
+
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : get the prediction at the specified number of boosting iterations
+            
+        Output:
+            Numpy array of the estimates of P(Y=k|X=x). Will have shape (n, K)
+        '''
         return self.pred_dist(X, max_iter=max_iter).class_probs()
 
     def staged_predict_proba(self, X, max_iter=None):
+        '''
+        Probability prediction of Y at the points X=x at multiple boosting iterations
+
+        Parameters:
+            X        : numpy array of predictors (n x p)
+            max_iter : largest number of boosting iterations to get the prediction for
+            
+        Output:
+            A list of of the estimates of P(Y=k|X=x) of shape (n, K), one per boosting stage up to max_iter
+        '''
         return [dist.class_probs() for dist in self.staged_pred_dist(X, max_iter=max_iter)]
 
 class NGBSurvival(NGBoost, BaseEstimator):

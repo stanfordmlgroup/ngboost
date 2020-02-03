@@ -6,6 +6,8 @@ from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
 from sklearn.base import BaseEstimator
 
+import pdb
+
 class NGBRegressor(NGBoost, BaseEstimator):
 
     def __init__(self,
@@ -75,3 +77,21 @@ class NGBSurvival(NGBoost, BaseEstimator):
         super().__init__(Dist.censor(), Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
+    def fit(self, X, T, E,
+            X_val = None, Y_val = None, 
+            sample_weight = None, val_sample_weight = None,
+            train_loss_monitor = None, val_loss_monitor = None, 
+            early_stopping_rounds = None):
+
+        Y = np.empty(dtype=[('Event', np.bool), ('Time', np.float64)],
+                     shape=T.shape[0])
+        Y['Event'] = (1-E).astype(bool)
+        Y['Time'] = T.astype(float)
+
+        # pdb.set_trace()
+
+        super().fit(X, Y, 
+            X_val = X_val, Y_val = Y_val, 
+            sample_weight = sample_weight, val_sample_weight = val_sample_weight,
+            train_loss_monitor = train_loss_monitor, val_loss_monitor = val_loss_monitor, 
+            early_stopping_rounds = early_stopping_rounds)

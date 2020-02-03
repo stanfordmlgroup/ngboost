@@ -13,15 +13,26 @@ from sklearn.tree import DecisionTreeRegressor
 # import pdb
 
 class NGBoost(object):
-    """
-    Natural Gradient Boosted Regression
+    '''
+    Constructor for all NGBoost models.
 
-    random_state : int, RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-    """
+    This class implements the methods that are common to all NGBoost models. Unless you are implementing a new kind of regression (e.g. interval-censored, etc.), you should probably use one of NGBRegressor, NGBClassifier, or NGBSurvival.
+
+    Parameters:
+        Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Normal
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        n_estimators      : the number of boosting iterations to fit
+        learning_rate     : the learning rate
+        minibatch_frac    : the percent subsample of rows to use in each boosting iteration
+        verbose           : flag indicating whether output should be printed during fitting
+        verbose_eval      : increment (in boosting iterations) at which output should be printed
+        tol               : numerical tolerance to be used in optimization
+        random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+    Output:
+        An NGBRegressor object that can be fit.
+    '''
     def __init__(self, Dist=Normal, Score=LogScore,
                  Base=default_tree_learner, natural_gradient=True,
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
@@ -105,6 +116,23 @@ class NGBoost(object):
             sample_weight = None, val_sample_weight = None,
             train_loss_monitor = None, val_loss_monitor = None, 
             early_stopping_rounds = None):
+        '''
+        Fits an NGBoost model to the data
+
+        Parameters:
+            X                       : numpy array of predictors (n x p)
+            Y                       : numpy array of outcomes (n). Should be floats for regression and integers from 0 to K-1 for K-class classification
+            X_val                   : validation-set predictors, if any
+            Y_val                   : validation-set outcomes, if any
+            sample_weight           : how much to weigh each example in the training set. numpy array of size (n) (defaults to 1)
+            val_sample_weight       : how much to weigh each example in the validation set. (defaults to 1)
+            train_loss_monitor      : a custom score or set of scores to track on the training set during training. Defaults to the score defined in the NGBoost constructor
+            val_loss_monitor        : a custom score or set of scores to track on the validation set during training. Defaults to the score defined in the NGBoost constructor
+            early_stopping_rounds   : the number of consecutive boosting iterations during which the loss has to increase before the algorithm stops early
+
+        Output:
+            A fit NGBRegressor object
+        '''
 
         loss_list = []
         val_loss_list = []
@@ -177,6 +205,7 @@ class NGBoost(object):
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
+
         if max_iter is not None: # get prediction at a particular iteration if asked for
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
         elif self.best_val_loss_itr is not None: # this will exist if there's a validation set 

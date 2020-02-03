@@ -253,7 +253,7 @@ class NGBoost(object):
 
         Parameters:
             X        : numpy array of predictors (n x p)
-            max_iter : largest number of boosting iterations to get the prediction for
+            max_iter : get the prediction at the specified number of boosting iterations
             
         Output:
             Numpy array of the estimates of Y
@@ -261,7 +261,7 @@ class NGBoost(object):
         return self.pred_dist(X, max_iter=max_iter).predict()
 
     def staged_predict(self, X, max_iter=None):
-                '''
+        '''
         Point prediction of Y at the points X=x at multiple boosting iterations
 
         Parameters:

@@ -174,4 +174,4 @@ class NGBSurvival(NGBoost, BaseEstimator):
             E_val                   : validation-set event idicators, if any
         '''
 
-        super().fit(X, build_Y(T, E), X_val = X_val, Y_val = build_Y(T_val, E_val), **kwargs)
+        super().fit(X, self.build_Y(T, E), X_val = X_val, Y_val = self.build_Y(T_val, E_val), **kwargs)

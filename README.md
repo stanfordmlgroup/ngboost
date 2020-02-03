@@ -209,7 +209,7 @@ ngb_cat.pred_dist(X_cls_test)[0:5].params
 
 ### Scores
 
-NGBoost supports the log score (`LogScore`) and CRPS (`CRPScore`), although each score may not be implemented for each distribution. The score is specified by the `Score` argument in the constructor.
+NGBoost supports the log score (`LogScore`, also known as negative log-likelihood) and CRPS (`CRPScore`), although each score may not be implemented for each distribution. The score is specified by the `Score` argument in the constructor.
 
 
 ```python

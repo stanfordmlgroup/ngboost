@@ -78,6 +78,13 @@ class LogNormalCRPScoreCensored(CRPScore):
 
 class LogNormal(RegressionDistn):
 
+    '''
+    Implements the log-normal distribution for NGBoost.
+
+    The normal distribution has two parameters, s and scale (see scipy.stats.lognorm)
+    This distribution has both LogScore and CRPScore implemented for it and both work for right-censored data.
+    '''
+
     n_params = 2
     censored_scores = [LogNormalLogScoreCensored, LogNormalCRPScoreCensored]
 

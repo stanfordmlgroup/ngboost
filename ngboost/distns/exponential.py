@@ -45,6 +45,12 @@ class ExponentialCRPScore(CRPScore):
         return M
 
 class Exponential(RegressionDistn):
+    '''
+    Implements the exponential distribution for NGBoost.
+
+    The exponential distribution has one parameters, scale. See scipy.stats.expon for details.
+    This distribution has both LogScore and CRPScore implemented for it and both work with right-censored data
+    '''
 
     n_params = 1
     censored_scores = [ExponentialLogScore, ExponentialCRPScore]

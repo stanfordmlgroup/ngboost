@@ -38,36 +38,6 @@ class Distn(object):
 			except KeyError as err:
 				raise ValueError(f'The scoring rule {Score.__name__} is not implemented for the {cls.__name__} distribution.') from err
 
-	@classmethod 
-	def uncensor_score_implementation(cls, Score):
-		"""
-		This method does the following:
-		1. it finds the distribution-appropriate implementation of the requested score
-		2. it implements a version of it that is suitable for uncenscored outcomes
-		3. it creates a new version of this distribution that is aware of the dynamically-generated 
-			uncensored implementation 
-		Returns:
-			DistWithUncensoredScore: a new version of this distribution that is aware of the dynamically-generated 
-			uncensored score implementation 
-		"""
-		class DistWithUncensoredScore(cls):
-			scores = [cls.implementation(Score, cls.censored_scores).uncensor()]
-		return DistWithUncensoredScore
-
-	@classmethod
-	def censor(cls):
-		"""
-		Creates a new dist class from a given dist. The new class has its implemented scores
-		set to the censored versions of the scores implemente for distand expects a {time, event} 
-		dict as Y instead of a numpy array.
-		"""
-		class CensoredDist(cls):
-			scores = cls.censored_scores
-
-			def fit(Y):
-				return cls.fit(Y["Time"])
-		return CensoredDist
-
 class RegressionDistn(Distn):
 	def predict(self): # predictions for regression are typically conditional means
 		return self.mean()

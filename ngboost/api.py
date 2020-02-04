@@ -44,7 +44,18 @@ class NGBRegressor(NGBoost, BaseEstimator):
         assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for regression.'
 
         if not hasattr(Dist, 'scores'): # user is trying to use a dist that only has censored scores implemented
-            Dist = Dist.uncensor_score_implementation(Score) # implement the uncensored version of the score and make the dist aware of it
+            DistScore = Dist.implementation(Score, Dist.censored_scores)
+
+            class UncensoredScore(DistScore, DistScore.__base__):
+                def score(self, Y):
+                    return super().score(Y_from_censored(Y))
+                def d_score(self, Y):
+                    return super().d_score(Y_from_censored(Y))
+
+            class DistWithUncensoredScore(Dist):
+                scores = [UncensoredScore]
+
+            Dist = DistWithUncensoredScore
 
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
@@ -150,11 +161,18 @@ class NGBSurvival(NGBoost, BaseEstimator):
         if not hasattr(Dist,'censored_scores'):
             raise ValueError(f'The {Dist.__name__} distribution does not have any censored scores implemented.')
 
+        class SurvivalDistn(Dist):         # Creates a new dist class from a given dist. The new class has its implemented scores
+            scores = Dist.censored_scores  # set to the censored versions of the scores implemented for dist 
+            def fit(Y):                    # and expects a {time, event} array as Y.
+                return Dist.fit(Y["Time"])
+
         # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
-        super().__init__(Dist.censor(), Score, Base, natural_gradient, n_estimators, learning_rate,
+        super().__init__(SurvivalDistn, Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
-    def fit(self, X, T, E, X_val = None, T_val = None, E_val = None, **kwargs):
+    def fit(self, X, T, E, 
+            X_val = None, T_val = None, E_val = None, 
+            **kwargs):
         '''
         Fits an NGBoost survival model to the data. For additional parameters see ngboost.NGboost.fit
 
@@ -165,4 +183,6 @@ class NGBSurvival(NGBoost, BaseEstimator):
             T_val                   : validation-set times, if any
             E_val                   : validation-set event idicators, if any
         '''
-        return super().fit(X, Y_from_censored(T, E), X_val = X_val, Y_val = Y_from_censored(T_val, E_val), **kwargs)
+        return super().fit(X, Y_from_censored(T, E), 
+                           X_val = X_val, Y_val = Y_from_censored(T_val, E_val), 
+                           **kwargs)

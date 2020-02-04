@@ -12,15 +12,6 @@ class Score():
             grad = np.linalg.solve(metric, grad)
         return grad
 
-    @classmethod
-    def uncensor(DistScore):
-        class UncensoredScore(DistScore, DistScore.__base__):
-            def score(self, Y):
-                return super().score(Y_from_censored(Y))
-            def d_score(self, Y):
-                return super().d_score(Y_from_censored(Y))
-        return UncensoredScore
-
 class LogScore(Score):
     '''
     Generic class for the log scoring rule.

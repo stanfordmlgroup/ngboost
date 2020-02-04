@@ -6,7 +6,6 @@ from ngboost.distns import Bernoulli, Normal
 
 np.random.seed(1)
 
-
 def test_classification():
     from sklearn.datasets import load_breast_cancer
     from sklearn.metrics import roc_auc_score, log_loss
@@ -32,7 +31,6 @@ def test_classification():
 
     score = roc_auc_score(y_test, preds[:,1])
     assert score >= 0.95
-
 
 def test_regression():
     from sklearn.datasets import load_boston

@@ -1,3 +1,4 @@
+import numpy as np
 from ngboost import NGBClassifier
 from ngboost.distns import Bernoulli
 from ngboost.learners import default_tree_learner
@@ -8,6 +9,8 @@ from sklearn.metrics import roc_auc_score
 
 
 if __name__ == "__main__":
+
+    np.random.seed(12345)
 
     X, Y = load_breast_cancer(True)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)

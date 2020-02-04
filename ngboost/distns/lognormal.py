@@ -1,11 +1,10 @@
 import scipy as sp
 import numpy as np
 from scipy.stats import lognorm as dist
-from ngboost.distns import SurvivalDistn
+from ngboost.distns import RegressionDistn
 from ngboost.scores import LogScore, CRPScore
 
-
-class LogNormalLogScore(LogScore):
+class LogNormalLogScoreCensored(LogScore):
 
     def score(self, Y):
         E = Y['Event']
@@ -42,7 +41,7 @@ class LogNormalLogScore(LogScore):
         FI[:, 1, 1] = 2
         return FI
 
-class LogNormalCRPScore(CRPScore):
+class LogNormalCRPScoreCensored(CRPScore):
 
     def score(self, Y):
         E = Y["Event"]
@@ -77,13 +76,20 @@ class LogNormalCRPScore(CRPScore):
         I = 1/(2*np.sqrt(np.pi)) * np.diag(np.array([1, self.scale ** 2 / 2]))
         return I + 1e-4 * np.eye(2)
 
+class LogNormal(RegressionDistn):
 
-class LogNormal(SurvivalDistn):
+    '''
+    Implements the log-normal distribution for NGBoost.
+
+    The normal distribution has two parameters, s and scale (see scipy.stats.lognorm)
+    This distribution has both LogScore and CRPScore implemented for it and both work for right-censored data.
+    '''
 
     n_params = 2
-    scores = [LogNormalLogScore, LogNormalCRPScore]
+    censored_scores = [LogNormalLogScoreCensored, LogNormalCRPScoreCensored]
 
     def __init__(self, params):
+        self._params = params
         self.loc = params[0]
         self.scale = np.exp(params[1])
         self.dist = dist(s=self.scale, scale=np.exp(self.loc))
@@ -93,11 +99,13 @@ class LogNormal(SurvivalDistn):
         if name in dir(self.dist):
             return getattr(self.dist, name)
         return None
+
+    # should implmenent a `sample()` method
     
     @property
     def params(self):
-        return {'loc':self.loc, 'scale':self.scale}
+        return {'s':self.scale, 'scale':np.exp(self.loc)}
+
     def fit(Y):
-        T = Y["Time"]
-        m, s = sp.stats.norm.fit(np.log(T))
+        m, s = sp.stats.norm.fit(np.log(Y))
         return np.array([m, np.log(s)])

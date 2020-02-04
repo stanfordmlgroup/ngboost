@@ -41,6 +41,12 @@ class NormalCRPScore(CRPScore):
         return I
 
 class Normal(RegressionDistn):
+    '''
+    Implements the normal distribution for NGBoost.
+
+    The normal distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    This distribution has both LogScore and CRPScore implemented for it.
+    '''
 
     n_params = 2
     scores = [NormalLogScore, NormalCRPScore]
@@ -94,6 +100,12 @@ class NormalFixedVarCRPScore(NormalCRPScore):
         return I
 
 class NormalFixedVar(Normal):
+    '''
+    Implements the normal distribution with variance=1 for NGBoost.
+
+    The fixed-variance normal distribution has one parameters, loc which is the mean.
+    This distribution has both LogScore and CRPScore implemented for it.
+    '''
 
     n_params = 1
     scores = [NormalFixedVarLogScore, NormalFixedVarCRPScore]

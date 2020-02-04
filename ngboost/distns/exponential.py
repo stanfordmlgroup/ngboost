@@ -1,7 +1,7 @@
 import scipy as sp
 import numpy as np
 from scipy.stats import expon as dist
-from ngboost.distns import SurvivalDistn
+from ngboost.distns import RegressionDistn
 from ngboost.scores import LogScore, CRPScore
 
 eps = 1e-10
@@ -44,12 +44,19 @@ class ExponentialCRPScore(CRPScore):
         M = 0.5 * self.scale[:, np.newaxis, np.newaxis]
         return M
 
-class Exponential(SurvivalDistn):
+class Exponential(RegressionDistn):
+    '''
+    Implements the exponential distribution for NGBoost.
+
+    The exponential distribution has one parameters, scale. See scipy.stats.expon for details.
+    This distribution has both LogScore and CRPScore implemented for it and both work with right-censored data
+    '''
 
     n_params = 1
-    scores = [ExponentialLogScore, ExponentialCRPScore]
+    censored_scores = [ExponentialLogScore, ExponentialCRPScore]
 
     def __init__(self, params):
+        self._params = params
         self.scale = np.exp(params[0])
         self.dist = dist(scale=self.scale)
     
@@ -58,12 +65,13 @@ class Exponential(SurvivalDistn):
             return getattr(self.dist, name)
         return None
     
+    # should implement a `sample()` method
+
     @property
     def params(self):
-        return {'loc':self.loc, 'scale':self.scale}
+        return {'scale':self.scale}
 
     def fit(Y):
-        T = Y["Time"]
-        m, s = sp.stats.expon.fit(T)
+        m, s = sp.stats.expon.fit(Y)
         return np.array([np.log(m + s)])
 

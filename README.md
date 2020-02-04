@@ -36,4 +36,4 @@ test_NLL = -Y_dists.logpdf(Y_test).mean()
 print('Test NLL', test_NLL)
 ```
 
-More information about available distributions, scoring rules, learners, how to tune NGBoost models, model interpretation, and extending NGBoost functionality is available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/survivial-regression-integration/examples/vignette.ipynb).
+More information about available distributions, scoring rules, learners, how to tune NGBoost models, model interpretation, and extending NGBoost functionality is available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb).

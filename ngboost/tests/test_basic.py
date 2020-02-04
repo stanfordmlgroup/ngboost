@@ -30,7 +30,6 @@ def test_classification():
     dist = ngb.pred_dist(x_test)
     assert isinstance(dist, Bernoulli)
 
-    preds = ngb.dist_to_prediction(dist)
     score = roc_auc_score(y_test, preds)
     assert score >= 0.95
 
@@ -54,6 +53,5 @@ def test_regression():
     dist = ngb.pred_dist(x_test)
     assert isinstance(dist, Normal)
 
-    preds = ngb.dist_to_prediction(dist)
     score = mean_squared_error(y_test, preds)
     assert score <= 8.0

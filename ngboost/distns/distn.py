@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 
 class Distn(object):
 	"""

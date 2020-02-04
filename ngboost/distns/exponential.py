@@ -65,7 +65,7 @@ class Exponential(RegressionDistn):
             return getattr(self.dist, name)
         return None
     
-    # should implmenent a `sample()` method
+    # should implement a `sample()` method
 
     @property
     def params(self):

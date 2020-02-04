@@ -4,6 +4,7 @@ from ngboost.distns import RegressionDistn, ClassificationDistn
 from ngboost.distns import Bernoulli, Normal, LogNormal
 from ngboost.scores import LogScore
 from ngboost.learners import default_tree_learner
+from ngboost.helpers import Y_from_censored
 from sklearn.base import BaseEstimator
 
 class NGBRegressor(NGBoost, BaseEstimator):
@@ -153,15 +154,6 @@ class NGBSurvival(NGBoost, BaseEstimator):
         super().__init__(Dist.censor(), Score, Base, natural_gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
-    def build_Y(T,E):
-        if T is None or E is None:
-            return None
-        Y = np.empty(dtype=[('Event', np.bool), ('Time', np.float64)],
-                     shape=T.shape[0])
-        Y['Event'] = (1-E).astype(bool)
-        Y['Time'] = T.astype(float)
-        return Y
-
     def fit(self, X, T, E, X_val = None, T_val = None, E_val = None, **kwargs):
         '''
         Fits an NGBoost survival model to the data. For additional parameters see ngboost.NGboost.fit
@@ -173,5 +165,4 @@ class NGBSurvival(NGBoost, BaseEstimator):
             T_val                   : validation-set times, if any
             E_val                   : validation-set event idicators, if any
         '''
-
-        super().fit(X, self.build_Y(T, E), X_val = X_val, Y_val = self.build_Y(T_val, E_val), **kwargs)
+        return super().fit(X, Y_from_censored(T, E), X_val = X_val, Y_val = Y_from_censored(T_val, E_val), **kwargs)

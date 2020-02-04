@@ -1,7 +1,5 @@
 import numpy as np
-
-def uncensored(Y):
-    return {"Event":np.ones_like(Y), "Time":Y}
+from ngboost.helpers import Y_from_censored
 
 class Score():
     def total_score(self, Y, sample_weight=None):
@@ -18,12 +16,18 @@ class Score():
     def uncensor(DistScore):
         class UncensoredScore(DistScore, DistScore.__base__):
             def score(self, Y):
-                return super().score(uncensored(Y))
+                return super().score(Y_from_censored(Y))
             def d_score(self, Y):
-                return super().d_score(uncensored(Y))
+                return super().d_score(Y_from_censored(Y))
         return UncensoredScore
 
 class LogScore(Score):
+    '''
+    Generic class for the log scoring rule.
+    
+    The log scoring rule is the same as negative log-likelihood: -log(P̂(y)), also known as the maximum likelihood estimator. This scoring rule has a default method for calculating the Riemannian metric.
+    '''
+
     def metric(self, n_mc_samples=100):
         grads = np.stack([self.d_score(Y) for Y in self.sample(n_mc_samples)])
         return np.mean(np.einsum('sik,sij->sijk', grads, grads), axis=0)
@@ -31,5 +35,8 @@ class LogScore(Score):
 MLE = LogScore
 
 class CRPScore(Score):
+    '''
+    Generic class for the continuous ranked probability scoring rule.
+    '''
     pass
 CRPS = CRPScore

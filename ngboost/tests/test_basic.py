@@ -30,7 +30,7 @@ def test_classification():
     dist = ngb.pred_dist(x_test)
     assert isinstance(dist, Bernoulli)
 
-    score = roc_auc_score(y_test, preds)
+    score = roc_auc_score(y_test, preds[:,1])
     assert score >= 0.95
 
 

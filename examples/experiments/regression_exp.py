@@ -1,17 +1,15 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import norm as norm_dist
 from argparse import ArgumentParser
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import PolynomialFeatures
 from ngboost.distns import Normal, NormalFixedVar
-from ngboost.ngboost import NGBoost
+from ngboost import NGBoost, NGBRegressor
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
-
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.metrics import mean_squared_error
-
 from sklearn.model_selection import KFold
 
 np.random.seed(1)
@@ -43,7 +41,7 @@ if __name__ == "__main__":
     argparser.add_argument("--n-est", type=int, default=2000)
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
-    argparser.add_argument("--lr", type=float, default=0.02)
+    argparser.add_argument("--lr", type=float, default=0.01)
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--score", type=str, default="MLE")
     argparser.add_argument("--base", type=str, default="tree")
@@ -60,9 +58,7 @@ if __name__ == "__main__":
 
     print('== Dataset=%s X.shape=%s %s/%s' % (args.dataset, str(X.shape), args.score, args.distn))
 
-    y_gbm, y_ngb, y_true = [], [], []
-    gbm_rmse, ngb_rmse = [], []
-    ngb_nll = []
+    y_true, ngb_rmse, ngb_nll = [], [], []
 
     if args.dataset == "msd":
         folds = [(np.arange(463715), np.arange(463715, len(X)))]
@@ -83,79 +79,64 @@ if __name__ == "__main__":
             train_index = permutation[ 0 : end_train ]
             test_index = permutation[ end_train : n ]
             folds.append( (train_index, test_index) )
-        #breakpoint()
 
     for itr, (train_index, test_index) in enumerate(folds):
+
         X_trainall, X_test = X[train_index], X[test_index]
         y_trainall, y_test = y[train_index], y[test_index]
-
 
         X_train, X_val, y_train, y_val = train_test_split(X_trainall, y_trainall, test_size=0.2)
 
         y_true += list(y_test.flatten())
 
-        ngb = NGBoost(Base=base_name_to_learner[args.base],
-                      Dist=eval(args.distn),
-                      Score=eval(args.score),
-                      n_estimators=args.n_est,
-                      learning_rate=args.lr,
-                      natural_gradient=args.natural,
-                      minibatch_frac=args.minibatch_frac,
-                      verbose=args.verbose)
+        ngb = NGBRegressor(Base=base_name_to_learner[args.base],
+                           Dist=eval(args.distn),
+                           Score=eval(args.score),
+                           n_estimators=args.n_est,
+                           learning_rate=args.lr,
+                           natural_gradient=args.natural,
+                           minibatch_frac=args.minibatch_frac,
+                           verbose=args.verbose)
 
-        ngb.fit(X_train, y_train) #, X_val, y_val)
+        ngb.fit(X_train, y_train)
 
+        # pick the best iteration on the validation set
         y_preds = ngb.staged_predict(X_val)
         y_forecasts = ngb.staged_pred_dist(X_val)
+
         val_rmse = [mean_squared_error(y_pred, y_val) for y_pred in y_preds]
         val_nll = [-y_forecast.logpdf(y_val.flatten()).mean() for y_forecast in y_forecasts]
         best_itr = np.argmin(val_rmse) + 1
-        best_itr = np.argmin(val_nll) + 1
 
-        full_retrain = True
-        if full_retrain:
-            ngb = NGBoost(Base=base_name_to_learner[args.base],
-                      Dist=eval(args.distn),
-                      Score=eval(args.score),
-                      n_estimators=args.n_est,
-                      learning_rate=args.lr,
-                      natural_gradient=args.natural,
-                      minibatch_frac=args.minibatch_frac,
-                      verbose=args.verbose)
-            ngb.fit(X_trainall, y_trainall)
+        # re-train using all the data after tuning number of iterations
+        ngb = NGBRegressor(Base=base_name_to_learner[args.base],
+                          Dist=eval(args.distn),
+                          Score=eval(args.score),
+                          n_estimators=args.n_est,
+                          learning_rate=args.lr,
+                          natural_gradient=args.natural,
+                          minibatch_frac=args.minibatch_frac,
+                          verbose=args.verbose)
+        ngb.fit(X_trainall, y_trainall)
 
+        # the final prediction for this fold
         forecast = ngb.pred_dist(X_test, max_iter=best_itr)
+        forecast_val = ngb.pred_dist(X_val, max_iter=best_itr)
 
-        y_ngb += list(forecast.loc)
-        ngb_rmse += [np.sqrt(mean_squared_error(forecast.loc, y_test))]
+        # set the appropriate scale if using a homoskedastic Normal
+        if args.distn == "NormalFixedVar":
+            scale = forecast.var * ((forecast_val.loc - y_val.flatten()) ** 2).mean() ** 0.5
+            forecast = norm_dist(loc=forecast.loc, scale=scale)
+
+        ngb_rmse += [np.sqrt(mean_squared_error(forecast.mean(), y_test))]
         ngb_nll += [-forecast.logpdf(y_test.flatten()).mean()]
 
-        #print(np.sqrt(mean_squared_error(forecast.loc, y_test)))
-        #for idx, y_p, y_t in zip(test_index, list(forecast.loc), y_test):
-        #    print(idx, y_t, y_p, np.abs(y_p - y_t))
+        print("[%d/%d] BestIter=%d RMSE: Val=%.4f Test=%.4f NLL: Test=%.4f" % (itr+1, args.n_splits,
+                                                                               best_itr, np.sqrt(val_rmse[best_itr-1]),
+                                                                               np.sqrt(mean_squared_error(forecast.mean(), y_test)),
+                                                                               ngb_nll[-1]))
 
-        if args.verbose or True:
-            print("[%d/%d] BestIter=%d RMSE: Val=%.4f Test=%.4f NLL: Test=%.4f" % (itr+1, args.n_splits,
-                                                                                   best_itr, np.sqrt(val_rmse[best_itr-1]),
-                                                                                   np.sqrt(mean_squared_error(forecast.loc, y_test)),
-                                                                                   ngb_nll[-1]))
-
-        gbr = GBR(n_estimators=args.n_est,
-                  learning_rate=args.lr,
-                  subsample=args.minibatch_frac,
-                  verbose=args.verbose)
-        gbr.fit(X_train, y_train.flatten())
-        y_pred = gbr.predict(X_test)
-        forecast = NormalFixedVar(y_pred.reshape((1, -1)))
-
-        y_gbm += list(y_pred.flatten())
-        gbm_rmse += [np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))]
-
-        if args.verbose or True:
-            print("[%d/%d] GBM RMSE=%.4f" % (itr+1, args.n_splits,
-                                             np.sqrt(mean_squared_error(y_pred.flatten(), y_test.flatten()))))
-
-    print('== RMSE GBM=%.4f +/- %.4f, NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % (np.mean(gbm_rmse), np.std(gbm_rmse),
+    print('== RMSE GBM=%.4f +/- %.4f, NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % (0.0, 0.0,
                                                                                   np.mean(ngb_rmse), np.std(ngb_rmse),
                                                                                   np.mean(ngb_nll), np.std(ngb_nll)))
 

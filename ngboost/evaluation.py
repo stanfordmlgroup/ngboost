@@ -18,7 +18,7 @@ def calibration_regression(Forecast, Y, bins=11, eps=1e-3):
     return pctles, observed, slope, intercept
 
 
-def calibration_time_to_event(Forecast, T, C, bins=10, eps=1e-3):
+def calibration_time_to_event(Forecast, T, E, bins=10, eps=1e-3):
     """
     Calculate calibration in the time-to-event setting, using the probability
     integral transform and a Kaplan-Meier fit.
@@ -27,7 +27,7 @@ def calibration_time_to_event(Forecast, T, C, bins=10, eps=1e-3):
     """
     cdfs = Forecast.cdf(T)
     kmf = KaplanMeierFitter()
-    kmf.fit(cdfs, 1 - C)
+    kmf.fit(cdfs, E)
     idxs = np.round(np.linspace(0, len(kmf.survival_function_) - 1, 11))
     preds = np.array(kmf.survival_function_.iloc[idxs].index)
     obs = 1 - np.array(kmf.survival_function_.iloc[idxs].KM_estimate)

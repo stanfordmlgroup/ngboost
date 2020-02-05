@@ -12,4 +12,3 @@ python3 -m examples.experiments.survival_exp --dataset=sprint  --score=MLE --nat
 python3 -m examples.experiments.survival_exp --dataset=sprint  --score=MLE --natural --verbose --distn=Exponential
 python3 -m examples.experiments.survival_exp --dataset=sprint  --score=MLE --natural --verbose --distn=MultivariateNormal
 
-exit

@@ -30,5 +30,5 @@ if __name__ == "__main__":
     )
 
     grid_search = GridSearchCV(ngb, param_grid=param_grid, cv=5)
-    grid_search.fit(X_train, y_train)
+    grid_search.fit(X_train, Y_train)
     print(grid_search.best_params_)

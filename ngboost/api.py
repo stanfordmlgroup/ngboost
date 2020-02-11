@@ -17,7 +17,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Normal
         Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
         Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        gradient          : 'ordinary' for ordinary gradient, natural' for natural gradient, 'newton' for newton (2nd order) descent
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
@@ -33,7 +33,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  Dist=Normal,
                  Score=LogScore,
                  Base=default_tree_learner,
-                 natural_gradient=True,
+                 gradient='natural',
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
@@ -57,7 +57,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
 
             Dist = DistWithUncensoredScore
 
-        super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
+        super().__init__(Dist, Score, Base, gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
 class NGBClassifier(NGBoost, BaseEstimator):
@@ -70,7 +70,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Bernoulli
         Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
         Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        gradient          : 'ordinary' for ordinary gradient, natural' for natural gradient, 'newton' for newton (2nd order) descent
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
@@ -85,7 +85,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  Dist=Bernoulli,
                  Score=LogScore,
                  Base=default_tree_learner,
-                 natural_gradient=True,
+                 gradient='natural',
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
@@ -94,7 +94,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  tol=1e-4,
                  random_state=None):
         assert issubclass(Dist, ClassificationDistn), f'{Dist.__name__} is not useable for classification.'
-        super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
+        super().__init__(Dist, Score, Base, gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def predict_proba(self, X, max_iter=None):
@@ -133,7 +133,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. LogNormal
         Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
         Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        gradient          : 'ordinary' for ordinary gradient, natural' for natural gradient, 'newton' for newton (2nd order) descent
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
@@ -148,7 +148,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  Dist=LogNormal,
                  Score=LogScore,
                  Base=default_tree_learner,
-                 natural_gradient=True,
+                 gradient='natural',
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
@@ -167,7 +167,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                 return Dist.fit(Y["Time"])
 
         # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
-        super().__init__(SurvivalDistn, Score, Base, natural_gradient, n_estimators, learning_rate,
+        super().__init__(SurvivalDistn, Score, Base, gradient, n_estimators, learning_rate,
                          minibatch_frac, verbose, verbose_eval, tol, random_state)
 
     def fit(self, X, T, E, 

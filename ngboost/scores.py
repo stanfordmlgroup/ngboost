@@ -5,11 +5,12 @@ class Score():
     def total_score(self, Y, sample_weight=None):
         return np.average(self.score(Y), weights=sample_weight)
 
-    def grad(self, Y, natural=True):
+    def grad(self, Y, method='natural'):
         grad = self.d_score(Y)
-        if natural:
-            metric = self.metric()
-            grad = np.linalg.solve(metric, grad)
+        if method == 'natural':
+            grad = np.linalg.solve(self.metric(), grad)
+        if method == 'newton':
+            grad = np.linalg.solve(self.hessian(Y), grad)
         return grad
 
 class LogScore(Score):

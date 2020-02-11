@@ -20,6 +20,14 @@ class NormalLogScore(LogScore):
         FI[:, 1, 1] = 2
         return FI
 
+    def hessian(self, Y):
+        H = np.zeros((self.var.shape[0], 2, 2))
+        H[:, 0, 0] = 1/(self.var + 1e-5)
+        H[:, 1, 0] = -2*(self.loc - Y)/(self.var + 1e-5)
+        H[:, 0, 1] = H[:, 1, 0]
+        H[:, 1, 1] = (2*(self.loc - Y)**2)/(self.var + 1e-5)
+        return H
+
 class NormalCRPScore(CRPScore):
     def score(self, Y):
         Z = (Y - self.loc) / self.scale

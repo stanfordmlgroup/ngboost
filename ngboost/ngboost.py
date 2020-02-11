@@ -10,7 +10,9 @@ from sklearn.utils import check_random_state
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 
-# import pdb
+import warnings
+
+import pdb
 
 class NGBoost(object):
     '''
@@ -22,7 +24,7 @@ class NGBoost(object):
         Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Normal
         Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
         Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        gradient          : 'ordinary' for ordinary gradient, natural' for natural gradient, 'newton' for newton (2nd order) descent
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
@@ -34,7 +36,7 @@ class NGBoost(object):
         An NGBRegressor object that can be fit.
     '''
     def __init__(self, Dist=Normal, Score=LogScore,
-                 Base=default_tree_learner, natural_gradient=True,
+                 Base=default_tree_learner, gradient='natural',
                  n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
                  verbose=True, verbose_eval=100, tol=1e-4,
                  random_state=None):
@@ -42,7 +44,7 @@ class NGBoost(object):
         self.Score = Score
         self.Base = Base
         self.Manifold = manifold(Score, Dist)
-        self.natural_gradient = natural_gradient
+        self.gradient = gradient
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
@@ -92,6 +94,12 @@ class NGBoost(object):
         while True:
             scaled_resids = resids * scale
             D = self.Manifold((start - scaled_resids).T)
+            # with warnings.catch_warnings():
+            #     warnings.filterwarnings('error')
+            #     try:
+            #         D = self.Manifold((start - scaled_resids).T)
+            #     except Warning: 
+            #         break
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if not np.isfinite(loss) or loss > loss_init or scale > 256:
@@ -102,8 +110,16 @@ class NGBoost(object):
         while True:
             scaled_resids = resids * scale
             D = self.Manifold((start - scaled_resids).T)
+            # with warnings.catch_warnings():
+            #     warnings.filterwarnings('error')
+            #     try:
+            #         D = self.Manifold((start - scaled_resids).T)
+            #     except Warning: 
+            #         scale = scale * 0.5
+            #         continue
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+            # if (loss < loss_init or norm < self.tol):
             if np.isfinite(loss) and (loss < loss_init or norm < self.tol) and\
                np.linalg.norm(scaled_resids, axis=1).mean() < 5.0:
                 break
@@ -156,7 +172,7 @@ class NGBoost(object):
 
             loss_list += [train_loss_monitor(D, Y_batch)]
             loss = loss_list[-1]
-            grads = D.grad(Y_batch, natural=self.natural_gradient)
+            grads = D.grad(Y_batch, method=self.gradient)
 
             proj_grad = self.fit_base(X_batch, grads, sample_weight)
             scale = self.line_search(proj_grad, P_batch, Y_batch, sample_weight)

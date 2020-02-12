@@ -1,12 +1,7 @@
-import pytest
-from sklearn.tree import DecisionTreeRegressor
-
-from ngboost.distns import Bernoulli, k_categorical, Normal, LogNormal, Exponential
-from ngboost.distns import RegressionDistn, ClassificationDistn
-from ngboost.scores import LogScore, CRPS
-
 @pytest.fixture(scope="module")
 def dists_scores():
+	from ngboost.distns import Bernoulli, k_categorical, Normal, LogNormal, Exponential
+	from ngboost.scores import LogScore, CRPS
 	return {
 		Bernoulli:[LogScore],
 		k_categorical(4): [LogScore], 
@@ -17,6 +12,7 @@ def dists_scores():
 
 @pytest.fixture(scope="module")
 def learners():
+	from sklearn.tree import DecisionTreeRegressor
 	return [
 		DecisionTreeRegressor(criterion='friedman_mse', max_depth=5),
 		DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
@@ -25,6 +21,7 @@ def learners():
 class TestRegDistns():
 	@pytest.fixture(scope="class")
 	def reg_dists(dists_scores):
+		from ngboost.distns import RegressionDistn
 		return [dist for dist in dists_scores.keys() if isinstance(dist, RegressionDistn)]
 
 	@pytest.fixture(scope="class")

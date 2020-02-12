@@ -1,5 +1,6 @@
 import pytest
-import smtplib
+from sklearn.tree import DecisionTreeRegressor
+
 from ngboost.distns import Bernoulli, k_categorical, Normal, LogNormal, Exponential
 from ngboost.distns import RegressionDistn, ClassificationDistn
 from ngboost.scores import LogScore, CRPS
@@ -17,7 +18,7 @@ def dists_scores():
 @pytest.fixture(scope="module")
 def learners():
     return [
-    	DecisionTreeRegressor(criterion='friedman_mse', max_depth=5)
+    	DecisionTreeRegressor(criterion='friedman_mse', max_depth=5),
     	DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
     ]
 

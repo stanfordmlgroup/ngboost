@@ -26,7 +26,7 @@ class TestRegDistns():
 		# try importing these in the class but outside the fn
 		return {
 			Normal: [LogScore, CRPScore], 
-			LogNormal: [LogScore], #, CRPScore], 
+			LogNormal: [LogScore, CRPScore], 
 			Exponential: [LogScore, CRPScore]
 			}
 

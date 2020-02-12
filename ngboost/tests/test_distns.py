@@ -1,9 +1,19 @@
 import pytest
 
+from ngboost.distns import Normal, LogNormal, Exponential, Bernoulli, k_categorical
+from ngboost.scores import LogScore, CRPScore
+from sklearn.tree import DecisionTreeRegressor
+
+from ngboost import NGBRegressor, NGBClassifier, NGBSurvival
+
+from sklearn.datasets import load_boston, load_breast_cancer
+from sklearn.model_selection import train_test_split
+
+import numpy as np
+
 @pytest.fixture(scope="module")
 def learners():
 	# add some learners that aren't trees
-	from sklearn.tree import DecisionTreeRegressor
 	return [
 		DecisionTreeRegressor(criterion='friedman_mse', max_depth=5),
 		DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
@@ -14,9 +24,6 @@ class TestRegDistns():
 	@pytest.fixture(scope="class")
 	def reg_dists(self):
 		# try importing these in the class but outside the fn
-		from ngboost.distns import RegressionDistn
-		from ngboost.distns import Normal, LogNormal, Exponential
-		from ngboost.scores import LogScore, CRPScore
 		return {
 			Normal: [LogScore, CRPScore], 
 			LogNormal: [LogScore], #, CRPScore], 
@@ -25,13 +32,10 @@ class TestRegDistns():
 
 	@pytest.fixture(scope="class")
 	def reg_data(self):
-		from sklearn.datasets import load_boston
-		from sklearn.model_selection import train_test_split
 		X, Y = load_boston(True)
 		return train_test_split(X, Y, test_size=0.2)
 
 	def test_dists(self, learners, reg_dists, reg_data):
-		from ngboost import NGBRegressor
 		X_reg_train, X_reg_test, Y_reg_train, Y_reg_test = reg_data
 		for Dist, Scores in reg_dists.items():
 			for Score in Scores:
@@ -51,16 +55,10 @@ class TestClsDistns():
 
 	@pytest.fixture(scope="class")
 	def cls_data(self):
-		from sklearn.datasets import load_breast_cancer
-		from sklearn.model_selection import train_test_split
 		X, Y = load_breast_cancer(True)
 		return train_test_split(X, Y, test_size=0.2)
 
 	def test_bernoulli(self, learners, cls_data):
-		from ngboost import NGBClassifier
-		from ngboost.distns import Bernoulli
-		from ngboost.scores import LogScore
-
 		X_cls_train, X_cls_test, Y_cls_train, Y_cls_test = cls_data
 		for Learner in learners:
 			# test early stopping features
@@ -73,11 +71,6 @@ class TestClsDistns():
 			# test properties of output
 
 	def test_categorical(self, learners, cls_data):
-		from ngboost import NGBClassifier
-		from ngboost.distns import k_categorical
-		from ngboost.scores import LogScore
-		import numpy as np
-
 		X_cls_train, X_cls_test, Y_cls_train, Y_cls_test = cls_data
 		for K in [2,4,7]:
 			Dist = k_categorical(K)

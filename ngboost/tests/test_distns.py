@@ -34,6 +34,7 @@ class TestRegDistns():
 		return train_test_split(X, Y, test_size=0.2)
 
 	def test_which_reg_dists(reg_dists):
+		from ngboost.distns import Normal, LogNormal, Exponential
 		assert set([Normal, LogNormal, Exponential]) == set(reg_dists)
 
 	def test_dists(dists_scores, learners, reg_dists, reg_data):

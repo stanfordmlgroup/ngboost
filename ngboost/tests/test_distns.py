@@ -20,18 +20,19 @@ def learners():
 		DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
 	]
 
-class TestRegDistns():
-	@pytest.fixture(scope="class")
-	def reg_dists(self, dists_scores):
-		from ngboost.distns import RegressionDistn
-		return [dist for dist in dists_scores.keys() if isinstance(dist, RegressionDistn)]
+@pytest.fixture(scope="class")
+def reg_dists(dists_scores):
+	from ngboost.distns import RegressionDistn
+	return [dist for dist in dists_scores.keys() if isinstance(dist, RegressionDistn)]
 
-	@pytest.fixture(scope="class")
-	def reg_data(self):
-		from sklearn.datasets import load_boston
-		from sklearn.model_selection import train_test_split
-		X, Y = load_boston(True)
-		return train_test_split(X, Y, test_size=0.2)
+@pytest.fixture(scope="class")
+def reg_data():
+	from sklearn.datasets import load_boston
+	from sklearn.model_selection import train_test_split
+	X, Y = load_boston(True)
+	return train_test_split(X, Y, test_size=0.2)
+
+class TestRegDistns():
 
 	def test_which_reg_dists(self, reg_dists):
 		from ngboost.distns import Normal, LogNormal, Exponential

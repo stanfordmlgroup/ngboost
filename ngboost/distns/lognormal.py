@@ -28,10 +28,6 @@ class LogNormalLogScoreCensored(LogScore):
                         (1 - self.dist.cdf(T) + self.eps)
         D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
                         (1 - self.dist.cdf(T) + self.eps)
-        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
-                        (1 - self.dist.cdf(T) + self.eps)
-        D_cens[:, 1] = -Z * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / \
-                        (1 - self.dist.cdf(T) + self.eps)
 
         return (1-E) * D_cens + E * D_uncens
 
@@ -63,8 +59,8 @@ class LogNormalCRPScoreCensored(CRPScore):
         Z = (lT - self.loc) / self.scale
 
         D = np.zeros((self.loc.shape[0], 2))
-        D[:, 0] = E * -(2 * sp.stats.norm.cdf(Z) - 1)
-        D[:, 0] = (1-E) * -(sp.stats.norm.cdf(Z) ** 2 + \
+        D[:, 0] = E * -(2 * sp.stats.norm.cdf(Z) - 1) + \
+                  (1-E) * -(sp.stats.norm.cdf(Z) ** 2 + \
                             2 * Z * sp.stats.norm.cdf(Z) * sp.stats.norm.pdf(Z) + \
                             2 * sp.stats.norm.pdf(Z) ** 2 - \
                             2 * sp.stats.norm.cdf(Z) * sp.stats.norm.pdf(Z) ** 2 - \
@@ -73,8 +69,11 @@ class LogNormalCRPScoreCensored(CRPScore):
         return D
 
     def metric(self):
-        I = 1/(2*np.sqrt(np.pi)) * np.diag(np.array([1, self.scale ** 2 / 2]))
-        return I + 1e-4 * np.eye(2)
+        I = np.zeros((self.loc.shape[0], 2, 2))
+        I[:, 0, 0] = 2
+        I[:, 1, 1] = self.scale ** 2
+        I /= (2 * np.sqrt(np.pi))
+        return I
 
 class LogNormal(RegressionDistn):
 

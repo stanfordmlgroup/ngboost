@@ -8,7 +8,7 @@ def dists_scores():
 		Bernoulli:[LogScore],
 		k_categorical(4): [LogScore], 
 		Normal: [LogScore, CRPScore], 
-		LogNormal: [LogScore, CRPScore], 
+		LogNormal: [LogScore] #, CRPScore], 
 		Exponential: [LogScore, CRPScore]
 		}
 

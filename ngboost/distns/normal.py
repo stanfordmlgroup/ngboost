@@ -30,7 +30,7 @@ class NormalCRPScore(CRPScore):
         Z = (Y - self.loc) / self.scale
         D = np.zeros((len(Y), 2))
         D[:, 0] = -(2 * sp.stats.norm.cdf(Z) - 1)
-        D[:, 1] = self.crps(Y) + (Y - self.loc) * D[:, 0]
+        D[:, 1] = self.score(Y) + (Y - self.loc) * D[:, 0]
         return D
 
     def metric(self):

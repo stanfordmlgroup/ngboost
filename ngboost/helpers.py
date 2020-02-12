@@ -3,6 +3,8 @@ import numpy as np
 def Y_from_censored(T,E=None):
     if T is None:
         return None
+    if T.dtype == [('Event', '?'), ('Time', '<f8')]: # already processed
+    	return T
     if E is None:
     	E = np.ones_like(T)
     Y = np.empty(dtype=[('Event', np.bool), ('Time', np.float64)],

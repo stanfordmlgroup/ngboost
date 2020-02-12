@@ -1,3 +1,5 @@
+import pytest
+
 @pytest.fixture(scope="module")
 def dists_scores():
 	from ngboost.distns import Bernoulli, k_categorical, Normal, LogNormal, Exponential

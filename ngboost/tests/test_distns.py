@@ -12,7 +12,7 @@ def learners():
 class TestRegDistns():
 
 	@pytest.fixture(scope="class")
-	def reg_dists(self, dists_scores):
+	def reg_dists(self):
 		# try importing these in the class but outside the fn
 		from ngboost.distns import RegressionDistn
 		from ngboost.distns import Normal, LogNormal, Exponential
@@ -48,16 +48,6 @@ class TestRegDistns():
 # test survival stuff
 
 class TestClsDistns():
-
-	@pytest.fixture(scope="class")
-	def cls_dists(self, dists_scores):
-		from ngboost.distns import RegressionDistn
-		from ngboost.distns import Bernoulli, k_categorical
-		from ngboost.scores import LogScore, CRPScore
-		return {
-			Bernoulli: [LogScore], 
-			k_categorical: [LogScore]
-			}
 
 	@pytest.fixture(scope="class")
 	def cls_data(self):

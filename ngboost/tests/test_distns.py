@@ -22,22 +22,22 @@ def learners():
 
 class TestRegDistns():
 	@pytest.fixture(scope="class")
-	def reg_dists(dists_scores):
+	def reg_dists(self, dists_scores):
 		from ngboost.distns import RegressionDistn
 		return [dist for dist in dists_scores.keys() if isinstance(dist, RegressionDistn)]
 
 	@pytest.fixture(scope="class")
-	def reg_data():
+	def reg_data(self):
 		from sklearn.datasets import load_boston
 		from sklearn.model_selection import train_test_split
 		X, Y = load_boston(True)
 		return train_test_split(X, Y, test_size=0.2)
 
-	def test_which_reg_dists(reg_dists):
+	def test_which_reg_dists(self, reg_dists):
 		from ngboost.distns import Normal, LogNormal, Exponential
 		assert set([Normal, LogNormal, Exponential]) == set(reg_dists)
 
-	def test_dists(dists_scores, learners, reg_dists, reg_data):
+	def test_dists(self, dists_scores, learners, reg_dists, reg_data):
 		from ngboost import NGBRegressor
 		X_reg_train, X_reg_test, Y_reg_train, Y_reg_test = reg_data
 		for Dist in reg_dists:

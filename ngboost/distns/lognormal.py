@@ -69,7 +69,7 @@ class LogNormalCRPScoreCensored(CRPScore):
                             2 * sp.stats.norm.pdf(Z) ** 2 - \
                             2 * sp.stats.norm.cdf(Z) * sp.stats.norm.pdf(Z) ** 2 - \
                             np.sqrt(2/np.pi) * sp.stats.norm.pdf(np.sqrt(2) * Z))
-        D[:, 1] = self.crps(Y) + (lT - self.loc) * D[:, 0]
+        D[:, 1] = self.score(Y) + (lT - self.loc) * D[:, 0]
         return D
 
     def metric(self):

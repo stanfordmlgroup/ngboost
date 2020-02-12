@@ -7,20 +7,20 @@ from ngboost.scores import LogScore, CRPS
 
 @pytest.fixture(scope="module")
 def dists_scores():
-    return {
-    	Bernoulli:[LogScore],
-    	k_categorical(4): [LogScore], 
-    	Normal: [LogScore, CRPScore], 
-    	LogNormal: [LogScore, CRPScore], 
-    	Exponential: [LogScore, CRPScore]
-    	}
+	return {
+		Bernoulli:[LogScore],
+		k_categorical(4): [LogScore], 
+		Normal: [LogScore, CRPScore], 
+		LogNormal: [LogScore, CRPScore], 
+		Exponential: [LogScore, CRPScore]
+		}
 
 @pytest.fixture(scope="module")
 def learners():
-    return [
-    	DecisionTreeRegressor(criterion='friedman_mse', max_depth=5),
-    	DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
-    ]
+	return [
+		DecisionTreeRegressor(criterion='friedman_mse', max_depth=5),
+		DecisionTreeRegressor(criterion='friedman_mse', max_depth=3)
+	]
 
 class TestRegDistns():
 	@pytest.fixture(scope="class")

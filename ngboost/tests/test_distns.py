@@ -28,6 +28,8 @@ class TestRegDistns():
 
 	@pytest.fixture(scope="class")
 	def reg_data():
+		from sklearn.datasets import load_boston
+		from sklearn.model_selection import train_test_split
 		X, Y = load_boston(True)
 		return train_test_split(X, Y, test_size=0.2)
 

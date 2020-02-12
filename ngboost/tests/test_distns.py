@@ -54,7 +54,7 @@ class TestClsDistns():
 		from sklearn.datasets import load_breast_cancer
 		from sklearn.model_selection import train_test_split
 		X, Y = load_breast_cancer(True)
-		X_cls_train, X_cls_test, Y_cls_train, Y_cls_test  = train_test_split(X, Y, test_size=0.2)
+		return train_test_split(X, Y, test_size=0.2)
 
 	def test_bernoulli(self, learners, cls_data):
 		from ngboost import NGBClassifier

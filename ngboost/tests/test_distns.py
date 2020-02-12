@@ -38,6 +38,7 @@ class TestRegDistns():
 		assert set([Normal, LogNormal, Exponential]) == set(reg_dists)
 
 	def test_dists(dists_scores, learners, reg_dists, reg_data):
+		from ngboost import NGBRegressor
 		X_reg_train, X_reg_test, Y_reg_train, Y_reg_test = reg_data
 		for Dist in reg_dists:
 			for Score in dists_scores[Dist]:

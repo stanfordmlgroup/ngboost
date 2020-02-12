@@ -3,7 +3,7 @@ import pytest
 @pytest.fixture(scope="module")
 def dists_scores():
 	from ngboost.distns import Bernoulli, k_categorical, Normal, LogNormal, Exponential
-	from ngboost.scores import LogScore, CRPS
+	from ngboost.scores import LogScore, CRPScore
 	return {
 		Bernoulli:[LogScore],
 		k_categorical(4): [LogScore], 

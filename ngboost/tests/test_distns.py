@@ -11,6 +11,9 @@ from sklearn.model_selection import train_test_split
 
 import numpy as np
 
+# test all the dist methods and score implementation methods, i.e. they all return proper shapes and sizes and types
+# check metric lines up with defaults for lognormal where applicable
+
 @pytest.fixture(scope="module")
 def learners():
 	# add some learners that aren't trees

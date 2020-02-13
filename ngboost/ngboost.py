@@ -55,6 +55,33 @@ class NGBoost(object):
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
 
+    def __getstate__(self): 
+        state = self.__dict__.copy() 
+        # Remove the unpicklable entries. 
+        del state['Manifold'] 
+        return state 
+
+    def __setstate__(self, state_dict):
+        state_dict['Manifold'] = manifold(state_dict['Score'], state_dict['Dist']) 
+        self.__dict__ = state_dict
+
+    def __getnewargs_ex__(self):
+        # The method must return a pair (args, kwargs) where args is a tuple of positional arguments and 
+        # kwargs a dictionary of named arguments for constructing the object.
+        return (tuple(),{
+            'Dist':self.Dist,
+            'Score':self.Score,
+            'Base':self.Base,
+            'natural_gradient':self.natural_gradient,
+            'n_estimators':self.n_estimators,
+            'learning_rate':self.learning_rate,
+            'minibatch_frac':self.minibatch_frac,
+            'verbose':self.verbose,
+            'verbose_eval':self.verbose_eval,
+            'tol':self.tol,
+            'random_state':self.random_state
+        })
+
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
         self.init_params = self.Manifold.fit(Y) # would be best to put sample weights here too
         return

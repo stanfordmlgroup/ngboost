@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import PolynomialFeatures
 from dfply import *
-from ngboost.distns import LogNormal, Exponential, MultivariateNormal
+from ngboost.distns import LogNormal, Exponential, MultivariateNormal, BivariateLogNormal
 from ngboost.api import NGBSurvival
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
@@ -26,8 +26,8 @@ def Y_join(T, E):
     col_time = 'Time'
     y = np.empty(dtype=[(col_event, np.bool), (col_time, np.float64)],
                  shape=T.shape[0])
-    y[col_event] = E.values
-    y[col_time] = T.values
+    y[col_event] = E
+    y[col_time] = T
     return y
 
 if __name__ == "__main__":
@@ -36,12 +36,12 @@ if __name__ == "__main__":
     argparser.add_argument("--dataset", type=str, default="flchain")
     argparser.add_argument("--distn", type=str, default="LogNormal")
     argparser.add_argument("--n-est", type=int, default=200)
-    argparser.add_argument("--reps", type=int, default=1)
     argparser.add_argument("--lr", type=float, default=.01)
     argparser.add_argument("--score", type=str, default="MLE")
     argparser.add_argument("--natural", action="store_true")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--minibatch-frac", type=float, default=1.0)
+    argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--verbose", action="store_true")
     args = argparser.parse_args()
 
@@ -96,10 +96,35 @@ if __name__ == "__main__":
 
     print('== Dataset=%s X.shape=%s Censorship=%.4f' % (args.dataset, str(X.shape), np.mean(1-E)))
 
-    for itr in range(args.reps):
+    # normalize Y
+    logY = np.log(Y)
+    Y = np.exp((logY - np.mean(logY)) / np.std(logY))
+    E = E.to_numpy()
+    Y = Y.to_numpy()
 
-        X_train, X_test, Y_train, Y_test, E_train, E_test = train_test_split(X, Y, E, test_size = 0.2)
-        X_train, X_val, Y_train, Y_val, E_train, E_val = train_test_split(X_train, Y_train, E_train, test_size=0.2)
+    # split the dataset
+    n = X.shape[0]
+    np.random.seed(1)
+    folds = []
+
+    ngb_cstat = []
+
+    for i in range(args.n_splits):
+        permutation = np.random.choice(range(n), n, replace = False)
+        end_train = round(n * 9.0 / 10)
+        end_test = n
+
+        train_index = permutation[ 0 : end_train ]
+        test_index = permutation[ end_train : n ]
+        folds.append( (train_index, test_index) )
+
+    for itr, (train_index, test_index) in enumerate(folds):
+
+        X_trainall, X_test = X[train_index], X[test_index]
+        Y_trainall, Y_test = Y[train_index], Y[test_index]
+        E_trainall, E_test = E[train_index], E[test_index]
+
+        X_train, X_val, Y_train, Y_val, E_train, E_val = train_test_split(X_trainall, Y_trainall, E_trainall, test_size=0.2)
 
         ngb = NGBSurvival(Dist=eval(args.distn),
                           n_estimators=args.n_est,
@@ -108,24 +133,46 @@ if __name__ == "__main__":
                           verbose=args.verbose,
                           minibatch_frac=1.0,
                           Base=base_name_to_learner[args.base],
+                          verbose_eval=1,
                           Score=eval(args.score))
 
         train_losses = ngb.fit(X_train, Y_train, E_train)
-        forecast = ngb.pred_dist(X_test)
-        train_forecast = ngb.pred_dist(X_train)
-        print('NGB score: %.4f (val), %.4f (train)' % (concordance_index_censored(E_test.astype(bool), Y_test, -forecast.mean())[0],
-                                                       concordance_index_censored(E_train.astype(bool), Y_train, -train_forecast.mean())[0]
-        ))
 
-        ##
-        ## sksurv
-        ##
+        # pick the best iteration on the validation set
+        Y_preds = ngb.staged_predict(X_val)
+        #y_forecasts = ngb.staged_pred_dist(X_val)
+
+        val_rmse = [concordance_index_censored(E_val.astype(bool), Y_val, -Y_pred) for Y_pred in Y_preds]
+        #val_nll = [-y_forecast.logpdf(y_val.flatten()).mean() for y_forecast in y_forecasts]
+        best_itr = np.argmin(val_rmse) + 1
+
+        # re-train using all the data after tuning number of iterations
+        ngb = NGBSurvival(Dist=eval(args.distn),
+                          n_estimators=args.n_est,
+                          learning_rate=args.lr,
+                          natural_gradient=args.natural,
+                          verbose=args.verbose,
+                          minibatch_frac=1.0,
+                          Base=base_name_to_learner[args.base],
+                          verbose_eval=1,
+                          Score=eval(args.score))
+        ngb.fit(X_trainall, Y_trainall, E_trainall)
+
+        # the final prediction for this fold
+        forecast = ngb.pred_dist(X_test, max_iter=best_itr)
+#        forecast_val = ngb.pred_dist(X_val, max_iter=best_itr)
+        train_forecast = ngb.pred_dist(X_train, max_iter=best_itr)
+
+        ngb_cstat += [concordance_index_censored(E_test.astype(bool), Y_test, -forecast.mean())[0]]
+        print('Itr: %d, NGB score: %.4f' % (itr, ngb_cstat[-1]))
+#
         gbsa = GBSA(n_estimators=args.n_est,
                     learning_rate=args.lr,
                     subsample=args.minibatch_frac,
                     verbose=args.verbose)
         gbsa.fit(X_train, Y_join(Y_train, E_train))
-        print('GBSA score: %.4f (val), %.4f (train)' % (gbsa.score(X_test, Y_join(Y_test, E_test)),
-                                                        gbsa.score(X_train, Y_join(Y_train, E_train))))
+        breakpoint()
+        print('Itr: %d, GBSA score: %.4f' % (itr, gbsa.score(X_test, Y_join(Y_test, E_test))))
 
 
+    print('==  NGB=%.4f +/- %.4f, NLL NGB=%.4f +/ %.4f' % ( np.mean(ngb_cstat), np.std(ngb_cstat), np.mean(ngb_cstat), np.std(ngb_cstat)))

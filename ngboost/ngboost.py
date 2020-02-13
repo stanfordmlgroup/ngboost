@@ -35,7 +35,7 @@ class NGBoost(object):
     '''
     def __init__(self, Dist=Normal, Score=LogScore,
                  Base=default_tree_learner, natural_gradient=True,
-                 n_estimators=500, learning_rate=0.01, minibatch_frac=1.0,
+                 n_estimators=500, learning_rate=0.01, minibatch_frac=1.0, col_sample=1.0,
                  verbose=True, verbose_eval=100, tol=1e-4,
                  random_state=None):
         self.Dist = Dist
@@ -46,11 +46,13 @@ class NGBoost(object):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
+        self.col_sample = col_sample
         self.verbose = verbose
         self.verbose_eval = verbose_eval
         self.init_params = None
         self.base_models = []
         self.scalings = []
+        self.col_idxs = []
         self.tol = tol
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
@@ -76,6 +78,7 @@ class NGBoost(object):
             'n_estimators':self.n_estimators,
             'learning_rate':self.learning_rate,
             'minibatch_frac':self.minibatch_frac,
+            'col_sample':self.col_sample,
             'verbose':self.verbose,
             'verbose_eval':self.verbose_eval,
             'tol':self.tol,
@@ -89,19 +92,26 @@ class NGBoost(object):
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
-        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
+        for i, (models, s, col_idx) in enumerate(zip(self.base_models, self.scalings, self.col_idxs)):
             if max_iter and i == max_iter:
                 break
-            resids = np.array([model.predict(X) for model in models]).T
+            resids = np.array([model.predict(X[:,col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
         return params
 
     def sample(self, X, Y, params):
-        if self.minibatch_frac == 1.0:
-            return np.arange(len(Y)), X, Y, params
-        sample_size = int(self.minibatch_frac * len(Y))
-        idxs = self.random_state.choice(np.arange(len(Y)), sample_size, replace=False)
-        return idxs, X[idxs,:], Y[idxs], params[idxs, :]
+        idxs = np.arange(len(Y))
+        col_idx = np.arange(X.shape[1])
+
+        if self.minibatch_frac != 1.0:
+            sample_size = int(self.minibatch_frac * len(Y))
+            idxs = self.random_state.choice(np.arange(len(Y)), sample_size, replace=False)
+
+        if self.col_sample != 1.0:
+            col_size = int(self.col_sample * X.shape[1])
+            col_idx = self.random_state.choice(np.arange(X.shape[1]), col_size, replace=False)
+
+        return idxs, col_idx, X[idxs,:][:,col_idx], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads, sample_weight=None):
         models = [clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T]
@@ -177,7 +187,8 @@ class NGBoost(object):
             val_loss_monitor = lambda D,Y: D.total_score(Y, sample_weight=val_sample_weight)
 
         for itr in range(self.n_estimators):
-            _, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
+            _, col_idx, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
+            self.col_idxs.append(col_idx)
 
             D = self.Manifold(P_batch.T)
 
@@ -189,11 +200,11 @@ class NGBoost(object):
             scale = self.line_search(proj_grad, P_batch, Y_batch, sample_weight)
 
             # pdb.set_trace()
-            params -= self.learning_rate * scale * np.array([m.predict(X) for m in self.base_models[-1]]).T
+            params -= self.learning_rate * scale * np.array([m.predict(X[:,col_idx]) for m in self.base_models[-1]]).T
 
             val_loss = 0
             if X_val is not None and Y_val is not None:
-                val_params -= self.learning_rate * scale * np.array([m.predict(X_val) for m in self.base_models[-1]]).T
+                val_params -= self.learning_rate * scale * np.array([m.predict(X_val[:,col_idx]) for m in self.base_models[-1]]).T
                 val_loss = val_loss_monitor(self.Manifold(val_params.T), Y_val)
                 val_loss_list += [val_loss]
                 if val_loss < best_val_loss:
@@ -260,8 +271,8 @@ class NGBoost(object):
         predictions = []
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
-        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
-            resids = np.array([model.predict(X) for model in models]).T
+        for i, (models, s, col_idx) in enumerate(zip(self.base_models, self.scalings, self.col_idxs)):
+            resids = np.array([model.predict(X[:,col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
             dists = self.Dist(np.copy(params.T)) # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)

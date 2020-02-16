@@ -21,6 +21,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
+        col_sample        : the percent subsample of columns to use in each boosting iteration
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
@@ -37,6 +38,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
+                 col_sample=1.0,
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4,
@@ -58,7 +60,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
             Dist = DistWithUncensoredScore
 
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol, random_state)
+                         minibatch_frac,col_sample, verbose, verbose_eval, tol, random_state)
 
 class NGBClassifier(NGBoost, BaseEstimator):
     '''
@@ -74,6 +76,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
+        col_sample        : the percent subsample of columns to use in each boosting iteration
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
@@ -89,13 +92,14 @@ class NGBClassifier(NGBoost, BaseEstimator):
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
+                 col_sample=1.0,
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4,
                  random_state=None):
         assert issubclass(Dist, ClassificationDistn), f'{Dist.__name__} is not useable for classification.'
         super().__init__(Dist, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol, random_state)
+                         minibatch_frac, col_sample, verbose, verbose_eval, tol, random_state)
 
     def predict_proba(self, X, max_iter=None):
         '''
@@ -137,6 +141,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
         minibatch_frac    : the percent subsample of rows to use in each boosting iteration
+        col_sample        : the percent subsample of columns to use in each boosting iteration
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
@@ -152,6 +157,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
                  n_estimators=500,
                  learning_rate=0.01,
                  minibatch_frac=1.0,
+                 col_sample = 1.0,
                  verbose=True,
                  verbose_eval=100,
                  tol=1e-4,
@@ -168,7 +174,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
 
         # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
         super().__init__(SurvivalDistn, Score, Base, natural_gradient, n_estimators, learning_rate,
-                         minibatch_frac, verbose, verbose_eval, tol, random_state)
+                         minibatch_frac, col_sample, verbose, verbose_eval, tol, random_state)
 
     def fit(self, X, T, E, 
             X_val = None, T_val = None, E_val = None, 

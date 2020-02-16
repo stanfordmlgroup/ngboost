@@ -11,6 +11,9 @@ from sklearn.model_selection import train_test_split
 
 import numpy as np
 
+# test all the dist methods and score implementation methods, i.e. they all return proper shapes and sizes and types
+# check metric lines up with defaults for lognormal where applicable
+
 @pytest.fixture(scope="module")
 def learners():
 	# add some learners that aren't trees
@@ -23,7 +26,6 @@ class TestRegDistns():
 
 	@pytest.fixture(scope="class")
 	def reg_dists(self):
-		# try importing these in the class but outside the fn
 		return {
 			Normal: [LogScore, CRPScore], 
 			LogNormal: [LogScore, CRPScore], 
@@ -49,7 +51,36 @@ class TestRegDistns():
 
 	# test what happens when a dist that's not regression is passed in
 
-# test survival stuff
+class TestSurvDistns():
+
+	@pytest.fixture(scope="class")
+	def surv_dists(self):
+		return {
+			LogNormal: [LogScore, CRPScore], 
+			Exponential: [LogScore, CRPScore]
+			}
+
+	@pytest.fixture(scope="class")
+	def surv_data(self):	
+		X, Y = load_boston(True)
+		X_surv_train, X_surv_test, Y_surv_train, Y_surv_test = train_test_split(X, Y, test_size=0.2)
+
+		# introduce administrative censoring to simulate survival data
+		T_surv_train = np.minimum(Y_surv_train, 30) # time of an event or censoring
+		E_surv_train = Y_surv_train > 30 # 1 if T[i] is the time of an event, 0 if it's a time of censoring
+		return X_surv_train, X_surv_test, T_surv_train, E_surv_train, Y_surv_test 
+
+	def test_dists(self, learners, surv_dists, surv_data):
+		X_surv_train, X_surv_test, T_surv_train, E_surv_train, Y_surv_test = surv_data
+		for Dist, Scores in surv_dists.items():
+			for Score in Scores:
+				for Learner in learners:
+					# test early stopping features
+					ngb = NGBSurvival(Dist=Dist, Score=Score, Base=Learner, verbose=False)
+					ngb.fit(X_surv_train, T_surv_train, E_surv_train)
+					y_pred = ngb.predict(X_surv_test)
+					y_dist = ngb.pred_dist(X_surv_test)
+					# test properties of output
 
 class TestClsDistns():
 

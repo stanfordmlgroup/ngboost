@@ -36,6 +36,6 @@ test_NLL = -Y_dists.logpdf(Y_test).mean()
 print('Test NLL', test_NLL)
 ```
 
-More information about available distributions, scoring rules, learners, how to tune NGBoost models, and model interpretation is available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb). Please see our [developer guide](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/dev_vignette.ipynb) for more information on how to add new distributions or scores to NGBoost.
+More information about available distributions, scoring rules, learners, tuning, and model interpretation is available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb). Please see our [developer guide](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/dev_vignette.ipynb) for more information on how to add new distributions or scores to NGBoost.
 
 A [slide deck](https://drive.google.com/file/d/183BWFAdFms81MKy6hSku8qI97OwS_JH_/view?usp=sharing) with an accessible presentation of how NGBoost works is also available.

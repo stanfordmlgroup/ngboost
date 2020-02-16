@@ -34,10 +34,10 @@ class NormalCRPScore(CRPScore):
         return D
 
     def metric(self):
-        I = np.c_[2 * np.ones_like(self.var), np.zeros_like(self.var),
-                  np.zeros_like(self.var), self.var]
-        I = I.reshape((self.var.shape[0], 2, 2))
-        I = 1 / (2 * np.sqrt(np.pi)) * I
+        I = np.zeros((self.var.shape[0], 2, 2))
+        I[:, 0, 0] = 2 * np.ones_like(self.var)
+        I[:, 1, 1] = self.var
+        I = I / (2 * np.sqrt(np.pi))
         return I
 
 class Normal(RegressionDistn):
@@ -55,7 +55,7 @@ class Normal(RegressionDistn):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        self.var = self.scale ** 2
+        self.var = self.scale ** 2 + 1e-4
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):
@@ -64,12 +64,12 @@ class Normal(RegressionDistn):
 
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
-    
+
     def __getattr__(self, name): # gives us Normal.mean() required for RegressionDist.predict()
         if name in dir(self.dist):
             return getattr(self.dist, name)
         return None
-    
+
     @property
     def params(self):
         return {'loc':self.loc, 'scale':self.scale}
@@ -93,7 +93,7 @@ class NormalFixedVarCRPScore(NormalCRPScore):
         D[:, 0] = -(2 * sp.stats.norm.cdf(Z) - 1)
         return D
 
-    def metric(self): 
+    def metric(self):
         I = np.c_[2 * np.ones_like(self.var)]
         I = I.reshape((self.var.shape[0], 1, 1))
         I = 1 / (2 * np.sqrt(np.pi)) * I

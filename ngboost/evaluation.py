@@ -25,7 +25,7 @@ def calibration_time_to_event(Forecast, T, E, bins=10, eps=1e-3):
     cdfs = Forecast.cdf(T)
     kmf = KaplanMeierFitter()
     kmf.fit(cdfs, E)
-    idxs = np.round(np.linspace(0, len(kmf.survival_function_) - 1, 11))
+    idxs = np.round(np.linspace(0, len(kmf.survival_function_) - 1, bins + 1))
     preds = np.array(kmf.survival_function_.iloc[idxs].index)
     obs = 1 - np.array(kmf.survival_function_.iloc[idxs].KM_estimate)
     slope, intercept = np.polyfit(preds, obs, deg=1)
@@ -99,4 +99,4 @@ def calculate_concordance_naive(preds, Y, E):
                     concordance += 0.5
                 counter += 1
     return concordance / counter
-    
+

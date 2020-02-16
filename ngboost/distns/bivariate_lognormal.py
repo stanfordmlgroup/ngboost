@@ -8,12 +8,12 @@ eps = 1e-6
 
 
 class BivariateLogNormalCensoredScore(LogScore):
-    
+
     def score(self, Y):
         E, T = Y['Event'], np.log(Y['Time'])
         nll = - self.marginal_dist(Y).logpdf(T) - self.conditional_dist(Y).logsf(T) + self.censoring_prob(Y)
         return nll
-        
+
     def d_score(self, Y):
         D = - self.D_conditional_logsf(Y) - self.D_marginal_logpdf(Y) + self.D_censoring_prob(Y)
         return D
@@ -28,7 +28,7 @@ class BivariateLogNormalCensoredScore(LogScore):
 
         FI = np.zeros((self.N, self.n_params, self.n_params))
 
-        S = np.array([[self.var0, self.cov], [self.cov, self.var1]])
+        S = np.array([[self.var0 + eps, self.cov], [self.cov, self.var1 + eps]])
         S = np.transpose(S, (2,0,1))
         invS = np.linalg.inv(S)
 
@@ -38,7 +38,7 @@ class BivariateLogNormalCensoredScore(LogScore):
         M = np.einsum('nij,njkl->nikl', invS, J)
         M = np.einsum('nijx,njky->nikxy', M, M)
         FI[:,2:,2:] = 0.5*np.trace(M, axis1=1, axis2=2)
-        
+
         return FI
 
     def conditional_dist(self, Y):
@@ -46,18 +46,17 @@ class BivariateLogNormalCensoredScore(LogScore):
         cond_mu = E * (self.mu0 + self.cov / self.var1 * (T - self.mu1)) +\
                   (1-E) * (self.mu1 + self.cov / self.var0 * (T - self.mu0))
         cond_var = E * (self.var0 - self.cov**2 / self.var1) +\
-                   (1-E) * (self.var1 - self.cov**2 / self.var0) + 1e-4
+                   (1-E) * (self.var1 - self.cov**2 / self.var0) + 1e-3
         try:
             assert np.all(cond_var > 0)
         except:
             breakpoint()
-        return dist(loc=cond_mu, scale=cond_var**(1/2))
+        return dist(loc=cond_mu, scale=cond_var**(1/2) + 1e-3)
 
     def D_conditional_logsf(self, Y):
         E, T = Y['Event'], np.log(Y['Time'])
         D = np.zeros((self.N, self.n_params))
-        eps = 1e-8
-        
+
         cond_dist = self.conditional_dist(Y)
         Z = (T-cond_dist.mean()) / cond_dist.std()
         pdf = dist().pdf(Z)
@@ -135,17 +134,18 @@ class BivariateLogNormal(RegressionDistn):
     # Event = 0 means censored
     # mu1 = Event
     # mu0 = Censored
-    
+
     def __init__(self, params):
+        self._params = params
         self.n_params, self.N = params.shape
         self.mu0, self.mu1 = params[0], params[1]
         self.scale0, self.scale1 = np.exp(params[2]), np.exp(params[3])
-        self.var0, self.var1 = self.scale0**2, self.scale1**2
+        self.var0, self.var1 = self.scale0**2 + eps, self.scale1**2 + eps
         self.s = params[4]
         self.cor = np.tanh(self.s)
         self.cov = self.cor * self.scale0 * self.scale1
 
-    def __getattr__(self, name): 
+    def __getattr__(self, name):
         if name in dir(self.dist):
             return getattr(self.dist, name)
         return None

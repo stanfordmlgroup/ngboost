@@ -4,7 +4,7 @@
 
 ngboost is a Python library that implements Natural Gradient Boosting, as described in ["NGBoost: Natural Gradient Boosting for Probabilistic Prediction"](https://stanfordmlgroup.github.io/projects/ngboost/). It is built on top of [Scikit-Learn](https://scikit-learn.org/stable/), and is designed to be scalable and modular with respect to choice of proper scoring rule, distribution, and base learners.
 
-Installation:
+## Installation
 
 ```
 pip install --upgrade git+https://github.com/stanfordmlgroup/ngboost.git

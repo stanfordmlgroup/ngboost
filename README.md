@@ -40,6 +40,9 @@ More information about available distributions, scoring rules, learners, tuning,
 
 A [slide deck](https://drive.google.com/file/d/183BWFAdFms81MKy6hSku8qI97OwS_JH_/view?usp=sharing) with an accessible presentation of how NGBoost works is also available.
 
+## License
+Apache License 2.0 (see [LICENSE](https://github.com/stanfordmlgroup/ngboost/blob/master/LICENSE)).
+
 ## Reference
 Tony Duan, Anand Avati, Daisy Yi Ding, Khanh K. Thai, Sanjay Basu, Andrew Y. Ng, Alejandro Schuler. 2019.
 NGBoost: Natural Gradient Boosting for Probabilistic Prediction.

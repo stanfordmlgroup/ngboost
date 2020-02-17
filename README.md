@@ -1,4 +1,5 @@
 ![Python package](https://github.com/stanfordmlgroup/ngboost/workflows/Python%20package/badge.svg)
+[![Github License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # NGBoost: Natural Gradient Boosting for Probabilistic Prediction
 

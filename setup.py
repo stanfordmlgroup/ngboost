@@ -22,5 +22,5 @@ setuptools.setup(
         "tqdm>=4.36.1",
         "lifelines>=0.22.8",
     ],
-    tests_require=["pytest"],
+    tests_require=["pytest", "pre-commit", "black"],
 )

@@ -37,18 +37,34 @@ if __name__ == "__main__":
         grads_y[i, j] = -g[1]
         crps[i, j] = crps_fn([loc[i, j], scale[i, j]])
 
-    plt.figure(figsize = (8, 3))
+    plt.figure(figsize=(8, 3))
     plt.subplot(1, 2, 1)
-    plt.contourf(loc, scale, crps, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.07 * grads_x, 0.07 * grads_y,
-               color = "white", angles='xy', scale_units='xy', scale=1)
+    plt.contourf(loc, scale, crps, cmap=mpl.cm.viridis, levels=100)
+    plt.quiver(
+        loc,
+        scale,
+        0.07 * grads_x,
+        0.07 * grads_y,
+        color="white",
+        angles="xy",
+        scale_units="xy",
+        scale=1,
+    )
     plt.xlabel("$\mu$")
     plt.ylabel("$\log\sigma$")
     plt.title("CRPS: gradients")
     plt.subplot(1, 2, 2)
-    plt.contourf(loc, scale, crps, cmap = mpl.cm.viridis, levels = 100)
-    plt.quiver(loc, scale, 0.07 * grads_metric_x, 0.07 * grads_metric_y,
-               color = "white", angles='xy', scale_units='xy', scale=1)
+    plt.contourf(loc, scale, crps, cmap=mpl.cm.viridis, levels=100)
+    plt.quiver(
+        loc,
+        scale,
+        0.07 * grads_metric_x,
+        0.07 * grads_metric_y,
+        color="white",
+        angles="xy",
+        scale_units="xy",
+        scale=1,
+    )
     plt.title("CRPS: natural gradients")
     plt.xlabel("$\mu$")
     plt.ylabel("$\log\sigma$")

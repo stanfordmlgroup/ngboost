@@ -9,7 +9,7 @@ setuptools.setup(
     long_description="Please see Github for full description.",
     long_description_content_type="text/markdown",
     url="https://github.com/stanfordmlgroup/ngboost",
-    license='Apache License 2.0',
+    license="Apache License 2.0",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -22,7 +22,5 @@ setuptools.setup(
         "tqdm>=4.36.1",
         "lifelines>=0.22.8",
     ],
-    tests_require=[
-        "pytest"
-    ]
+    tests_require=["pytest"],
 )

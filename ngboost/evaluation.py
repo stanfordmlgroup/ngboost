@@ -9,10 +9,10 @@ def calibration_regression(Forecast, Y, bins=11, eps=1e-3):
     """
     Calculate calibration in the regression setting.
     """
-    pctles = np.linspace(eps, 1-eps, bins)
+    pctles = np.linspace(eps, 1 - eps, bins)
     observed = np.zeros_like(pctles)
     for i, pctle in enumerate(pctles):
-        icdfs = Forecast.ppf(pctle)[:,np.newaxis]
+        icdfs = Forecast.ppf(pctle)[:, np.newaxis]
         observed[i] = np.mean(Y < icdfs)
     slope, intercept = np.polyfit(pctles, observed, deg=1)
     return pctles, observed, slope, intercept
@@ -37,13 +37,19 @@ def calculate_calib_error(predicted, observed):
 
 
 def plot_pit_histogram(predicted, observed, **kwargs):
-    plt.bar(x = predicted[1:], height = np.diff(observed),
-            width = -np.diff(predicted), align = "edge",
-            fill = False, edgecolor = "black", **kwargs)
+    plt.bar(
+        x=predicted[1:],
+        height=np.diff(observed),
+        width=-np.diff(predicted),
+        align="edge",
+        fill=False,
+        edgecolor="black",
+        **kwargs
+    )
     plt.xlim((0, 1))
     plt.xlabel("Probability Integral Transform")
     plt.ylabel("Density")
-    plt.axhline(1.0 / (len(predicted) - 1), linestyle = "--", color = "grey")
+    plt.axhline(1.0 / (len(predicted) - 1), linestyle="--", color="grey")
     plt.title("PIT Histogram")
 
 
@@ -53,11 +59,15 @@ def plot_calibration_curve(predicted, observed):
     """
     slope, intercept = np.polyfit(predicted, observed, deg=1)
     plt.plot(predicted, observed, "o", color="black")
-    plt.plot(np.linspace(0, 1), np.linspace(0, 1) * slope + intercept, "--",
-             label="Slope: %.2f, Intercept: %.2f" % (slope, intercept),
-             alpha=0.5, color="black")
-    plt.plot(np.linspace(0, 1), np.linspace(0, 1), "--", color="grey",
-             alpha=0.5)
+    plt.plot(
+        np.linspace(0, 1),
+        np.linspace(0, 1) * slope + intercept,
+        "--",
+        label="Slope: %.2f, Intercept: %.2f" % (slope, intercept),
+        alpha=0.5,
+        color="black",
+    )
+    plt.plot(np.linspace(0, 1), np.linspace(0, 1), "--", color="grey", alpha=0.5)
     plt.xlabel("Predicted CDF")
     plt.ylabel("Observed CDF")
     plt.title("Calibration Plot")
@@ -70,9 +80,9 @@ def calculate_concordance_dead_only(preds, Y, E):
     """
     Calculate C-statistic for only cases where outcome is uncensored.
     """
-    return calculate_concordance_naive(np.array(preds[E == 1]),
-                                       np.array(Y[E == 1]),
-                                       np.array(E[E == 1]))
+    return calculate_concordance_naive(
+        np.array(preds[E == 1]), np.array(Y[E == 1]), np.array(E[E == 1])
+    )
 
 
 def calculate_concordance_naive(preds, Y, E):
@@ -90,13 +100,16 @@ def calculate_concordance_naive(preds, Y, E):
     counter = 0
     for i in tqdm(range(N)):
         for j in range(i + 1, N):
-            if (E[i] and E[j]) or \
-                 (E[i] and not E[j] and Y[i] < Y[j]) or (not E[i] and E[j] and Y[i] > Y[j]):
-                if (preds[i] < preds[j] and trues[i] < trues[j]) or \
-                     (preds[i] > preds[j] and trues[i] > trues[j]):
-                        concordance += 1
+            if (
+                (E[i] and E[j])
+                or (E[i] and not E[j] and Y[i] < Y[j])
+                or (not E[i] and E[j] and Y[i] > Y[j])
+            ):
+                if (preds[i] < preds[j] and trues[i] < trues[j]) or (
+                    preds[i] > preds[j] and trues[i] > trues[j]
+                ):
+                    concordance += 1
                 elif preds[i] == preds[j]:
                     concordance += 0.5
                 counter += 1
     return concordance / counter
-    

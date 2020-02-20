@@ -11,7 +11,8 @@ from argparse import ArgumentParser
 
 np.random.seed(1)
 
-default_knr_learner=lambda : KNR()
+default_knr_learner = lambda: KNR()
+
 
 def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     x = np.linspace(-bound, bound, n)[:, np.newaxis]
@@ -19,6 +20,7 @@ def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     e = np.random.randn(*x.shape) * (0.1 + 10 * np.abs(x))
     y = 50 * (x ** deg) + h * beta + noise * e + intcpt
     return x, y.squeeze(), np.c_[h, np.ones_like(h)]
+
 
 BLK = 2
 if __name__ == "__main__":
@@ -35,14 +37,16 @@ if __name__ == "__main__":
     poly_transform = PolynomialFeatures(1)
     x_tr = poly_transform.fit_transform(x_tr)
 
-    ngb = NGBoost(Base=default_tree_learner,
-                  Dist=Normal,
-                  Score=MLE(),
-                  n_estimators=args.n_estimators,
-                  learning_rate=args.lr,
-                  natural_gradient=args.natural,
-                  minibatch_frac=args.minibatch_frac,
-                  verbose=True)
+    ngb = NGBoost(
+        Base=default_tree_learner,
+        Dist=Normal,
+        Score=MLE(),
+        n_estimators=args.n_estimators,
+        learning_rate=args.lr,
+        natural_gradient=args.natural,
+        minibatch_frac=args.minibatch_frac,
+        verbose=True,
+    )
 
     blk = int(args.n_estimators / 100)
     ngb.fit(x_tr, y_tr)
@@ -58,14 +62,29 @@ if __name__ == "__main__":
     for i, preds in enumerate(all_preds):
         if i % blk != 0:
             continue
-        plt.figure(figsize = (6, 3))
-        plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
-        plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1)
-        plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
-        plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
+        plt.figure(figsize=(6, 3))
+        plt.scatter(x_tr[:, 1], y_tr, color="black", marker=".", alpha=0.5)
+        plt.plot(x_te[:, 1], preds.loc, color="black", linestyle="-", linewidth=1)
+        plt.plot(
+            x_te[:, 1],
+            preds.loc - 1.96 * preds.scale,
+            color="black",
+            linestyle="--",
+            linewidth=0.3,
+        )
+        plt.plot(
+            x_te[:, 1],
+            preds.loc + 1.96 * preds.scale,
+            color="black",
+            linestyle="--",
+            linewidth=0.3,
+        )
         plt.ylim([-75, 75])
         plt.axis("off")
-        plt.title("%s Gradient: %02d%% fit" % ("Natural" if args.natural else "Ordinary", i/blk))
+        plt.title(
+            "%s Gradient: %02d%% fit"
+            % ("Natural" if args.natural else "Ordinary", i / blk)
+        )
         plt.tight_layout()
 
         filenames.append("./figures/anim/toy%d.png" % i)
@@ -75,9 +94,10 @@ if __name__ == "__main__":
             plt.savefig("./figures/anim/toy%d.pdf" % i)
 
     import imageio
+
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
     for _ in range(10):
         images.append(imageio.imread(filename))
-    imageio.mimsave('./figures/toy.gif', images, fps=5)
+    imageio.mimsave("./figures/toy.gif", images, fps=5)

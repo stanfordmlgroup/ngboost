@@ -6,9 +6,6 @@ from sklearn.model_selection import train_test_split
 from ngboost import NGBClassifier, NGBRegressor
 from ngboost.distns import Bernoulli, Normal
 
-np.random.seed(1)
-
-
 def test_classification():
     from sklearn.datasets import load_breast_cancer
     from sklearn.metrics import roc_auc_score, log_loss

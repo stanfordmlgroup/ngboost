@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 
 from ngboost.scores import LogScore
-from ngboost.distns import Normal
+from ngboost.distns import Normal, k_categorical
 from ngboost.manifold import manifold
 from ngboost.learners import default_tree_learner, default_linear_learner
 
@@ -11,7 +11,6 @@ from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 
 # import pdb
-
 
 class NGBoost(object):
     """
@@ -73,32 +72,16 @@ class NGBoost(object):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         del state["Manifold"]
+        if self.Dist.__name__ == "Categorical":
+            del state["Dist"] 
+            state["K"] = self.Dist.n_params + 1
         return state
 
     def __setstate__(self, state_dict):
+        if "K" in state_dict.keys():
+            state_dict["Dist"] = k_categorical(state_dict["K"])
         state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
-
-    def __getnewargs_ex__(self):
-        # The method must return a pair (args, kwargs) where args is a tuple of positional arguments and
-        # kwargs a dictionary of named arguments for constructing the object.
-        return (
-            tuple(),
-            {
-                "Dist": self.Dist,
-                "Score": self.Score,
-                "Base": self.Base,
-                "natural_gradient": self.natural_gradient,
-                "n_estimators": self.n_estimators,
-                "learning_rate": self.learning_rate,
-                "minibatch_frac": self.minibatch_frac,
-                "col_sample": self.col_sample,
-                "verbose": self.verbose,
-                "verbose_eval": self.verbose_eval,
-                "tol": self.tol,
-                "random_state": self.random_state,
-            },
-        )
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
         self.init_params = self.Manifold.fit(

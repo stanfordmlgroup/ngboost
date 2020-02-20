@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from argparse import ArgumentParser
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     argparser = ArgumentParser()
     argparser.add_argument("--lr", type=float, default=0.1)
@@ -31,19 +31,21 @@ if __name__ == '__main__':
     Y = (X @ beta1 + args.noise_lvl * noise).squeeze()
     print(X.shape, Y.shape)
 
-    X_train, X_test = X[:1000,:], X[1000:,]
+    X_train, X_test = X[:1000, :], X[1000:,]
     Y_train, Y_test = Y[:1000], Y[1000:]
 
-    ngb = NGBoost(n_estimators=400, learning_rate=args.lr,
-                  Dist=Normal,
-                  Base=default_linear_learner,
-                  natural_gradient=args.natural,
-                  minibatch_frac=1.0,
-                  Score=eval(args.score)(),
-                  verbose=True,
-                  verbose_eval=100)
+    ngb = NGBoost(
+        n_estimators=400,
+        learning_rate=args.lr,
+        Dist=Normal,
+        Base=default_linear_learner,
+        natural_gradient=args.natural,
+        minibatch_frac=1.0,
+        Score=eval(args.score)(),
+        verbose=True,
+        verbose_eval=100,
+    )
 
     losses = ngb.fit(X_train, Y_train)
     forecast = ngb.pred_dist(X_test)
     print("R2:", r2_score(Y_test, forecast.loc))
-

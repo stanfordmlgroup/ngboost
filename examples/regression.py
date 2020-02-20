@@ -16,8 +16,8 @@ if __name__ == "__main__":
 
     # test Mean Squared Error
     test_MSE = mean_squared_error(Y_preds, Y_test)
-    print('Test MSE', test_MSE)
+    print("Test MSE", test_MSE)
 
     # test Negative Log Likelihood
     test_NLL = -Y_dists.logpdf(Y_test.flatten()).mean()
-    print('Test NLL', test_NLL)
+    print("Test NLL", test_NLL)

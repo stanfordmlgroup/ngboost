@@ -1,15 +1,18 @@
 ![Python package](https://github.com/stanfordmlgroup/ngboost/workflows/Python%20package/badge.svg)
+[![Github License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # NGBoost: Natural Gradient Boosting for Probabilistic Prediction
 
-ngboost is a Python library that implements Natural Gradient Boosting, as described in ["NGBoost: Natural Gradient Boosting for Probabilistic Prediction"](https://stanfordmlgroup.github.io/projects/ngboost/). It is built on top of [Scikit-Learn](https://scikit-learn.org/stable/), and is designed to be scalable and modular with respect to choice of proper scoring rule, distribution, and base learners.
+ngboost is a Python library that implements Natural Gradient Boosting, as described in ["NGBoost: Natural Gradient Boosting for Probabilistic Prediction"](https://stanfordmlgroup.github.io/projects/ngboost/). It is built on top of [Scikit-Learn](https://scikit-learn.org/stable/), and is designed to be scalable and modular with respect to choice of proper scoring rule, distribution, and base learner. A didactic introduction to the methodology underlying NGBoost is available in this [slide deck](https://drive.google.com/file/d/183BWFAdFms81MKy6hSku8qI97OwS_JH_/view?usp=sharing).
 
-Installation:
+## Installation
 
 ```
 pip install --upgrade git+https://github.com/stanfordmlgroup/ngboost.git
 ```
 
+
+## Usage
 Probabilistic regression example on the Boston housing dataset:
 
 
@@ -36,6 +39,12 @@ test_NLL = -Y_dists.logpdf(Y_test).mean()
 print('Test NLL', test_NLL)
 ```
 
-More information about available distributions, scoring rules, learners, tuning, and model interpretation is available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb). Please see our [developer guide](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/dev_vignette.ipynb) for more information on how to add new distributions or scores to NGBoost.
+Details on available distributions, scoring rules, learners, tuning, and model interpretation are available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb), which also includes numerous usage examples. Please see our [developer guide](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/dev_vignette.ipynb) for more information on how to add new distributions or scores to NGBoost.
 
-A [slide deck](https://drive.google.com/file/d/183BWFAdFms81MKy6hSku8qI97OwS_JH_/view?usp=sharing) with an accessible presentation of how NGBoost works is also available.
+## License
+Apache License 2.0 (see [LICENSE](https://github.com/stanfordmlgroup/ngboost/blob/master/LICENSE)).
+
+## Reference
+Tony Duan, Anand Avati, Daisy Yi Ding, Khanh K. Thai, Sanjay Basu, Andrew Y. Ng, Alejandro Schuler. 2019.
+NGBoost: Natural Gradient Boosting for Probabilistic Prediction.
+[arXiv](https://arxiv.org/abs/1910.03225)

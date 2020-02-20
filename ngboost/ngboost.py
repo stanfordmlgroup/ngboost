@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 
 from ngboost.scores import LogScore
-from ngboost.distns import Normal
+from ngboost.distns import Normal, k_categorical
 from ngboost.manifold import manifold
 from ngboost.learners import default_tree_learner, default_linear_learner
 
@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeRegressor
 # import pdb
 
 class NGBoost(object):
-    '''
+    """
     Constructor for all NGBoost models.
 
     This class implements the methods that are common to all NGBoost models. Unless you are implementing a new kind of regression (e.g. interval-censored, etc.), you should probably use one of NGBRegressor, NGBClassifier, or NGBSurvival.
@@ -32,12 +32,23 @@ class NGBoost(object):
         random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
         An NGBRegressor object that can be fit.
-    '''
-    def __init__(self, Dist=Normal, Score=LogScore,
-                 Base=default_tree_learner, natural_gradient=True,
-                 n_estimators=500, learning_rate=0.01, minibatch_frac=1.0, col_sample=1.0,
-                 verbose=True, verbose_eval=100, tol=1e-4,
-                 random_state=None):
+    """
+
+    def __init__(
+        self,
+        Dist=Normal,
+        Score=LogScore,
+        Base=default_tree_learner,
+        natural_gradient=True,
+        n_estimators=500,
+        learning_rate=0.01,
+        minibatch_frac=1.0,
+        col_sample=1.0,
+        verbose=True,
+        verbose_eval=100,
+        tol=1e-4,
+        random_state=None,
+    ):
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
@@ -57,45 +68,36 @@ class NGBoost(object):
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
 
-    def __getstate__(self): 
-        state = self.__dict__.copy() 
-        # Remove the unpicklable entries. 
-        del state['Manifold'] 
-        return state 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        del state["Manifold"]
+        if self.Dist.__name__ == "Categorical":
+            del state["Dist"] 
+            state["K"] = self.Dist.n_params + 1
+        return state
 
     def __setstate__(self, state_dict):
-        state_dict['Manifold'] = manifold(state_dict['Score'], state_dict['Dist']) 
+        if "K" in state_dict.keys():
+            state_dict["Dist"] = k_categorical(state_dict["K"])
+        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
 
-    def __getnewargs_ex__(self):
-        # The method must return a pair (args, kwargs) where args is a tuple of positional arguments and 
-        # kwargs a dictionary of named arguments for constructing the object.
-        return (tuple(),{
-            'Dist':self.Dist,
-            'Score':self.Score,
-            'Base':self.Base,
-            'natural_gradient':self.natural_gradient,
-            'n_estimators':self.n_estimators,
-            'learning_rate':self.learning_rate,
-            'minibatch_frac':self.minibatch_frac,
-            'col_sample':self.col_sample,
-            'verbose':self.verbose,
-            'verbose_eval':self.verbose_eval,
-            'tol':self.tol,
-            'random_state':self.random_state
-        })
-
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
-        self.init_params = self.Manifold.fit(Y) # would be best to put sample weights here too
+        self.init_params = self.Manifold.fit(
+            Y
+        )  # would be best to put sample weights here too
         return
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
-        for i, (models, s, col_idx) in enumerate(zip(self.base_models, self.scalings, self.col_idxs)):
+        for i, (models, s, col_idx) in enumerate(
+            zip(self.base_models, self.scalings, self.col_idxs)
+        ):
             if max_iter and i == max_iter:
                 break
-            resids = np.array([model.predict(X[:,col_idx]) for model in models]).T
+            resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
         return params
 
@@ -105,16 +107,22 @@ class NGBoost(object):
 
         if self.minibatch_frac != 1.0:
             sample_size = int(self.minibatch_frac * len(Y))
-            idxs = self.random_state.choice(np.arange(len(Y)), sample_size, replace=False)
+            idxs = self.random_state.choice(
+                np.arange(len(Y)), sample_size, replace=False
+            )
 
         if self.col_sample != 1.0:
             col_size = int(self.col_sample * X.shape[1])
-            col_idx = self.random_state.choice(np.arange(X.shape[1]), col_size, replace=False)
+            col_idx = self.random_state.choice(
+                np.arange(X.shape[1]), col_size, replace=False
+            )
 
-        return idxs, col_idx, X[idxs,:][:,col_idx], Y[idxs], params[idxs, :]
+        return idxs, col_idx, X[idxs, :][:, col_idx], Y[idxs], params[idxs, :]
 
     def fit_base(self, X, grads, sample_weight=None):
-        models = [clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T]
+        models = [
+            clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
+        ]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
         return fitted
@@ -141,19 +149,29 @@ class NGBoost(object):
             D = self.Manifold((start - scaled_resids).T)
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if np.isfinite(loss) and (loss < loss_init or norm < self.tol) and\
-               np.linalg.norm(scaled_resids, axis=1).mean() < 5.0:
+            if (
+                np.isfinite(loss)
+                and (loss < loss_init or norm < self.tol)
+                and np.linalg.norm(scaled_resids, axis=1).mean() < 5.0
+            ):
                 break
             scale = scale * 0.5
         self.scalings.append(scale)
         return scale
 
-    def fit(self, X, Y,
-            X_val = None, Y_val = None,
-            sample_weight = None, val_sample_weight = None,
-            train_loss_monitor = None, val_loss_monitor = None,
-            early_stopping_rounds = None):
-        '''
+    def fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        """
         Fits an NGBoost model to the data
 
         Parameters:
@@ -169,7 +187,7 @@ class NGBoost(object):
 
         Output:
             A fit NGBRegressor object
-        '''
+        """
 
         loss_list = []
         self.fit_init_params_to_marginal(Y)
@@ -181,10 +199,14 @@ class NGBoost(object):
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D,Y: D.total_score(Y, sample_weight=sample_weight)
+            train_loss_monitor = lambda D, Y: D.total_score(
+                Y, sample_weight=sample_weight
+            )
 
         if not val_loss_monitor:
-            val_loss_monitor = lambda D,Y: D.total_score(Y, sample_weight=val_sample_weight)
+            val_loss_monitor = lambda D, Y: D.total_score(
+                Y, sample_weight=val_sample_weight
+            )
 
         for itr in range(self.n_estimators):
             _, col_idx, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
@@ -200,37 +222,56 @@ class NGBoost(object):
             scale = self.line_search(proj_grad, P_batch, Y_batch, sample_weight)
 
             # pdb.set_trace()
-            params -= self.learning_rate * scale * np.array([m.predict(X[:,col_idx]) for m in self.base_models[-1]]).T
+            params -= (
+                self.learning_rate
+                * scale
+                * np.array([m.predict(X[:, col_idx]) for m in self.base_models[-1]]).T
+            )
 
             val_loss = 0
             if X_val is not None and Y_val is not None:
-                val_params -= self.learning_rate * scale * np.array([m.predict(X_val[:,col_idx]) for m in self.base_models[-1]]).T
+                val_params -= (
+                    self.learning_rate
+                    * scale
+                    * np.array(
+                        [m.predict(X_val[:, col_idx]) for m in self.base_models[-1]]
+                    ).T
+                )
                 val_loss = val_loss_monitor(self.Manifold(val_params.T), Y_val)
                 val_loss_list += [val_loss]
                 if val_loss < best_val_loss:
-                        best_val_loss, self.best_val_loss_itr = val_loss, itr
-                if early_stopping_rounds is not None and best_val_loss < np.min(np.array(val_loss_list[-early_stopping_rounds:])):
+                    best_val_loss, self.best_val_loss_itr = val_loss, itr
+                if early_stopping_rounds is not None and best_val_loss < np.min(
+                    np.array(val_loss_list[-early_stopping_rounds:])
+                ):
                     if self.verbose:
                         print(f"== Early stopping achieved.")
-                        print(f"== Best iteration / VAL {self.best_val_loss_itr} (val_loss={best_val_loss:.4f})")
+                        print(
+                            f"== Best iteration / VAL {self.best_val_loss_itr} (val_loss={best_val_loss:.4f})"
+                        )
                     break
 
-            if self.verbose and int(self.verbose_eval) > 0 and itr % int(self.verbose_eval) == 0:
+            if (
+                self.verbose
+                and int(self.verbose_eval) > 0
+                and itr % int(self.verbose_eval) == 0
+            ):
                 grad_norm = np.linalg.norm(grads, axis=1).mean() * scale
-                print(f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} "
-                      f"norm={grad_norm:.4f}")
+                print(
+                    f"[iter {itr}] loss={loss:.4f} val_loss={val_loss:.4f} scale={scale:.4f} "
+                    f"norm={grad_norm:.4f}"
+                )
 
             if np.linalg.norm(proj_grad, axis=1).mean() < self.tol:
                 if self.verbose:
                     print(f"== Quitting at iteration / GRAD {itr}")
                 break
 
-
         self.evals_result = {}
         metric = self.Score.__name__.upper()
-        self.evals_result['train'] = {metric: loss_list}
+        self.evals_result["train"] = {metric: loss_list}
         if X_val is not None and Y_val is not None:
-            self.evals_result['val'] = {metric: val_loss_list}
+            self.evals_result["val"] = {metric: val_loss_list}
 
         return self
 
@@ -238,7 +279,7 @@ class NGBoost(object):
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
-        '''
+        """
         Predict the conditional distribution of Y at the points X=x
 
         Parameters:
@@ -247,10 +288,14 @@ class NGBoost(object):
 
         Output:
             A NGBoost distribution object
-        '''
-        if max_iter is not None: # get prediction at a particular iteration if asked for
+        """
+        if (
+            max_iter is not None
+        ):  # get prediction at a particular iteration if asked for
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
-        elif self.best_val_loss_itr is not None: # this will exist if there's a validation set
+        elif (
+            self.best_val_loss_itr is not None
+        ):  # this will exist if there's a validation set
             dist = self.staged_pred_dist(X, max_iter=self.best_val_loss_itr)[-1]
         else:
             params = np.asarray(self.pred_param(X, max_iter))
@@ -258,7 +303,7 @@ class NGBoost(object):
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):
-        '''
+        """
         Predict the conditional distribution of Y at the points X=x at multiple boosting iterations
 
         Parameters:
@@ -267,21 +312,25 @@ class NGBoost(object):
 
         Output:
             A list of NGBoost distribution objects, one per boosting stage up to max_iter
-        '''
+        """
         predictions = []
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
-        for i, (models, s, col_idx) in enumerate(zip(self.base_models, self.scalings, self.col_idxs)):
-            resids = np.array([model.predict(X[:,col_idx]) for model in models]).T
+        for i, (models, s, col_idx) in enumerate(
+            zip(self.base_models, self.scalings, self.col_idxs)
+        ):
+            resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(np.copy(params.T)) # if the params aren't copied, param changes with stages carry over to dists
+            dists = self.Dist(
+                np.copy(params.T)
+            )  # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)
             if max_iter and i == max_iter:
                 break
         return predictions
 
     def predict(self, X, max_iter=None):
-        '''
+        """
         Point prediction of Y at the points X=x
 
         Parameters:
@@ -290,11 +339,11 @@ class NGBoost(object):
 
         Output:
             Numpy array of the estimates of Y
-        '''
+        """
         return self.pred_dist(X, max_iter=max_iter).predict()
 
     def staged_predict(self, X, max_iter=None):
-        '''
+        """
         Point prediction of Y at the points X=x at multiple boosting iterations
 
         Parameters:
@@ -303,7 +352,7 @@ class NGBoost(object):
 
         Output:
             A list of numpy arrays of the estimates of Y, one per boosting stage up to max_iter
-        '''
+        """
         return [dist.predict() for dist in self.staged_pred_dist(X, max_iter=max_iter)]
 
     @property
@@ -328,13 +377,25 @@ class NGBoost(object):
         # Reshape the base_models
         params_trees = zip(*self.base_models)
         # Get the feature_importances_ for all the params and all the trees
-        all_params_importances = [[getattr(tree, 'feature_importances_')
-            for tree in trees if tree.tree_.node_count > 1]
-                for trees in params_trees]
+        all_params_importances = [
+            [
+                getattr(tree, "feature_importances_")
+                for tree in trees
+                if tree.tree_.node_count > 1
+            ]
+            for trees in params_trees
+        ]
 
         if not all_params_importances:
-            return np.zeros(len(self.base_models[0]),self.base_models[0][0].n_features_, dtype=np.float64)
+            return np.zeros(
+                len(self.base_models[0]),
+                self.base_models[0][0].n_features_,
+                dtype=np.float64,
+            )
         # Weighted average of importance by tree scaling factors
-        all_params_importances = np.average(all_params_importances,
-                                  axis=1, weights=self.scalings)
-        return all_params_importances / np.sum(all_params_importances,axis=1,keepdims=True)
+        all_params_importances = np.average(
+            all_params_importances, axis=1, weights=self.scalings
+        )
+        return all_params_importances / np.sum(
+            all_params_importances, axis=1, keepdims=True
+        )

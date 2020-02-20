@@ -3,14 +3,18 @@ from ngboost.distns import LogNormal, Exponential, Normal
 from ngboost.api import NGBSurvival
 from ngboost.scores import MLE, CRPS
 from ngboost.learners import default_tree_learner, default_linear_learner
-from ngboost.evaluation import calibration_time_to_event, plot_calibration_curve, calibration_regression
+from ngboost.evaluation import (
+    calibration_time_to_event,
+    plot_calibration_curve,
+    calibration_regression,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from matplotlib import pyplot as plt
 from argparse import ArgumentParser
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     argparser = ArgumentParser()
     argparser.add_argument("--n-estimators", type=int, default=100)
@@ -28,16 +32,19 @@ if __name__ == '__main__':
     print(f"Event rate: {np.mean(E):.2f}")
 
     X_tr, X_te, Y_tr, Y_te, T_tr, T_te, E_tr, E_te = train_test_split(
-        X, Y, T, E, test_size=0.2)
+        X, Y, T, E, test_size=0.2
+    )
 
-    ngb = NGBSurvival(Dist=Exponential,
-                      n_estimators=args.n_estimators,
-                      learning_rate=args.lr,
-                      natural_gradient=True,
-                      Base=default_linear_learner,
-                      Score=MLE,
-                      verbose=True,
-                      verbose_eval=True)
+    ngb = NGBSurvival(
+        Dist=Exponential,
+        n_estimators=args.n_estimators,
+        learning_rate=args.lr,
+        natural_gradient=True,
+        Base=default_linear_learner,
+        Score=MLE,
+        verbose=True,
+        verbose_eval=True,
+    )
     train_losses = ngb.fit(X_tr, np.exp(np.minimum(Y_tr, T_tr)), E_tr)
 
     preds = ngb.pred_dist(X_te)
@@ -55,6 +62,8 @@ if __name__ == '__main__':
     plt.show()
 
     # calibration for partial observations
-    pctles, observed, slope, intercept = calibration_time_to_event(preds, np.minimum(Y_te, T_te).squeeze(), E_te.squeeze())
+    pctles, observed, slope, intercept = calibration_time_to_event(
+        preds, np.minimum(Y_te, T_te).squeeze(), E_te.squeeze()
+    )
     plot_calibration_curve(pctles, observed)
     plt.show()

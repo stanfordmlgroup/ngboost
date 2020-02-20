@@ -11,7 +11,8 @@ from argparse import ArgumentParser
 
 np.random.seed(1)
 
-default_knr_learner=lambda : KNR()
+default_knr_learner = lambda: KNR()
+
 
 def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     x = np.linspace(-bound, bound, n)[:, np.newaxis]
@@ -35,14 +36,16 @@ if __name__ == "__main__":
     poly_transform = PolynomialFeatures(1)
     x_tr = poly_transform.fit_transform(x_tr)
 
-    ngb = NGBoost(Base=default_tree_learner,
-                  Dist=Normal,
-                  Score=MLE,
-                  n_estimators=args.n_estimators,
-                  learning_rate=args.lr,
-                  natural_gradient=args.natural,
-                  minibatch_frac=args.minibatch_frac,
-                  verbose=True)
+    ngb = NGBoost(
+        Base=default_tree_learner,
+        Dist=Normal,
+        Score=MLE,
+        n_estimators=args.n_estimators,
+        learning_rate=args.lr,
+        natural_gradient=args.natural,
+        minibatch_frac=args.minibatch_frac,
+        verbose=True,
+    )
 
     ngb.fit(x_tr, y_tr)
 
@@ -54,11 +57,31 @@ if __name__ == "__main__":
 
     all_preds = ngb.staged_pred_dist(x_te)
     preds = all_preds[-1]
-    plt.figure(figsize = (6, 3))
-    plt.scatter(x_tr[:,1], y_tr, color = "black", marker = ".", alpha=0.5)
-    plt.plot(x_te[:,1], preds.loc, color = "black", linestyle = "-", linewidth=1, label="Predicted mean")
-    plt.plot(x_te[:,1], preds.loc - 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3, label="95\% prediction interval")
-    plt.plot(x_te[:,1], preds.loc + 1.96 * preds.scale, color = "black", linestyle = "--", linewidth=0.3)
+    plt.figure(figsize=(6, 3))
+    plt.scatter(x_tr[:, 1], y_tr, color="black", marker=".", alpha=0.5)
+    plt.plot(
+        x_te[:, 1],
+        preds.loc,
+        color="black",
+        linestyle="-",
+        linewidth=1,
+        label="Predicted mean",
+    )
+    plt.plot(
+        x_te[:, 1],
+        preds.loc - 1.96 * preds.scale,
+        color="black",
+        linestyle="--",
+        linewidth=0.3,
+        label="95\% prediction interval",
+    )
+    plt.plot(
+        x_te[:, 1],
+        preds.loc + 1.96 * preds.scale,
+        color="black",
+        linestyle="--",
+        linewidth=0.3,
+    )
     plt.ylim([-75, 75])
     plt.xlabel("$x$")
     plt.ylabel("$y$")

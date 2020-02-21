@@ -42,7 +42,7 @@ if __name__ == "__main__":
     argparser.add_argument("--n-splits", type=int, default=20)
     argparser.add_argument("--distn", type=str, default="Normal")
     argparser.add_argument("--lr", type=float, default=0.01)
-    argparser.add_argument("--natural", action="store_true")
+    argparser.add_argument("--gradient", type=str, default="natural")
     argparser.add_argument("--score", type=str, default="MLE")
     argparser.add_argument("--base", type=str, default="tree")
     argparser.add_argument("--minibatch-frac", type=float, default=None)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
                            Score=eval(args.score),
                            n_estimators=args.n_est,
                            learning_rate=args.lr,
-                           natural_gradient=args.natural,
+                           gradient=args.gradient,
                            minibatch_frac=args.minibatch_frac,
                            verbose=args.verbose)
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
                           Score=eval(args.score),
                           n_estimators=args.n_est,
                           learning_rate=args.lr,
-                          natural_gradient=args.natural,
+                          gradient=args.gradient,
                           minibatch_frac=args.minibatch_frac,
                           verbose=args.verbose)
         ngb.fit(X_trainall, y_trainall)

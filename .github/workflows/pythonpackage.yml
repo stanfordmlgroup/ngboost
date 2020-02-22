@@ -19,14 +19,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pipenv 
-        #pipenv sync
+        python -m pip install --upgrade pre-commit
+        pipenv sync
         pipenv sync --dev
         pipenv install -e .
-        #pipenv graph
     - name: Lint with flake8
       run: |
-        #pipenv sync --dev
         # stop the build if there are Python syntax errors or undefined names
         pipenv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide

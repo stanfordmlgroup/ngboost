@@ -22,8 +22,6 @@ jobs:
         python -m pip install --upgrade pre-commit
         pip install -r requirements.txt
         pip install -e .
-    - name: Lint
-      run: pre-commit run --all-files
     - name: Lint with flake8
       run: |
         pip install flake8

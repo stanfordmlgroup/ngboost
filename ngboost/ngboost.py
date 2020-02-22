@@ -12,6 +12,7 @@ from sklearn.tree import DecisionTreeRegressor
 
 # import pdb
 
+
 class NGBoost(object):
     """
     Constructor for all NGBoost models.
@@ -73,7 +74,7 @@ class NGBoost(object):
         # Remove the unpicklable entries.
         del state["Manifold"]
         if self.Dist.__name__ == "Categorical":
-            del state["Dist"] 
+            del state["Dist"]
             state["K"] = self.Dist.n_params + 1
         return state
 

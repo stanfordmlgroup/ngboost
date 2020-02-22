@@ -43,7 +43,7 @@ print('Test NLL', test_NLL)
 Details on available distributions, scoring rules, learners, tuning, and model interpretation are available in our [vignette](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/vignette.ipynb), which also includes numerous usage examples. Please see our [developer guide](https://github.com/stanfordmlgroup/ngboost/blob/master/examples/dev_vignette.ipynb) for more information on how to add new distributions or scores to NGBoost.
 
 ## License
-Apache License 2.0 (see [LICENSE](https://github.com/stanfordmlgroup/ngboost/blob/master/LICENSE)).
+[Apache License 2.0](https://github.com/stanfordmlgroup/ngboost/blob/master/LICENSE).
 
 ## Reference
 Tony Duan, Anand Avati, Daisy Yi Ding, Khanh K. Thai, Sanjay Basu, Andrew Y. Ng, Alejandro Schuler. 2019.

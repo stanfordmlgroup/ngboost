@@ -1,0 +1,178 @@
+---
+interact_link: content/4-saving.ipynb
+kernel_name: python3
+kernel_path: content
+has_widgets: false
+title: |-
+  Saving Models
+pagenum: 5
+prev_page:
+  url: /3-interpretation.html
+next_page:
+  url: /5-dev.html
+suffix: .ipynb
+search: saving models ngboost easy pickle package
+
+comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /content***"
+---
+
+    <main class="jupyter-page">
+    <div id="page-info"><div id="page-title">Saving Models</div>
+</div>
+    
+<div class="jb_cell tag_hide_input">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBClassifier</span><span class="p">,</span> <span class="n">NGBRegressor</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">k_categorical</span><span class="p">,</span> <span class="n">Normal</span>
+<span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">LogScore</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_breast_cancer</span><span class="p">,</span> <span class="n">load_boston</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">train_test_split</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">X_reg_train</span><span class="p">,</span> <span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">Y_reg_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_breast_cancer</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># artificially make this a 3-class problem instead of a 2-class problem</span>
+<span class="n">X_cls_train</span><span class="p">,</span> <span class="n">X_cls_test</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">,</span> <span class="n">Y_cls_test</span>  <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Saving ngboost models is easy with the <code>pickle</code> package:</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[iter 0] loss=3.6659 val_loss=0.0000 scale=0.5000 norm=3.4867
+[iter 100] loss=3.1316 val_loss=0.0000 scale=1.0000 norm=4.0407
+[iter 200] loss=2.5093 val_loss=0.0000 scale=2.0000 norm=4.1753
+[iter 300] loss=2.0549 val_loss=0.0000 scale=2.0000 norm=3.2230
+[iter 400] loss=1.8405 val_loss=0.0000 scale=1.0000 norm=1.4379
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/Users/c242587/Desktop/ngbtest.p&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">ngb</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/Users/c242587/Desktop/ngbtest.p&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">ngb_unpickled</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">Y_preds</span> <span class="o">=</span> <span class="n">ngb_unpickled</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">)</span>
+<span class="n">Y_dists</span> <span class="o">=</span> <span class="n">ngb_unpickled</span><span class="o">.</span><span class="n">pred_dist</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">)</span>
+
+<span class="n">Y_dists</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;loc&#39;: array([33.56254296, 20.00248252, 16.76998823, 12.42596904, 20.24461023]),
+ &#39;scale&#39;: array([1.71143188, 1.46911816, 1.20134737, 1.51642038, 1.18972627])}</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+ 
+
+
+    </main>
+    

@@ -22,8 +22,8 @@ email: alejandro.schuler@gmail.com
 description: >-
   NGBoost useage and development
 
-baseurl: "/guide" # the subpath of your site, e.g. /blog. If there is no subpath for your site, use an empty string ""
-url: "https://alejandroschuler.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/projects/ngboost/guide" # the subpath of your site, e.g. /blog. If there is no subpath for your site, use an empty string ""
+url: "https://stanfordmlgroup.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
 
 #######################################################################################

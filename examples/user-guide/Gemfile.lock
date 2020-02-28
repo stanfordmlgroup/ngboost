@@ -8,7 +8,7 @@ GEM
       tzinfo (~> 1.1)
     addressable (2.7.0)
       public_suffix (>= 2.0.2, < 5.0)
-    bibtex-ruby (4.4.7)
+    bibtex-ruby (5.1.0)
       latex-decode (~> 0.0)
     citeproc (1.0.9)
       namae (~> 1.0)

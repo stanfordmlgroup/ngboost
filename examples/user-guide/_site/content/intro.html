@@ -5,16 +5,16 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width,minimum-scale=1">
 
-  <title>Tuning</title>
-  <meta name="description" content="        Tuning        from ngboost import NGBClassifier, NGBRegressorfrom ngboost.distns import k_categorical, Normalfrom ngboost.scores import LogScorefrom ...">
+  <title>NGBoost</title>
+  <meta name="description" content="Welcome to the NGBoost user guide! Details on available distributions, scoring rules, learners, tuning, and model interpretation are available here, as are n...">
 
-  <link rel="canonical" href="https://stanfordmlgroup.github.io/ngboost/2-tuning.html">
+  <link rel="canonical" href="https://stanfordmlgroup.github.io/ngboost/content/intro.html">
   <link rel="alternate" type="application/rss+xml" title="NGBoost" href="https://stanfordmlgroup.github.io/ngboost/feed.xml">
 
-  <meta property="og:url"         content="https://stanfordmlgroup.github.io/ngboost/2-tuning.html" />
+  <meta property="og:url"         content="https://stanfordmlgroup.github.io/ngboost/content/intro.html" />
 <meta property="og:type"        content="article" />
-<meta property="og:title"       content="Tuning" />
-<meta property="og:description" content="        Tuning        from ngboost import NGBClassifier, NGBRegressorfrom ngboost.distns import k_categorical, Normalfrom ngboost.scores import LogScorefrom ..." />
+<meta property="og:title"       content="NGBoost" />
+<meta property="og:description" content="Welcome to the NGBoost user guide! Details on available distributions, scoring rules, learners, tuning, and model interpretation are available here, as are n..." />
 <meta property="og:image"       content="" />
 
 <meta name="twitter:card" content="summary">
@@ -24,11 +24,11 @@
   {
   "@context": "http://schema.org",
   "@type": "NewsArticle",
-  "mainEntityOfPage": "https://stanfordmlgroup.github.io/ngboost/2-tuning.html",
-  "headline": "Tuning",
+  "mainEntityOfPage": "https://stanfordmlgroup.github.io/ngboost/content/intro.html",
+  "headline": "NGBoost",
   "datePublished": "2020-02-27T16:39:03-08:00",
   "dateModified": "2020-02-27T16:39:03-08:00",
-  "description": "        Tuning        from ngboost import NGBClassifier, NGBRegressorfrom ngboost.distns import k_categorical, Normalfrom ngboost.scores import LogScorefrom ...",
+  "description": "Welcome to the NGBoost user guide! Details on available distributions, scoring rules, learners, tuning, and model interpretation are available here, as are n...",
   "author": {
     "@type": "Person",
     "name": "Alejandro Schuler"
@@ -407,7 +407,7 @@ initFunction(initPrint)
     },
     kernelOptions: {
     kernelName: "python3",
-    path: "content"
+    path: ""
     }
 }
 </script>
@@ -693,20 +693,10 @@ initFunction(initPrint)
 <div class="download-buttons-dropdown">
     <button id="dropdown-button-trigger" class="interact-button"><img src="/ngboost/assets/images/download-solid.svg" alt="Download" /></button>
     <div class="download-buttons">
-        <a href="/ngboost/content/2-tuning.ipynb" download>
-        <button id="interact-button-download" class="interact-button">.ipynb</button>
-        </a>
         
         <a id="interact-button-print"><button id="interact-button-download" class="interact-button">.pdf</button></a>
     </div>
 </div>
-
-
-  <button id="interact-button-thebelab" class="interact-button">Thebelab</button>
-
-  
-  
-  
 
 
 </div>
@@ -725,367 +715,16 @@ initFunction(initPrint)
 
       <main class="c-textbook__page" tabindex="-1">
             <div class="c-textbook__content" id="textbook_content">
-                  <main class="jupyter-page">
-    <div id="page-info"><div id="page-title">Tuning</div>
-</div>
-    
-<div class="jb_cell tag_hide_input">
+              <p>Welcome to the NGBoost user guide!</p>
 
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
+<p>Details on available distributions, scoring rules, learners, tuning, and model interpretation are available here, as are numerous usage examples. Please see the development section for more information on how to add new distributions or scores to NGBoost.</p>
 
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBClassifier</span><span class="p">,</span> <span class="n">NGBRegressor</span>
-<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">k_categorical</span><span class="p">,</span> <span class="n">Normal</span>
-<span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">LogScore</span>
-
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_breast_cancer</span><span class="p">,</span> <span class="n">load_boston</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">train_test_split</span>
-
-<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">X_reg_train</span><span class="p">,</span> <span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">Y_reg_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_breast_cancer</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># artificially make this a 3-class problem instead of a 2-class problem</span>
-<span class="n">X_cls_train</span><span class="p">,</span> <span class="n">X_cls_test</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">,</span> <span class="n">Y_cls_test</span>  <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Staged-Prediction">Staged Prediction<a class="anchor-link" href="#Staged-Prediction"> </a></h2>
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>All fit NGBoost objects support staged prediction.</p>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_cls</span> <span class="o">=</span> <span class="n">NGBClassifier</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">k_categorical</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">Score</span><span class="o">=</span><span class="n">LogScore</span><span class="p">,</span> <span class="n">n_estimators</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_cls_train</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>For instance, to get the predictions on the first 5 examples after fitting 415 base learners, use:</p>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">ngb_cls</span><span class="o">.</span><span class="n">staged_predict</span><span class="p">(</span><span class="n">X_cls_test</span><span class="p">)</span>
-<span class="n">preds</span><span class="p">[</span><span class="mi">415</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="jb_output_wrapper }}">
-<div class="output_area">
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>array([1, 1, 1, 1, 1])</pre>
-</div>
-
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">pred_dists</span> <span class="o">=</span> <span class="n">ngb_cls</span><span class="o">.</span><span class="n">staged_pred_dist</span><span class="p">(</span><span class="n">X_cls_test</span><span class="p">)</span>
-<span class="n">pred_dists</span><span class="p">[</span><span class="mi">415</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="jb_output_wrapper }}">
-<div class="output_area">
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>{&#39;p0&#39;: array([0.0036683 , 0.00370816, 0.00366828, 0.00366828, 0.00366828]),
- &#39;p1&#39;: array([0.99608409, 0.99619704, 0.99607732, 0.99607732, 0.99607732]),
- &#39;p2&#39;: array([2.47605121e-04, 9.47955927e-05, 2.54405628e-04, 2.54405628e-04,
-        2.54405628e-04])}</pre>
-</div>
-
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>This is useful in conjunction with tracking errors on a validation set, which you can do by passing the <code>X_val</code> and <code>Y_val</code> arguments and then inspecting the <code>.best_val_loss_itr</code> instance attribute.</p>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">()</span>
-<span class="n">ngb</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">X_val</span><span class="o">=</span><span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_val</span><span class="o">=</span><span class="n">Y_reg_test</span><span class="p">)</span> <span class="c1"># use a validation set instead of test set here in your own work</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">ngb</span><span class="o">.</span><span class="n">best_val_loss_itr</span><span class="p">)</span>
-<span class="n">best_preds</span> <span class="o">=</span> <span class="n">ngb</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="n">ngb</span><span class="o">.</span><span class="n">best_val_loss_itr</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="jb_output_wrapper }}">
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[iter 0] loss=3.6639 val_loss=3.5325 scale=0.5000 norm=3.4373
-[iter 100] loss=3.1102 val_loss=3.1139 scale=1.0000 norm=3.9032
-[iter 200] loss=2.4635 val_loss=2.6144 scale=2.0000 norm=4.0454
-[iter 300] loss=2.0046 val_loss=2.6142 scale=2.0000 norm=3.1239
-[iter 400] loss=1.8151 val_loss=2.8736 scale=1.0000 norm=1.4106
-253
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Early-Stopping">Early Stopping<a class="anchor-link" href="#Early-Stopping"> </a></h2>
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>NGBoost also has early stopping. If an integer <code>early_stopping_rounds</code> and a validation set (<code>X_val</code>,<code>Y_val</code>) are passed to <code>fit()</code>, the algorithm will stop running after the validation loss has increased for <code>early_stopping_rounds</code> of consecutive iterations.</p>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">_</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">X_val</span><span class="o">=</span><span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_val</span><span class="o">=</span><span class="n">Y_reg_test</span><span class="p">,</span> <span class="n">early_stopping_rounds</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="jb_output_wrapper }}">
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[iter 0] loss=3.6639 val_loss=3.5325 scale=0.5000 norm=3.4373
-[iter 100] loss=3.1102 val_loss=3.1142 scale=1.0000 norm=3.9032
-[iter 200] loss=2.4635 val_loss=2.6150 scale=2.0000 norm=4.0454
-== Early stopping achieved.
-== Best iteration / VAL 245 (val_loss=2.5231)
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Using-sklearn-Model-Selection">Using <code>sklearn</code> Model Selection<a class="anchor-link" href="#Using-sklearn-Model-Selection"> </a></h2>
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><code>sklearn</code> methods are compatible with NGBoost.</p>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="jb_cell">
-
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">GridSearchCV</span>
-<span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="k">import</span> <span class="n">DecisionTreeRegressor</span>
-
-<span class="n">b1</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;friedman_mse&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">b2</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;friedman_mse&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-
-<span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s1">&#39;minibatch_frac&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
-    <span class="s1">&#39;Base&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">]</span>
-<span class="p">}</span>
-
-<span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Normal</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-<span class="n">grid_search</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">ngb</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">grid_search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">grid_search</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="jb_output_wrapper }}">
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>{&#39;Base&#39;: DecisionTreeRegressor(criterion=&#39;friedman_mse&#39;, max_depth=4, max_features=None,
-                      max_leaf_nodes=None, min_impurity_decrease=0.0,
-                      min_impurity_split=None, min_samples_leaf=1,
-                      min_samples_split=2, min_weight_fraction_leaf=0.0,
-                      presort=False, random_state=None, splitter=&#39;best&#39;), &#39;minibatch_frac&#39;: 0.5, &#39;n_estimators&#39;: 20}
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
- 
-
-
-    </main>
-    
             </div>
             <div class="c-textbook__footer" id="textbook_footer">
               
 <nav class="c-page__nav">
   
-    
-    
 
-    <a id="js-page__nav__prev" class="c-page__nav__prev" href="/ngboost/1-useage.html">
-      〈 <span class="u-margin-right-tiny"></span> Usage
-    </a>
-  
-
-  
-    
-
-    
-    <a id="js-page__nav__next" class="c-page__nav__next" href="/ngboost/3-interpretation.html">
-      Model Interpretation <span class="u-margin-right-tiny"></span> 〉
-    </a>
   
 </nav>
 

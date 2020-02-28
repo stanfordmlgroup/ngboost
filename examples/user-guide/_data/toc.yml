@@ -35,7 +35,7 @@
   - url: /5-dev
 
 # External link
-- title: GitHub
+- title: Package
   url: https://github.com/stanfordmlgroup/ngboost
   external: true
   not_numbered: true

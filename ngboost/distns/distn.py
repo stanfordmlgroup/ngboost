@@ -1,5 +1,7 @@
-import numpy as np
 from warnings import warn
+
+import numpy as np
+from ngboost.helpers import Y_from_censored
 
 
 class Distn(object):
@@ -42,6 +44,22 @@ class Distn(object):
                 raise ValueError(
                     f"The scoring rule {Score.__name__} is not implemented for the {cls.__name__} distribution."
                 ) from err
+
+    @classmethod
+    def uncensor(cls, Score):
+        DistScore = cls.implementation(Score, cls.censored_scores)
+
+        class UncensoredScore(DistScore, DistScore.__base__):
+            def score(self, Y):
+                return super().score(Y_from_censored(Y))
+
+            def d_score(self, Y):
+                return super().d_score(Y_from_censored(Y))
+
+        class DistWithUncensoredScore(cls):
+            scores = [UncensoredScore]
+
+        return DistWithUncensoredScore
 
 
 class RegressionDistn(Distn):

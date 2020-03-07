@@ -1,10 +1,15 @@
 import numpy as np
-from ngboost.ngboost import NGBoost
-from ngboost.distns import RegressionDistn, ClassificationDistn
-from ngboost.distns import Bernoulli, Normal, LogNormal
-from ngboost.scores import LogScore
-from ngboost.learners import default_tree_learner
+from ngboost.distns import (
+    Bernoulli,
+    ClassificationDistn,
+    LogNormal,
+    Normal,
+    RegressionDistn,
+)
 from ngboost.helpers import Y_from_censored
+from ngboost.learners import default_tree_learner
+from ngboost.ngboost import NGBoost
+from ngboost.scores import LogScore
 from sklearn.base import BaseEstimator
 
 
@@ -53,19 +58,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         if not hasattr(
             Dist, "scores"
         ):  # user is trying to use a dist that only has censored scores implemented
-            DistScore = Dist.implementation(Score, Dist.censored_scores)
-
-            class UncensoredScore(DistScore, DistScore.__base__):
-                def score(self, Y):
-                    return super().score(Y_from_censored(Y))
-
-                def d_score(self, Y):
-                    return super().d_score(Y_from_censored(Y))
-
-            class DistWithUncensoredScore(Dist):
-                scores = [UncensoredScore]
-
-            Dist = DistWithUncensoredScore
+            Dist = Dist.uncensor(Score)
 
         super().__init__(
             Dist,
@@ -81,6 +74,19 @@ class NGBRegressor(NGBoost, BaseEstimator):
             tol,
             random_state,
         )
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        # Remove the unpicklable entries.
+        if self.Dist.__name__ == "DistWithUncensoredScore":
+            state["Dist"] = self.Dist.__base__
+            state["uncensor"] = True
+        return state
+
+    def __setstate__(self, state_dict):
+        if "uncensor" in state_dict.keys():
+            state_dict["Dist"] = state_dict["Dist"].uncensor(state_dict["Score"])
+        super().__setstate__(state_dict)
 
 
 class NGBClassifier(NGBoost, BaseEstimator):

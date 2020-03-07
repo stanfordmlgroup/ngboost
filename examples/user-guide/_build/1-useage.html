@@ -1,0 +1,861 @@
+---
+interact_link: content/1-useage.ipynb
+kernel_name: python3
+kernel_path: content
+has_widgets: false
+title: |-
+  Usage
+pagenum: 2
+prev_page:
+  url: /0-install.html
+next_page:
+  url: /2-tuning.html
+suffix: .ipynb
+search: scipy distribution regression returns distributions ngboost used logscore stats set classification implemented scores reference org score crpscore class argument survival k p wikipedia parameters normal scale docs doc generated html lognormal exponential constructor appropriate default also bernoulli base points standard test those support through ngbregressor passing dist prediction methods objects predict regressor preddist object conditional xi supports right censored any analysis event censoring kcategorical en wiki ngbclassifier sklearn log specified usage well start probabilistic example boston housing dataset getting estimated distributional easy predicted mean deviation five observations variety broken into infinite finite loc norm s lognorm expon point predictions expect
+
+comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /content***"
+---
+
+    <main class="jupyter-page">
+    <div id="page-info"><div id="page-title">Usage</div>
+</div>
+    
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We'll start with a probabilistic regression example on the Boston housing dataset:</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBRegressor</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_boston</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="k">import</span> <span class="n">mean_squared_error</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">Y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">)</span>
+<span class="n">Y_preds</span> <span class="o">=</span> <span class="n">ngb</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+<span class="n">Y_dists</span> <span class="o">=</span> <span class="n">ngb</span><span class="o">.</span><span class="n">pred_dist</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1"># test Mean Squared Error</span>
+<span class="n">test_MSE</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">Y_preds</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Test MSE&#39;</span><span class="p">,</span> <span class="n">test_MSE</span><span class="p">)</span>
+
+<span class="c1"># test Negative Log Likelihood</span>
+<span class="n">test_NLL</span> <span class="o">=</span> <span class="o">-</span><span class="n">Y_dists</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">Y_test</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Test NLL&#39;</span><span class="p">,</span> <span class="n">test_NLL</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[iter 0] loss=3.6231 val_loss=0.0000 scale=0.5000 norm=3.3059
+[iter 100] loss=3.0349 val_loss=0.0000 scale=2.0000 norm=7.1655
+[iter 200] loss=2.3596 val_loss=0.0000 scale=2.0000 norm=3.7977
+[iter 300] loss=1.9685 val_loss=0.0000 scale=2.0000 norm=3.0467
+[iter 400] loss=1.7957 val_loss=0.0000 scale=1.0000 norm=1.3911
+Test MSE 11.751316258028782
+Test NLL 3.7006980539890253
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Getting the estimated distributional parameters at a set of points is easy. This returns the predicted mean and standard deviation of the first five observations in the test set:</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">Y_dists</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;loc&#39;: array([23.46378107, 16.37767307, 23.47872484, 33.74513435, 24.77121111]),
+ &#39;scale&#39;: array([1.28837356, 1.25869559, 1.03021179, 1.01968677, 1.01327948])}</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Distributions">Distributions<a class="anchor-link" href="#Distributions"> </a></h2><p>NGBoost can be used with a variety of distributions, broken down into those for regression (support on an infinite set) and those for classification (support on a finite set).</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Regression-Distributions">Regression Distributions<a class="anchor-link" href="#Regression-Distributions"> </a></h3>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<table>
+<thead><tr>
+<th>Distribution</th>
+<th>Parameters</th>
+<th>Implemented Scores</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Normal</code></td>
+<td><code>loc</code>, <code>scale</code></td>
+<td><code>LogScore</code>, <code>CRPScore</code></td>
+<td><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.norm.html"><code>scipy.stats</code> normal</a></td>
+</tr>
+<tr>
+<td><code>LogNormal</code></td>
+<td><code>s</code>, <code>scale</code></td>
+<td><code>LogScore</code>, <code>CRPScore</code></td>
+<td><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html"><code>scipy.stats</code> lognormal</a></td>
+</tr>
+<tr>
+<td><code>Exponential</code></td>
+<td><code>scale</code></td>
+<td><code>LogScore</code>, <code>CRPScore</code></td>
+<td><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.expon.html"><code>scipy.stats</code> exponential</a></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Regression distributions can be used through the <code>NGBRegressor()</code> constructor by passing the appropriate class as the <code>Dist</code> argument. <code>Normal</code> is the default.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">Exponential</span><span class="p">,</span> <span class="n">Normal</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">X_reg_train</span><span class="p">,</span> <span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">Y_reg_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">ngb_norm</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Normal</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
+<span class="n">ngb_exp</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Exponential</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>There are two prediction methods for <code>NGBRegressor</code> objects: <code>predict()</code>, which returns point predictions as one would expect from a standard regressor, and <code>pred_dist()</code>, which returns a distribution object representing the conditional distribution of $Y|X=x_i$ at the points $x_i$ in the test set.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_norm</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([32.03465906, 19.15818411, 19.30217489, 20.94209258, 18.99318666])</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_exp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([22.28380823, 20.10027072, 17.55630199, 21.18983355, 18.11223638])</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_exp</span><span class="o">.</span><span class="n">pred_dist</span><span class="p">(</span><span class="n">X_reg_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;scale&#39;: array([22.28380823, 20.10027072, 17.55630199, 21.18983355, 18.11223638])}</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Survival-Regression">Survival Regression<a class="anchor-link" href="#Survival-Regression"> </a></h4>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>NGBoost supports analyses of right-censored data. Any distribution that can be used for regression in NGBoost can also be used for survival analysis in theory, but this requires the implementation of the right-censored version of the appropriate score. At the moment, <code>LogNormal</code> and <code>Exponential</code> have these scores implemented. To do survival analysis, use <code>NGBSurvival</code> and pass both the time-to-event (or censoring) and event indicator vectors to  <code>fit()</code>:</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBSurvival</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">LogNormal</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">X_surv_train</span><span class="p">,</span> <span class="n">X_surv_test</span><span class="p">,</span> <span class="n">Y_surv_train</span><span class="p">,</span> <span class="n">Y_surv_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="c1"># introduce administrative censoring to simulate survival data</span>
+<span class="n">T_surv_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="c1"># time of an event or censoring</span>
+<span class="n">E_surv_train</span> <span class="o">=</span> <span class="n">Y_train</span> <span class="o">&gt;</span> <span class="mi">30</span> <span class="c1"># 1 if T[i] is the time of an event, 0 if it&#39;s a time of censoring</span>
+
+<span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBSurvival</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">LogNormal</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_surv_train</span><span class="p">,</span> <span class="n">T_surv_train</span><span class="p">,</span> <span class="n">E_surv_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[iter 0] loss=1.2578 val_loss=0.0000 scale=4.0000 norm=2.3885
+[iter 100] loss=0.5902 val_loss=0.0000 scale=2.0000 norm=0.7520
+[iter 200] loss=0.3591 val_loss=0.0000 scale=4.0000 norm=0.9354
+[iter 300] loss=0.2541 val_loss=0.0000 scale=2.0000 norm=0.3104
+[iter 400] loss=0.1479 val_loss=0.0000 scale=4.0000 norm=0.3567
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The scores currently implemented assume that the censoring is independent of survival, conditional on the observed predictors.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Classification-Distributions">Classification Distributions<a class="anchor-link" href="#Classification-Distributions"> </a></h3>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<table>
+<thead><tr>
+<th>Distribution</th>
+<th>Parameters</th>
+<th>Implemented Scores</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>k_categorical(K)</code></td>
+<td><code>p0</code>, <code>p1</code>... <code>p{K-1}</code></td>
+<td><code>LogScore</code></td>
+<td><a href="https://en.wikipedia.org/wiki/Categorical_distribution">Categorical distribution on Wikipedia</a></td>
+</tr>
+<tr>
+<td><code>Bernoulli</code></td>
+<td><code>p</code></td>
+<td><code>LogScore</code></td>
+<td><a href="https://en.wikipedia.org/wiki/Bernoulli_distribution">Bernoulli distribution on Wikipedia</a></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Classification distributions can be used through the <code>NGBClassifier()</code> constructor by passing the appropriate class as the <code>Dist</code> argument. <code>Bernoulli</code> is the default and is equivalent to <code>k_categorical(2)</code>.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBClassifier</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">k_categorical</span><span class="p">,</span> <span class="n">Bernoulli</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_breast_cancer</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_breast_cancer</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># artificially make this a 3-class problem instead of a 2-class problem</span>
+<span class="n">X_cls_train</span><span class="p">,</span> <span class="n">X_cls_test</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">,</span> <span class="n">Y_cls_test</span>  <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">ngb_cat</span> <span class="o">=</span> <span class="n">NGBClassifier</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">k_categorical</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># tell ngboost that there are 3 possible outcomes</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">ngb_cat</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_cls_train</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">)</span> <span class="c1"># Y should have only 3 values: {0,1,2}</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>When using NGBoost for classification, the outcome vector <code>Y</code> must consist only of integers from 0 to K-1, where K is the total number of classes. This is consistent with the classification standards in sklearn.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>NGBClassifier</code> objects have three prediction methods: <code>predict()</code> returns the most likely class, <code>predict_proba()</code> returns the class probabilities, and <code>pred_dist()</code> returns the distribution object.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_cat</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_cls_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([1, 1, 1, 1, 1])</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_cat</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_cls_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([[7.28228735e-04, 9.99260196e-01, 1.15752705e-05],
+       [7.28206439e-04, 9.99229602e-01, 4.21917010e-05],
+       [7.28207212e-04, 9.99230662e-01, 4.11305541e-05],
+       [7.28206439e-04, 9.99229602e-01, 4.21917010e-05],
+       [7.28206439e-04, 9.99229602e-01, 4.21917010e-05]])</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb_cat</span><span class="o">.</span><span class="n">pred_dist</span><span class="p">(</span><span class="n">X_cls_test</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;p0&#39;: array([0.00072823, 0.00072821, 0.00072821, 0.00072821, 0.00072821]),
+ &#39;p1&#39;: array([0.9992602 , 0.9992296 , 0.99923066, 0.9992296 , 0.9992296 ]),
+ &#39;p2&#39;: array([1.15752705e-05, 4.21917010e-05, 4.11305541e-05, 4.21917010e-05,
+        4.21917010e-05])}</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Scores">Scores<a class="anchor-link" href="#Scores"> </a></h2>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>NGBoost supports the log score (<code>LogScore</code>, also known as negative log-likelihood) and CRPS (<code>CRPScore</code>), although each score may not be implemented for each distribution. The score is specified by the <code>Score</code> argument in the constructor.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell tag_hide_output">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">LogScore</span><span class="p">,</span> <span class="n">CRPScore</span>
+
+<span class="n">NGBRegressor</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Exponential</span><span class="p">,</span> <span class="n">Score</span><span class="o">=</span><span class="n">CRPScore</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
+<span class="n">NGBClassifier</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">k_categorical</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">Score</span><span class="o">=</span><span class="n">LogScore</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_cls_train</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>NGBClassifier(Base=DecisionTreeRegressor(criterion=&#39;friedman_mse&#39;, max_depth=3,
+                                         max_features=None, max_leaf_nodes=None,
+                                         min_impurity_decrease=0.0,
+                                         min_impurity_split=None,
+                                         min_samples_leaf=1,
+                                         min_samples_split=2,
+                                         min_weight_fraction_leaf=0.0,
+                                         presort=False, random_state=None,
+                                         splitter=&#39;best&#39;),
+              Dist=&lt;class &#39;ngboost.distns.categorical.k_categorical.&lt;locals&gt;.Categorical&#39;&gt;,
+              Score=&lt;class &#39;ngboost.scores.LogScore&#39;&gt;, col_sample=1.0,
+              learning_rate=0.01, minibatch_frac=1.0, n_estimators=500,
+              natural_gradient=True,
+              random_state=RandomState(MT19937) at 0x119C48D10, tol=0.0001,
+              verbose=False, verbose_eval=100)</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Base-Learners">Base Learners<a class="anchor-link" href="#Base-Learners"> </a></h2>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>NGBoost can be used with any sklearn regressor as the base learner, specified with the <code>Base</code> argument. The default is a depth-3 regression tree.</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell tag_hide_output">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="k">import</span> <span class="n">DecisionTreeRegressor</span>
+
+<span class="n">learner</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;friedman_mse&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="n">NGBSurvival</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Exponential</span><span class="p">,</span> <span class="n">Score</span><span class="o">=</span><span class="n">CRPScore</span><span class="p">,</span> <span class="n">Base</span><span class="o">=</span><span class="n">learner</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_surv_train</span><span class="p">,</span> <span class="n">T_surv_train</span><span class="p">,</span> <span class="n">E_surv_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>NGBSurvival(Base=DecisionTreeRegressor(criterion=&#39;friedman_mse&#39;, max_depth=5,
+                                       max_features=None, max_leaf_nodes=None,
+                                       min_impurity_decrease=0.0,
+                                       min_impurity_split=None,
+                                       min_samples_leaf=1, min_samples_split=2,
+                                       min_weight_fraction_leaf=0.0,
+                                       presort=False, random_state=None,
+                                       splitter=&#39;best&#39;),
+            Dist=&lt;class &#39;ngboost.api.NGBSurvival.__init__.&lt;locals&gt;.SurvivalDistn&#39;&gt;,
+            Score=&lt;class &#39;ngboost.scores.CRPScore&#39;&gt;, col_sample=1.0,
+            learning_rate=0.01, minibatch_frac=1.0, n_estimators=500,
+            natural_gradient=True,
+            random_state=RandomState(MT19937) at 0x119C48D10, tol=0.0001,
+            verbose=False, verbose_eval=100)</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Other-Arguments">Other Arguments<a class="anchor-link" href="#Other-Arguments"> </a></h2>
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The learning rate, number of estimators, minibatch fraction, and column subsampling are also easily adjusted:</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="jb_cell tag_hide_output">
+
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> 
+             <span class="n">minibatch_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">col_sample</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ngb</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[iter 0] loss=3.5985 val_loss=0.0000 scale=0.5000 norm=3.2693
+</pre>
+</div>
+</div>
+</div>
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>NGBRegressor(Base=DecisionTreeRegressor(criterion=&#39;friedman_mse&#39;, max_depth=3,
+                                        max_features=None, max_leaf_nodes=None,
+                                        min_impurity_decrease=0.0,
+                                        min_impurity_split=None,
+                                        min_samples_leaf=1, min_samples_split=2,
+                                        min_weight_fraction_leaf=0.0,
+                                        presort=False, random_state=None,
+                                        splitter=&#39;best&#39;),
+             Dist=&lt;class &#39;ngboost.distns.normal.Normal&#39;&gt;,
+             Score=&lt;class &#39;ngboost.scores.LogScore&#39;&gt;, col_sample=0.5,
+             learning_rate=0.01, minibatch_frac=0.5, n_estimators=100,
+             natural_gradient=True,
+             random_state=RandomState(MT19937) at 0x119C48D10, tol=0.0001,
+             verbose=True, verbose_eval=100)</pre>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+ 
+
+
+    </main>
+    

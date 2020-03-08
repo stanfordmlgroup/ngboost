@@ -122,7 +122,7 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>array([1, 1, 1, 1, 1])</pre>
+<pre>array([0, 0, 1, 0, 1])</pre>
 </div>
 
 </div>
@@ -157,10 +157,9 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>{&#39;p0&#39;: array([0.0036683 , 0.00370816, 0.00366828, 0.00366828, 0.00366828]),
- &#39;p1&#39;: array([0.99608409, 0.99619704, 0.99607732, 0.99607732, 0.99607732]),
- &#39;p2&#39;: array([2.47605121e-04, 9.47955927e-05, 2.54405628e-04, 2.54405628e-04,
-        2.54405628e-04])}</pre>
+<pre>{&#39;p0&#39;: array([0.93294265, 0.9946058 , 0.00239031, 0.9946058 , 0.00239031]),
+ &#39;p1&#39;: array([0.01480089, 0.00512651, 0.99744307, 0.00512651, 0.99744307]),
+ &#39;p2&#39;: array([0.05225647, 0.00026768, 0.00016662, 0.00026768, 0.00016662])}</pre>
 </div>
 
 </div>
@@ -206,12 +205,12 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[iter 0] loss=3.6639 val_loss=3.5325 scale=0.5000 norm=3.4373
-[iter 100] loss=3.1102 val_loss=3.1139 scale=1.0000 norm=3.9032
-[iter 200] loss=2.4635 val_loss=2.6144 scale=2.0000 norm=4.0454
-[iter 300] loss=2.0046 val_loss=2.6142 scale=2.0000 norm=3.1239
-[iter 400] loss=1.8151 val_loss=2.8736 scale=1.0000 norm=1.4106
-253
+<pre>[iter 0] loss=3.6296 val_loss=3.6565 scale=0.5000 norm=3.3412
+[iter 100] loss=3.0606 val_loss=3.0973 scale=1.0000 norm=3.7137
+[iter 200] loss=2.4130 val_loss=2.5824 scale=2.0000 norm=3.9143
+[iter 300] loss=1.9793 val_loss=2.6617 scale=2.0000 norm=3.0184
+[iter 400] loss=1.7858 val_loss=3.0965 scale=2.0000 norm=2.7297
+238
 </pre>
 </div>
 </div>
@@ -250,7 +249,7 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">_</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">X_val</span><span class="o">=</span><span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_val</span><span class="o">=</span><span class="n">Y_reg_test</span><span class="p">,</span> <span class="n">early_stopping_rounds</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">_</span> <span class="o">=</span> <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">early_stopping_rounds</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">X_val</span><span class="o">=</span><span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_val</span><span class="o">=</span><span class="n">Y_reg_test</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -264,11 +263,11 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[iter 0] loss=3.6639 val_loss=3.5325 scale=0.5000 norm=3.4373
-[iter 100] loss=3.1102 val_loss=3.1142 scale=1.0000 norm=3.9032
-[iter 200] loss=2.4635 val_loss=2.6150 scale=2.0000 norm=4.0454
+<pre>[iter 0] loss=3.6296 val_loss=3.6565 scale=0.5000 norm=3.3412
+[iter 100] loss=3.0606 val_loss=3.0975 scale=1.0000 norm=3.7137
+[iter 200] loss=2.4130 val_loss=2.5819 scale=2.0000 norm=3.9143
 == Early stopping achieved.
-== Best iteration / VAL 245 (val_loss=2.5231)
+== Best iteration / VAL 230 (val_loss=2.5301)
 </pre>
 </div>
 </div>
@@ -314,7 +313,6 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 <span class="n">b2</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;friedman_mse&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
     <span class="s1">&#39;minibatch_frac&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
     <span class="s1">&#39;Base&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">]</span>
 <span class="p">}</span>
@@ -336,12 +334,22 @@ comment: "***PROGRAMMATICALLY GENERATED, DO NOT EDIT. SEE ORIGINAL FILES IN /con
 <div class="jb_output_wrapper }}">
 <div class="output_area">
 
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>/usr/local/lib/python3.7/site-packages/sklearn/model_selection/_search.py:814: DeprecationWarning: The default of the `iid` parameter will change from True to False in version 0.22 and will be removed in 0.24. This will change numeric results when test-set sizes are unequal.
+  DeprecationWarning)
+</pre>
+</div>
+</div>
+</div>
+<div class="jb_output_wrapper }}">
+<div class="output_area">
+
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>{&#39;Base&#39;: DecisionTreeRegressor(criterion=&#39;friedman_mse&#39;, max_depth=4, max_features=None,
                       max_leaf_nodes=None, min_impurity_decrease=0.0,
                       min_impurity_split=None, min_samples_leaf=1,
                       min_samples_split=2, min_weight_fraction_leaf=0.0,
-                      presort=False, random_state=None, splitter=&#39;best&#39;), &#39;minibatch_frac&#39;: 0.5, &#39;n_estimators&#39;: 20}
+                      presort=False, random_state=None, splitter=&#39;best&#39;), &#39;minibatch_frac&#39;: 1.0}
 </pre>
 </div>
 </div>

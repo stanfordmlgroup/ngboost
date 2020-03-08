@@ -276,7 +276,7 @@ class NGBoost(object):
 
         return self
 
-    def score(self, X, Y):
+    def score(self, X, Y):  # for sklearn
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):

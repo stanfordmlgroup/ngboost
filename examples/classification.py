@@ -19,4 +19,4 @@ if __name__ == "__main__":
     ngb.fit(X_train, Y_train)
 
     preds = ngb.pred_dist(X_test)
-    print("ROC:", roc_auc_score(Y_test, preds.prob))
+    print("ROC:", roc_auc_score(Y_test, preds.probs[1]))

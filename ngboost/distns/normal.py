@@ -88,7 +88,10 @@ class Normal(RegressionDistn):
 
 
 ### Fixed Variance Normal ###
-class NormalFixedVarLogScore(NormalLogScore):
+class NormalFixedVarLogScore(LogScore):
+    def score(self, Y):
+        return -self.dist.logpdf(Y)
+
     def d_score(self, Y):
         D = np.zeros((len(Y), 1))
         D[:, 0] = (self.loc - Y) / self.var
@@ -100,7 +103,16 @@ class NormalFixedVarLogScore(NormalLogScore):
         return FI
 
 
-class NormalFixedVarCRPScore(NormalCRPScore):
+class NormalFixedVarCRPScore(CRPScore):
+
+    def score(self, Y):
+        Z = (Y - self.loc) / self.scale
+        return self.scale * (
+            Z * (2 * sp.stats.norm.cdf(Z) - 1)
+            + 2 * sp.stats.norm.pdf(Z)
+            - 1 / np.sqrt(np.pi)
+        )
+
     def d_score(self, Y):
         Z = (Y - self.loc) / self.scale
         D = np.zeros((len(Y), 1))

@@ -294,10 +294,6 @@ class NGBoost(object):
             max_iter is not None
         ):  # get prediction at a particular iteration if asked for
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
-        elif (
-            self.best_val_loss_itr is not None
-        ):  # this will exist if there's a validation set
-            dist = self.staged_pred_dist(X, max_iter=self.best_val_loss_itr)[-1]
         else:
             params = np.asarray(self.pred_param(X, max_iter))
             dist = self.Dist(params.T)

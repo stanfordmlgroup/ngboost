@@ -1,4 +1,12 @@
+import os
 import setuptools
+
+
+def get_long_description():
+    readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+    with open(readme_path) as f:
+        return f.read()
+
 
 setuptools.setup(
     name="ngboost",
@@ -6,7 +14,7 @@ setuptools.setup(
     author="Stanford ML Group",
     author_email="avati@cs.stanford.edu",
     description="Library for probabilistic predictions via gradient boosting.",
-    long_description="Please see Github for full description.",
+    long_description=get_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/stanfordmlgroup/ngboost",
     license="Apache License 2.0",

@@ -2,6 +2,16 @@ import os
 import setuptools
 
 
+def get_version() -> str:
+
+    version_filepath = os.path.join(os.path.dirname(__file__), "ngboost", "version.py")
+    with open(version_filepath) as f:
+        for line in f:
+            if line.startswith("__version__"):
+                return line.strip().split()[-1][1:-1]
+    assert False
+
+
 def get_long_description():
     readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
     with open(readme_path) as f:
@@ -10,7 +20,7 @@ def get_long_description():
 
 setuptools.setup(
     name="ngboost",
-    version="0.2.0",
+    version=get_version(),
     author="Stanford ML Group",
     author_email="avati@cs.stanford.edu",
     description="Library for probabilistic predictions via gradient boosting.",

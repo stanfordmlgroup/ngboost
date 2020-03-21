@@ -3,7 +3,6 @@ import setuptools
 
 
 def get_version() -> str:
-
     version_filepath = os.path.join(os.path.dirname(__file__), "ngboost", "version.py")
     with open(version_filepath) as f:
         for line in f:

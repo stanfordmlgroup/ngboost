@@ -104,7 +104,6 @@ class NormalFixedVarLogScore(LogScore):
 
 
 class NormalFixedVarCRPScore(CRPScore):
-
     def score(self, Y):
         Z = (Y - self.loc) / self.scale
         return self.scale * (

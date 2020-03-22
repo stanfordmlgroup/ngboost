@@ -6,14 +6,14 @@ from ngboost.helpers import Y_from_censored
 
 class Distn(object):
     """
-	User should define:
-	- __init__(params) to hold self.params_ = params
-	- X_scoring(self, Y) 
-	- D_X_scoring(self, Y)
-	- sample(self, n)
-	- fit(Y)
-	- predict(self) mean, mode, whatever (method to call for point prediction
-	"""
+    User should define:
+    - __init__(params) to hold self.params_ = params
+    - X_scoring(self, Y) 
+    - D_X_scoring(self, Y)
+    - sample(self, n)
+    - fit(Y)
+    - predict(self) mean, mode, whatever (method to call for point prediction
+    """
 
     def __init__(self, params):
         self._params = params
@@ -26,10 +26,10 @@ class Distn(object):
 
     @classmethod
     def implementation(cls, Score, scores=None):
+	"""
+        Finds the distribution-appropriate implementation of Score 
+        (using the provided scores if cls.scores is empty)
         """
-		Finds the distribution-appropriate implementation of Score 
-		(using the provided scores if cls.scores is empty) 
-		"""
         if scores is None:
             scores = cls.scores
         if Score in scores:

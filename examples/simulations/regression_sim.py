@@ -31,7 +31,7 @@ if __name__ == "__main__":
     Y = (X @ beta1 + args.noise_lvl * noise).squeeze()
     print(X.shape, Y.shape)
 
-    X_train, X_test = X[:1000, :], X[1000:, ]
+    X_train, X_test = X[:1000, :], X[1000:,]
     Y_train, Y_test = Y[:1000], Y[1000:]
 
     ngb = NGBoost(

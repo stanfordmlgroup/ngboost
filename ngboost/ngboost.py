@@ -242,13 +242,13 @@ class NGBoost(object):
                 val_loss_list += [val_loss]
                 if val_loss < best_val_loss:
                     best_val_loss, self.best_val_loss_itr = val_loss, itr
-                if early_stopping_rounds is not None and best_val_loss < np.min(
+                if early_stopping_rounds is not None and len(val_loss_list) > early_stopping_rounds and best_val_loss < np.min(
                     np.array(val_loss_list[-early_stopping_rounds:])
                 ):
                     if self.verbose:
                         print(f"== Early stopping achieved.")
                         print(
-                            f"== Best iteration / VAL {self.best_val_loss_itr} (val_loss={best_val_loss:.4f})"
+                            f"== Best iteration / VAL{self.best_val_loss_itr} (val_loss={best_val_loss:.4f})"
                         )
                     break
 

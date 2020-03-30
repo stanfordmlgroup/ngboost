@@ -7,7 +7,7 @@ help:
 	@echo "  clean       to clean out site build files"
 	@echo "  runall      to run all notebooks in-place, capturing outputs with the notebook"
 	@echo "  serve       to serve the repository locally with Jekyll"
-	@echo "  build       to build the site HTML and store in _site/"
+	@echo "  build       to build the site HTML and store in _build/"
 	@echo "  site 		 to build the site HTML, store in _site/, and serve with Jekyll"
 
 

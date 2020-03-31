@@ -102,7 +102,7 @@ class NGBoost(object):
             params -= self.learning_rate * resids * s
         return params
 
-    def sample(self, X, Y, params):
+    def sample(self, X, Y, sample_weight, params):
         idxs = np.arange(len(Y))
         col_idx = np.arange(X.shape[1])
 
@@ -118,7 +118,16 @@ class NGBoost(object):
                 np.arange(X.shape[1]), col_size, replace=False
             )
 
-        return idxs, col_idx, X[idxs, :][:, col_idx], Y[idxs], params[idxs, :]
+        weight_batch = None if sample_weight is None else sample_weight[idxs]
+
+        return (
+            idxs,
+            col_idx,
+            X[idxs, :][:, col_idx],
+            Y[idxs],
+            weight_batch,
+            params[idxs, :],
+        )
 
     def fit_base(self, X, grads, sample_weight=None):
         models = [
@@ -200,9 +209,7 @@ class NGBoost(object):
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D, Y: D.total_score(
-                Y, sample_weight=sample_weight
-            )
+            train_loss_monitor = lambda D, Y, W: D.total_score(Y, sample_weight=W)
 
         if not val_loss_monitor:
             val_loss_monitor = lambda D, Y: D.total_score(
@@ -210,17 +217,19 @@ class NGBoost(object):
             )
 
         for itr in range(self.n_estimators):
-            _, col_idx, X_batch, Y_batch, P_batch = self.sample(X, Y, params)
+            _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
+                X, Y, sample_weight, params
+            )
             self.col_idxs.append(col_idx)
 
             D = self.Manifold(P_batch.T)
 
-            loss_list += [train_loss_monitor(D, Y_batch)]
+            loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
 
-            proj_grad = self.fit_base(X_batch, grads, sample_weight)
-            scale = self.line_search(proj_grad, P_batch, Y_batch, sample_weight)
+            proj_grad = self.fit_base(X_batch, grads, weight_batch)
+            scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
 
             # pdb.set_trace()
             params -= (
@@ -242,8 +251,11 @@ class NGBoost(object):
                 val_loss_list += [val_loss]
                 if val_loss < best_val_loss:
                     best_val_loss, self.best_val_loss_itr = val_loss, itr
-                if early_stopping_rounds is not None and len(val_loss_list) > early_stopping_rounds and best_val_loss < np.min(
-                    np.array(val_loss_list[-early_stopping_rounds:])
+                if (
+                    early_stopping_rounds is not None
+                    and len(val_loss_list) > early_stopping_rounds
+                    and best_val_loss
+                    < np.min(np.array(val_loss_list[-early_stopping_rounds:]))
                 ):
                     if self.verbose:
                         print(f"== Early stopping achieved.")

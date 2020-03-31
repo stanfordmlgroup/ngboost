@@ -390,7 +390,6 @@ class NGBoost(object):
             [
                 getattr(tree, "feature_importances_")
                 for tree in trees
-                if tree.tree_.node_count > 1
             ]
             for trees in params_trees
         ]

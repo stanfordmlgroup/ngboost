@@ -13,6 +13,8 @@ dist/
 downloads/
 eggs/
 .eggs/
+examples/user-guide/_build/
+examples/user-guide/.sass-cache/
 lib/
 lib64/
 parts/

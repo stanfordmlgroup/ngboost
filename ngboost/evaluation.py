@@ -12,7 +12,7 @@ def calibration_regression(Forecast, Y, bins=11, eps=1e-3):
     pctles = np.linspace(eps, 1 - eps, bins)
     observed = np.zeros_like(pctles)
     for i, pctle in enumerate(pctles):
-        icdfs = Forecast.ppf(pctle)[:, np.newaxis]
+        icdfs = Forecast.ppf(pctle).reshape(Y.shape)
         observed[i] = np.mean(Y < icdfs)
     slope, intercept = np.polyfit(pctles, observed, deg=1)
     return pctles, observed, slope, intercept

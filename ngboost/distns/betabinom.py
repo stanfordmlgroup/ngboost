@@ -10,7 +10,7 @@ from array import array
 class BetaBinomLogScore(LogScore): 
     
     def score(self, Y):
-        return -self.dist.logpdf(Y)
+        return -self.dist.logpmf(Y)
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))

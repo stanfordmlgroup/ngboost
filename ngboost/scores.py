@@ -14,6 +14,7 @@ class Score:
             except:
                 print('lstsq')
                 for r in range(metric.shape[0]):
+                    print(r, metric[r], grad[r])
                     solution = np.linalg.lstsq(metric[r], grad[r], rcond=None)
                     grad[r] = solution[0]
         return grad

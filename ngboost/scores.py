@@ -10,7 +10,7 @@ class Score:
         if natural:
             metric = self.metric()
             print(metric.shape)
-            grad = np.linalg.solve(metric, grad)
+            grad = np.linalg.lstsq(metric, grad)
         return grad
 
 

@@ -5,7 +5,8 @@ from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
 from scipy.special import digamma
 from scipy.special import beta as betafunction
-                      
+from fastbetabino import *
+from array import array     
 class BetaBinomLogScore(LogScore): 
     
     def score(self, Y):
@@ -45,7 +46,8 @@ class BetaBinom(RegressionDistn):
         self.dist = dist(n=1, a=self.alpha, b=self.beta)
 
     def fit(Y):
-        alpha, beta, loc, scale = dist.fit(Y) # use scipy's implementation
+        imps = np.ones_like(Y)
+        alpha, beta = fit_alpha_beta(imps, Y) # use scipy's implementation
         return np.array([np.log(alpha), np.log(beta)])
 
     def sample(self, m):

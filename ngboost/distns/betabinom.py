@@ -1,26 +1,37 @@
-from scipy.stats import beta as dist
+from scipy.stats import betabinom as dist
+from scipy.stats import beta as betadist
 import numpy as np
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
 from scipy.special import digamma
+from scipy.special import beta as betafunction
                       
-class BetaLogScore(LogScore): 
+class BetaBinomLogScore(LogScore): 
     
     def score(self, Y):
         return -self.dist.logpdf(Y)
 
     def d_score(self, Y):
-        eps = 1e-8
-        Y = np.maximum(eps, np.minimum(1-eps, Y))
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
-        D[:, 0] = self.alpha * digamma(self.alpha + self.alpha) - digamma(self.alpha) + np.log(Y)
-        D[:, 1] = self.beta * (digamma(self.alpha + self.beta) - digamma(self.beta) + np.log(1 - Y))
+        p = betadist(a=self.alpha, b=self.beta)
+
+        D[:, 0] =   (
+                    (self.alpha * (digamma(self.alpha + self.beta) - digamma(self.alpha) + log(p)) *
+                    (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
+                    (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
+                    )
+        D[:, 1] =   (
+                    (self.beta * (digamma(self.alpha + self.beta) - digamma(self.beta) + log(1 - p)) *
+                    (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
+                    (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
+                    )
+
         return D
 
-class Beta(RegressionDistn):
+class BetaBinom(RegressionDistn):
 
     n_params = 2
-    scores = [BetaLogScore] 
+    scores = [BetaBinomLogScore]
 
     def __init__(self, params):
         # save the parameters
@@ -31,7 +42,7 @@ class Beta(RegressionDistn):
         self.log_beta = params[1]
         self.alpha = np.exp(params[0]) # since params[1] is log(scale)
         self.beta = np.exp(params[1]) # since params[1] is log(scale)
-        self.dist = dist(a=self.alpha, b=self.beta)
+        self.dist = dist(n=1, a=self.alpha, b=self.beta)
 
     def fit(Y):
         alpha, beta, loc, scale = dist.fit(Y) # use scipy's implementation

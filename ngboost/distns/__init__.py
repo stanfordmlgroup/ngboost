@@ -5,3 +5,4 @@ from .lognormal import LogNormal
 from .exponential import Exponential
 from .categorical import k_categorical, Bernoulli
 from .beta import Beta
+from .betabinom import BetaBinom

@@ -32,7 +32,7 @@ class Beta(RegressionDistn):
         self.dist = dist(loc=self.alpha, scale=self.beta)
 
     def fit(Y):
-        alpha, beta = dist.fit(Y) # use scipy's implementation
+        alpha, beta, loc, scale = dist.fit(Y) # use scipy's implementation
         return np.array([np.log(alpha), np.log(beta)])
 
     def sample(self, m):

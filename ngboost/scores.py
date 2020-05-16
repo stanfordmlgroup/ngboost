@@ -1,6 +1,5 @@
 import numpy as np
 from ngboost.helpers import Y_from_censored
-import scipy as sc
 
 class Score:
     def total_score(self, Y, sample_weight=None):
@@ -11,7 +10,7 @@ class Score:
         if natural:
             metric = self.metric()
             print(metric.shape)
-            grad = sc.linalg.solve(metric, grad)
+            grad = np.linalg.solve(metric, grad)
         return grad
 
 

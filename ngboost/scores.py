@@ -9,8 +9,10 @@ class Score:
         grad = self.d_score(Y)
         if natural:
             metric = self.metric()
-            print(metric.shape)
-            grad = np.linalg.lstsq(metric, grad)
+            grad = np.linalg.solve(metric, grad)
+            except:
+                for r in range(metric.shape[0]):
+                    grad[r] = np.linalg.lstsq(metric[r], grad[r])
         return grad
 
 

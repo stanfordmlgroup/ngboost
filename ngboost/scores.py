@@ -13,7 +13,8 @@ class Score:
                 grad = np.linalg.solve(metric, grad)
             except:
                 for r in range(metric.shape[0]):
-                    solution = np.linalg.lstsq(metric[r], grad[r])
+                    print(r)
+                    solution = np.linalg.lstsq(metric[r], grad[r], rcond=None)
                     grad[r] = solution[0]
         return grad
 

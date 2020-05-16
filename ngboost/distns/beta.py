@@ -10,6 +10,8 @@ class BetaLogScore(LogScore):
         return -self.dist.logpdf(Y)
 
     def d_score(self, Y):
+        eps = 1e-8
+        Y = np.maximum(eps, np.minimum(1-eps, Y))
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
         D[:, 0] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_alpha) + np.log(Y)
         D[:, 1] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_beta) + np.log(1-Y)

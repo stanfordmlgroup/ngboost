@@ -4,3 +4,4 @@ from .multivariate_normal import MultivariateNormal
 from .lognormal import LogNormal
 from .exponential import Exponential
 from .categorical import k_categorical, Bernoulli
+from .beta import Beta

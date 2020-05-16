@@ -10,6 +10,7 @@ class Score:
         grad = self.d_score(Y)
         if natural:
             metric = self.metric()
+            print(metric.shape)
             grad = sc.linalg.solve(metric, grad)
         return grad
 

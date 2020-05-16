@@ -11,8 +11,8 @@ class BetaLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
-        D[:, 0] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_alpha) + log(Y)
-        D[:, 1] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_beta) + log(1-Y)
+        D[:, 0] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_alpha) + np.log(Y)
+        D[:, 1] = digamma(self.log_alpha + self.log_beta) - digamma(self.log_beta) + np.log(1-Y)
         return D
 
 class Beta(RegressionDistn):

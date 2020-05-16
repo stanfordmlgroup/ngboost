@@ -17,12 +17,12 @@ class BetaBinomLogScore(LogScore):
         p = betadist(a=self.alpha, b=self.beta)
 
         D[:, 0] =   (
-                    (self.alpha * (digamma(self.alpha + self.beta) - digamma(self.alpha) + log(p)) *
+                    (self.alpha * (digamma(self.alpha + self.beta) - digamma(self.alpha) + np.log(p)) *
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
                     )
         D[:, 1] =   (
-                    (self.beta * (digamma(self.alpha + self.beta) - digamma(self.beta) + log(1 - p)) *
+                    (self.beta * (digamma(self.alpha + self.beta) - digamma(self.beta) + np.log(1 - p)) *
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
                     )

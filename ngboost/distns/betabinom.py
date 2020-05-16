@@ -14,7 +14,7 @@ class BetaBinomLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
-        p = betadist(a=self.alpha, b=self.beta)
+        p = betadist(a=self.alpha, b=self.beta).mean()
 
         D[:, 0] =   (
                     (self.alpha * (digamma(self.alpha + self.beta) - digamma(self.alpha) + np.log(p)) *

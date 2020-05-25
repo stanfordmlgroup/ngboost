@@ -7,7 +7,7 @@ from scipy.special import digamma
 from scipy.special import beta as betafunction
 from fastbetabino import *
 from array import array     
-class BetaBinomLogScore(LogScore): 
+class BetaBernoulliLogScore(LogScore): 
     
     def score(self, Y):
         return -self.dist.logpmf(Y)
@@ -26,13 +26,13 @@ class BetaBinomLogScore(LogScore):
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
                     )
-
+        
         return D
 
-class BetaBinom(RegressionDistn):
+class BetaBernoulli(RegressionDistn):
 
     n_params = 2
-    scores = [BetaBinomLogScore]
+    scores = [BetaBernoulliLogScore]
 
     def __init__(self, params):
         # save the parameters
@@ -41,8 +41,8 @@ class BetaBinom(RegressionDistn):
         # create other objects that will be useful later
         self.log_alpha = params[0]
         self.log_beta = params[1]
-        self.alpha = np.exp(params[0]) # since params[1] is log(scale)
-        self.beta = np.exp(params[1]) # since params[1] is log(scale)
+        self.alpha = np.exp(params[0]) # since params[1] is log(alpha)
+        self.beta = np.exp(params[1]) # since params[1] is log(beta)
         self.dist = dist(n=1, a=self.alpha, b=self.beta)
 
     def fit(Y):

@@ -98,7 +98,7 @@ class NGBoost(object):
         ):
             if max_iter and i == max_iter:
                 break
-            resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
+            resids = np.array([model.predict(X.iloc[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
         return params
 
@@ -123,8 +123,8 @@ class NGBoost(object):
         return (
             idxs,
             col_idx,
-            X[idxs, :][:, col_idx],
-            Y[idxs],
+            X.iloc[idxs,col_idx],
+            Y.iloc[idxs],
             weight_batch,
             params[idxs, :],
         )
@@ -235,7 +235,7 @@ class NGBoost(object):
             params -= (
                 self.learning_rate
                 * scale
-                * np.array([m.predict(X[:, col_idx]) for m in self.base_models[-1]]).T
+                * np.array([m.predict(X.iloc[:, col_idx]) for m in self.base_models[-1]]).T
             )
 
             val_loss = 0

@@ -6,7 +6,7 @@ from ngboost.distns import Normal, k_categorical
 from ngboost.manifold import manifold
 from ngboost.learners import default_tree_learner, default_linear_learner
 
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state,check_X_y,check_array
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 
@@ -185,10 +185,10 @@ class NGBoost(object):
         Fits an NGBoost model to the data
 
         Parameters:
-            X                       : numpy array of predictors (n x p)
-            Y                       : numpy array of outcomes (n). Should be floats for regression and integers from 0 to K-1 for K-class classification
-            X_val                   : validation-set predictors, if any
-            Y_val                   : validation-set outcomes, if any
+            X                       : DataFrame object or List or numpy array of predictors (n x p) in Numeric format
+            Y                       : DataFrame object or List or numpy array of outcomes (n) in Numeric format. Should be floats for regression and integers from 0 to K-1 for K-class classification
+            X_val                   : DataFrame object or List or numpy array of validation-set predictors in Numeric format, if any
+            Y_val                   : DataFrame object or List or numpy array of validation-set outcomes in Numeric format, if any
             sample_weight           : how much to weigh each example in the training set. numpy array of size (n) (defaults to 1)
             val_sample_weight       : how much to weigh each example in the validation set. (defaults to 1)
             train_loss_monitor      : a custom score or set of scores to track on the training set during training. Defaults to the score defined in the NGBoost constructor
@@ -198,12 +198,18 @@ class NGBoost(object):
         Output:
             A fit NGBRegressor object
         """
-
+        
+        if y is None:
+            raise ValueError("y cannot be None")
+        
+        X, Y = check_X_y(X, Y, y_numeric=True)
+        
         loss_list = []
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
         if X_val is not None and Y_val is not None:
+            X_val, Y_val = check_X_y(X_val, Y_val, y_numeric=True)
             val_params = self.pred_param(X_val)
             val_loss_list = []
             best_val_loss = np.inf
@@ -296,12 +302,15 @@ class NGBoost(object):
         Predict the conditional distribution of Y at the points X=x
 
         Parameters:
-            X        : numpy array of predictors (n x p)
+            X        : DataFrame object or List or numpy array of predictors (n x p) in Numeric Format
             max_iter : get the prediction at the specified number of boosting iterations
 
         Output:
             A NGBoost distribution object
         """
+        
+        X = check_array(X)
+        
         if (
             max_iter is not None
         ):  # get prediction at a particular iteration if asked for
@@ -343,12 +352,15 @@ class NGBoost(object):
         Point prediction of Y at the points X=x
 
         Parameters:
-            X        : numpy array of predictors (n x p)
+            X        : DataFrame object or List or numpy array of predictors (n x p) in Numeric Format
             max_iter : get the prediction at the specified number of boosting iterations
 
         Output:
             Numpy array of the estimates of Y
         """
+        
+        X = check_array(X)
+        
         return self.pred_dist(X, max_iter=max_iter).predict()
 
     def staged_predict(self, X, max_iter=None):

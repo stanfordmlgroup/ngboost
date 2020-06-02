@@ -11,6 +11,7 @@ from ngboost.learners import default_tree_learner
 from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 
 
 class NGBRegressor(NGBoost, BaseEstimator):
@@ -252,12 +253,18 @@ class NGBSurvival(NGBoost, BaseEstimator):
         Fits an NGBoost survival model to the data. For additional parameters see ngboost.NGboost.fit
 
         Parameters:
-            X                       : numpy array of predictors (n x p)
-            T                       : numpy array of times to event or censoring (n). Should be floats 
-            E                       : numpy array of event indicators (n). E[i] = 1 <=> T[i] is the time of an event, else censoring time
-            T_val                   : validation-set times, if any
-            E_val                   : validation-set event idicators, if any
+            X                       : DataFrame object or List or numpy array of predictors (n x p) in Numeric format
+            T                       : DataFrame object or List or numpy array of times to event or censoring (n). Should be floats 
+            E                       : DataFrame object or List or numpy array of event indicators (n). E[i] = 1 <=> T[i] is the time of an event, else censoring time
+            T_val                   : DataFrame object or List or validation-set times, in Numeric format if any
+            E_val                   : DataFrame object or List or validation-set event idicators, in Numeric format if any
         """
+        
+        X = check_array(X)
+        
+        if X_val is not None:
+            X_val = check_array(X_val)
+        
         return super().fit(
             X,
             Y_from_censored(T, E),

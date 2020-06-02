@@ -199,7 +199,7 @@ class NGBoost(object):
             A fit NGBRegressor object
         """
         
-        if y is None:
+        if Y is None:
             raise ValueError("y cannot be None")
         
         X, Y = check_X_y(X, Y, y_numeric=True)

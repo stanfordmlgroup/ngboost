@@ -10,6 +10,8 @@ class Score:
         if natural:
             metric = self.metric()
             try:
+                print('metric:', metric)
+                print('grad:', grad)
                 grad = np.linalg.solve(metric, grad)
             except:
                 for r in range(metric.shape[0]):

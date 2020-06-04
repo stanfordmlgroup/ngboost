@@ -26,8 +26,8 @@
   "@type": "NewsArticle",
   "mainEntityOfPage": "https://stanfordmlgroup.github.io/ngboost/1-useage.html",
   "headline": "Usage",
-  "datePublished": "2020-03-31T11:59:13-07:00",
-  "dateModified": "2020-03-31T11:59:13-07:00",
+  "datePublished": "2020-06-03T18:28:35-07:00",
+  "dateModified": "2020-06-03T18:28:35-07:00",
   "description": "        Usage    We'll start with a probabilistic regression example on the Boston housing dataset:    from ngboost import NGBRegressorfrom sklearn.datasets ...",
   "author": {
     "@type": "Person",
@@ -1086,8 +1086,8 @@ Test NLL 2.8867507325340243
 <span class="n">X_surv_train</span><span class="p">,</span> <span class="n">X_surv_test</span><span class="p">,</span> <span class="n">Y_surv_train</span><span class="p">,</span> <span class="n">Y_surv_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
 
 <span class="c1"># introduce administrative censoring to simulate survival data</span>
-<span class="n">T_surv_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="c1"># time of an event or censoring</span>
-<span class="n">E_surv_train</span> <span class="o">=</span> <span class="n">Y_train</span> <span class="o">&gt;</span> <span class="mi">30</span> <span class="c1"># 1 if T[i] is the time of an event, 0 if it&#39;s a time of censoring</span>
+<span class="n">T_surv_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">Y_surv_train</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="c1"># time of an event or censoring</span>
+<span class="n">E_surv_train</span> <span class="o">=</span> <span class="n">Y_surv_train</span> <span class="o">&gt;</span> <span class="mi">30</span> <span class="c1"># 1 if T[i] is the time of an event, 0 if it&#39;s a time of censoring</span>
 
 <span class="n">ngb</span> <span class="o">=</span> <span class="n">NGBSurvival</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">LogNormal</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_surv_train</span><span class="p">,</span> <span class="n">T_surv_train</span><span class="p">,</span> <span class="n">E_surv_train</span><span class="p">)</span>
 </pre></div>

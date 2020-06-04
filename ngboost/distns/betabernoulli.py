@@ -47,7 +47,7 @@ class BetaBernoulli(RegressionDistn):
 
     def fit(Y):
         imps = np.ones_like(Y)
-        #alpha, beta = fit_alpha_beta(imps, Y) # use scipy's implementation
+        alpha, beta = fit_alpha_beta(imps, Y) # use scipy's implementation
         return np.array([np.log(alpha), np.log(beta)])
 
     def sample(self, m):

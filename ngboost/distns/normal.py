@@ -6,6 +6,9 @@ from scipy.stats import norm as dist
 
 
 class NormalLogScore(LogScore):
+    def __init__(self):
+        super(NormalLogScore, self).__init__()
+        
     def score(self, Y):
         return -self.dist.logpdf(Y)
 

@@ -230,7 +230,9 @@ class NGBoost(object):
             grads = D.grad(Y_batch, natural=self.natural_gradient)
             print("grad: ", grads)
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
+            print("proj_grad: ", proj_grad)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
+            print("scale: ", scale)
 
             # pdb.set_trace()
             params -= (

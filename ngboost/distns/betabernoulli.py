@@ -16,18 +16,18 @@ class BetaBernoulliLogScore(LogScore):
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
         p = betadist(a=self.alpha, b=self.beta).mean()
 
-        D[:, 0] =   (self.alpha * (
+        D[:, 0] =   self.alpha * (
                         digamma(self.alpha + self.beta) + 
-                        digamma(Y + self.alpha) −
-                        digamma(self.alpha + self.beta + 1) −
+                        digamma(Y + self.alpha) -
+                        digamma(self.alpha + self.beta + 1) -
                         digamma(self.alpha)
-                    ) )
-        D[:, 1] =   (self.beta * (
+                    )
+        D[:, 1] =   self.beta * (
                         digamma(self.alpha + self.beta) + 
-                        digamma(−Y + self.beta + 1) −
-                        digamma(self.alpha + self.beta + 1) −
+                        digamma(-Y + self.beta + 1) -
+                        digamma(self.alpha + self.beta + 1) -
                         digamma(self.beta)
-                    ) ) 
+                    )
         return D
 
 class BetaBernoulli(RegressionDistn):

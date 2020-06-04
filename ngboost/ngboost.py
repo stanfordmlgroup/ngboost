@@ -203,7 +203,7 @@ class NGBoost(object):
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
-        print(params)
+        #print(params)
         if X_val is not None and Y_val is not None:
             val_params = self.pred_param(X_val)
             val_loss_list = []
@@ -228,11 +228,11 @@ class NGBoost(object):
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
-            print("grad: ", grads)
+            #print("grad: ", grads)
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
-            print("proj_grad: ", proj_grad)
+            #print("proj_grad: ", proj_grad)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
-            print("scale: ", scale)
+            #print("scale: ", scale)
 
             # pdb.set_trace()
             params -= (
@@ -240,7 +240,7 @@ class NGBoost(object):
                 * scale
                 * np.array([m.predict(X[:, col_idx]) for m in self.base_models[-1]]).T
             )
-            print(params)
+            #print(params)
             
             val_loss = 0
             if X_val is not None and Y_val is not None:

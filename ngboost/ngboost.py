@@ -228,8 +228,6 @@ class NGBoost(object):
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
-            print('a')
-            print(grads)
             
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
@@ -240,7 +238,8 @@ class NGBoost(object):
                 * scale
                 * np.array([m.predict(X[:, col_idx]) for m in self.base_models[-1]]).T
             )
-
+            print(params)
+            
             val_loss = 0
             if X_val is not None and Y_val is not None:
                 val_params -= (

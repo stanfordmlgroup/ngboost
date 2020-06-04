@@ -227,6 +227,7 @@ class NGBoost(object):
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
+            print('a')
             print(grads)
             
             proj_grad = self.fit_base(X_batch, grads, weight_batch)

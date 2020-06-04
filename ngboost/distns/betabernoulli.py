@@ -16,15 +16,19 @@ class BetaBernoulliLogScore(LogScore):
         D = np.zeros((len(Y), 2)) # first col is dS/d(log(α)), second col is dS/d(log(β))
         p = betadist(a=self.alpha, b=self.beta).mean()
 
-        D[:, 0] =   np.log(self.alpha)*
-                    np.log(
-                        ( 1 / (p * betafunction(p, 1 + p)) * gamma(p + self.alpha)*gamma(-p + self.beta + 1) ) / 
-                        ( (self.alpha + self.beta) * gamma(self.alpha) * gamma(self.beta) )
+        D[:, 0] =   (
+                        np.log(self.alpha) *
+                        np.log(
+                            ( 1 / (p * betafunction(p, 1 + p)) * gamma(p + self.alpha)*gamma(-p + self.beta + 1) ) / 
+                            ( (self.alpha + self.beta) * gamma(self.alpha) * gamma(self.beta) )
+                        )
                     )
-        D[:, 1] =   np.log(self.beta)*
-                    np.log(
-                        ( 1 / (p * betafunction(p, 1 + p)) * gamma(p + self.alpha)*gamma(-p + self.beta + 1) ) / 
-                        ( (self.alpha + self.beta) * gamma(self.alpha) * gamma(self.beta) )
+        D[:, 1] =   (
+                        np.log(self.beta) *
+                        np.log(
+                            ( 1 / (p * betafunction(p, 1 + p)) * gamma(p + self.alpha)*gamma(-p + self.beta + 1) ) / 
+                            ( (self.alpha + self.beta) * gamma(self.alpha) * gamma(self.beta) )
+                        )
                     )
         return D
 

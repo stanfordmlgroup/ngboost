@@ -3,7 +3,7 @@ from scipy.stats import beta as betadist
 import numpy as np
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
-from scipy.special import digamma
+from scipy.special import polygamma
 from scipy.special import beta as betafunction
 from fastbetabino import *
 from array import array     
@@ -17,12 +17,12 @@ class BetaBernoulliLogScore(LogScore):
         p = betadist(a=self.alpha, b=self.beta).mean()
 
         D[:, 0] =   (
-                    (self.alpha * (digamma(self.alpha + self.beta) - digamma(self.alpha) + np.log(p)) *
+                    (self.alpha * (polygamma(1, self.alpha + self.beta) - polygamma(1, self.alpha) + np.log(p)) *
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
                     )
         D[:, 1] =   (
-                    (self.beta * (digamma(self.alpha + self.beta) - digamma(self.beta) + np.log(1 - p)) *
+                    (self.beta * (polygamma(1, self.alpha + self.beta) - polygamma(1, self.beta) + np.log(1 - p)) *
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * Y * betafunction(self.alpha, self.beta))) /
                     (p**(self.alpha) * (1 - p)**(self.beta) + (p - 1) * p * betafunction(self.alpha, self.beta))
                     )

@@ -314,6 +314,7 @@ class NGBoost(object):
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
         else:
             params = np.asarray(self.pred_param(X, max_iter))
+            print(params)
             dist = self.Dist(params.T)
         return dist
 

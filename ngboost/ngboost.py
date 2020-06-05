@@ -203,7 +203,7 @@ class NGBoost(object):
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
-        #print(params)
+        print(params)
         if X_val is not None and Y_val is not None:
             val_params = self.pred_param(X_val)
             val_loss_list = []

@@ -93,6 +93,7 @@ class NGBoost(object):
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
+        print(params)
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
@@ -100,6 +101,7 @@ class NGBoost(object):
                 break
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
+        print(params)
         return params
 
     def sample(self, X, Y, sample_weight, params):
@@ -203,7 +205,7 @@ class NGBoost(object):
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
-        print(params)
+        #print(params)
         if X_val is not None and Y_val is not None:
             val_params = self.pred_param(X_val)
             val_loss_list = []
@@ -240,7 +242,7 @@ class NGBoost(object):
                 * scale
                 * np.array([m.predict(X[:, col_idx]) for m in self.base_models[-1]]).T
             )
-            print(params)
+            #print(params)
             
             val_loss = 0
             if X_val is not None and Y_val is not None:

@@ -94,7 +94,7 @@ class NGBoost(object):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
         print(params)
-        print(self.Manifold.params)
+        print(self.Dist.params)
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):

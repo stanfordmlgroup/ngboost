@@ -27,7 +27,7 @@ class BetaBernoulliLogScore(LogScore):
                         digamma(-Y + self.beta + 1) -
                         digamma(self.alpha + self.beta + 1) -
                         digamma(self.beta)
-                    )
+                    )*2
         return D
 
 class BetaBernoulli(RegressionDistn):

@@ -25,7 +25,7 @@ class BetaBernoulliLogScore(LogScore):
         D[:, 1] =   self.beta * (
                         digamma(self.alpha + self.beta) + 
                         digamma(-Y + self.beta + 2) -
-                        digamma(self.alpha + self.beta + 2) -
+                        digamma(self.alpha + self.beta + 1) -
                         digamma(self.beta)
                     )
         return D

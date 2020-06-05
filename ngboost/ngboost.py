@@ -93,16 +93,14 @@ class NGBoost(object):
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
-        print(params)
-        print(self.Dist.params)
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
             if max_iter and i == max_iter:
                 break
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
+            print(resids)
             params -= self.learning_rate * resids * s
-        print(params)
         return params
 
     def sample(self, X, Y, sample_weight, params):

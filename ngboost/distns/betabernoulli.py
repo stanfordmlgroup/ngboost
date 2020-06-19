@@ -1,4 +1,4 @@
-from scipy.stats import betabinom
+from scipy.stats import betabinom as dist
 import numpy as np
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore

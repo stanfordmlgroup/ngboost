@@ -1,13 +1,10 @@
-from scipy.stats import betabinom as dist
-from scipy.stats import beta as betadist
+from scipy.stats import betabinom
 import numpy as np
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
-from scipy.special import polygamma, gamma, digamma
-from scipy.special import beta as betafunction
-from fastbetabino import *
+from scipy.special import digamma
 from array import array  
-import sys   
+import sys
 class BetaBernoulliLogScore(LogScore): 
     
     def score(self, Y):

@@ -4,6 +4,8 @@ import scipy.stats
 import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal
+from ngboost.scores import CRPScore
+from ngboost.manifold import manifold
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
@@ -12,9 +14,9 @@ if __name__ == "__main__":
 
     rvs = np.random.randn(500)
 
-    crps_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).crps(rvs).mean()
-    metric_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).crps_metric()
-    grad_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).D_crps(rvs).mean(axis=0)
+    crps_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).score(rvs).mean()
+    metric_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).metric()
+    grad_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).d_score(rvs).mean(axis=0)
 
     loc = np.linspace(-3, 3, 20)
     scale = np.linspace(-0.5, 2, 20)

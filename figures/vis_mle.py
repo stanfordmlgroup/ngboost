@@ -4,6 +4,8 @@ import scipy.stats
 import matplotlib as mpl
 import itertools
 from ngboost.distns import Normal
+from ngboost.scores import LogScore
+from ngboost.manifold import manifold
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
@@ -12,9 +14,9 @@ if __name__ == "__main__":
 
     rvs = np.random.randn(500)
 
-    nll_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).nll(rvs).mean()
-    fisher_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).fisher_info()
-    grad_fn = lambda p: Normal(np.array(p)[:, np.newaxis]).D_nll(rvs).mean(axis=0)
+    nll_fn = lambda p: manifold(LogScore, Normal)(np.array(p)[:, np.newaxis]).score(rvs).mean()
+    fisher_fn = lambda p: manifold(LogScore, Normal)(np.array(p)[:, np.newaxis]).metric()
+    grad_fn = lambda p: manifold(LogScore, Normal)(np.array(p)[:, np.newaxis]).d_score(rvs).mean(axis=0)
 
     loc = np.linspace(-3, 3, 20)
     scale = np.linspace(-0.5, 2, 20)

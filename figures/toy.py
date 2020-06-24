@@ -40,7 +40,7 @@ if __name__ == "__main__":
     ngb = NGBoost(
         Base=default_tree_learner,
         Dist=Normal,
-        Score=MLE(),
+        Score=MLE,
         n_estimators=args.n_estimators,
         learning_rate=args.lr,
         natural_gradient=args.natural,

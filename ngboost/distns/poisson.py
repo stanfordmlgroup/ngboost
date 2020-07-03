@@ -40,19 +40,22 @@ class Poisson(RegressionDistn):
 
     def fit(Y):
         assert(np.all([np.equal(np.mod(y, 1), 0) for y in Y])), "All Poisson target data must be discrete integers"
+        assert(np.all([y >= 0 for y in Y])), "Count data must be >= 0"
         
-        ## alternative method to fit Poisson dist instead of mean ##
-#         m = minimize(negative_log_likelihood,
-#                      x0=np.ones(1), # initialized value
-#                      args=(Y,),       
-#                      bounds=(Bounds(0,np.max(Y))),
+        # minimize NLL ##
+        m = minimize(negative_log_likelihood,
+                     x0=np.ones(1), # initialized value
+                     args=(Y,),       
+                     bounds=(Bounds(0,np.max(Y))),
 #                      method='', # minimization method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html
-#                   )
+                  )
 
-        ## I have not found a dataset that NLL outperforms just mean ##
-        ## would return np.array([np.log(m.x)])
+        # another option would be returning just the mean : np.array([np.log(np.mean(Y))])
+        # however, I would run into lower bound issues when fitting data this way
+        # specifically on the The French Motor Third-Party Liability Claims dataset
+        # following this example: https://scikit-learn.org/stable/auto_examples/linear_model/plot_poisson_regression_non_normal_loss.html
         
-        return np.array([np.log(np.mean(Y))])
+        return np.array([np.log(m.x)])
 
     def sample(self, m):
         return np.array([self.dist.rvs() for i in range(m)])

@@ -25,7 +25,11 @@ class PoissonLogScore(LogScore):
         return D
     
 class Poisson(RegressionDistn):
-
+    """
+    Implements the Poisson distribution for NGBoost.
+    The Poisson distribution has one parameter, mu, which is the mean number of events per interval.
+    This distribution has LogScore implemented for it.
+    """
     n_params = 1
     scores = [PoissonLogScore] 
 
@@ -39,7 +43,7 @@ class Poisson(RegressionDistn):
         self.dist = dist(mu=self.mu)
 
     def fit(Y):
-        assert(np.all([np.equal(np.mod(y, 1), 0) for y in Y])), "All Poisson target data must be discrete integers"
+        assert(np.equal(np.mod(y, 1), 0).all), "All Poisson target data must be discrete integers"
         assert(np.all([y >= 0 for y in Y])), "Count data must be >= 0"
         
         # minimize NLL ##
@@ -68,3 +72,4 @@ class Poisson(RegressionDistn):
     @property
     def params(self):
         return {'mu':self.mu}
+        

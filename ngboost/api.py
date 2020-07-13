@@ -5,7 +5,7 @@ from ngboost.distns import (
     LogNormal,
     Normal,
     RegressionDistn,
-    Poisson
+    Poisson,
 )
 from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner

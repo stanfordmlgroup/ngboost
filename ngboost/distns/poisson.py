@@ -10,10 +10,6 @@ from scipy.optimize import minimize
 def negative_log_likelihood(params, data):
     return -dist.logpmf(np.array(data), params[0]).sum()
 
-def isinteger(x):
-    return np.equal(np.mod(x, 1), 0)
-
-
 ## NGBoost Classes ##
 class PoissonLogScore(LogScore):
     def score(self, Y):
@@ -43,15 +39,15 @@ class Poisson(RegressionDistn):
         self.dist = dist(mu=self.mu)
 
     def fit(Y):
-        assert(np.equal(np.mod(y, 1), 0).all), "All Poisson target data must be discrete integers"
+        assert(np.equal(np.mod(Y, 1), 0).all), "All Poisson target data must be discrete integers"
         assert(np.all([y >= 0 for y in Y])), "Count data must be >= 0"
-        
-        # minimize NLL ##
+
+
+        # minimize negative log likelihood 
         m = minimize(negative_log_likelihood,
                      x0=np.ones(1), # initialized value
                      args=(Y,),       
                      bounds=(Bounds(0,np.max(Y))),
-#                      method='', # minimization method, https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html
                   )
 
         # another option would be returning just the mean : np.array([np.log(np.mean(Y))])

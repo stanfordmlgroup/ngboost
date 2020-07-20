@@ -40,7 +40,7 @@ class Poisson(RegressionDistn):
 
     def fit(Y):
         assert(np.equal(np.mod(Y, 1), 0).all), "All Poisson target data must be discrete integers"
-        assert(np.all([y >= 0 for y in Y])), "Count data must be >= 0"
+        assert((y>=0).all()), "Count data must be >= 0"
 
 
         # minimize negative log likelihood 

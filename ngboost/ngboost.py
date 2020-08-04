@@ -159,11 +159,9 @@ class NGBoost(object):
             D = self.Manifold((start - scaled_resids).T)
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if (
-                np.isfinite(loss)
-                and (loss < loss_init or norm < self.tol)
-                and np.linalg.norm(scaled_resids, axis=1).mean() < 5.0
-            ):
+            if norm < self.tol:
+                break
+            if np.isfinite(loss) and loss < loss_init:
                 break
             scale = scale * 0.5
         self.scalings.append(scale)

@@ -17,7 +17,7 @@ class NormalLogScore(LogScore):
 
     def metric(self):
         FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / self.var + 1e-5
+        FI[:, 0, 0] = 1 / self.var
         FI[:, 1, 1] = 2
         return FI
 

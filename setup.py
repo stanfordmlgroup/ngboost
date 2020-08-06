@@ -5,6 +5,7 @@ import sys
 
 assert sys.version_info >= (3, 6, 0), "NGBoost requires Python 3.6+"
 
+
 def get_version() -> str:
     version_filepath = os.path.join(os.path.dirname(__file__), "ngboost", "version.py")
     with open(version_filepath) as f:

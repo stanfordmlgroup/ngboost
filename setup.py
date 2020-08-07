@@ -1,5 +1,9 @@
 import os
 import setuptools
+import sys
+
+
+assert sys.version_info >= (3, 6, 0), "NGBoost requires Python 3.6+"
 
 
 def get_version() -> str:
@@ -27,6 +31,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/stanfordmlgroup/ngboost",
     license="Apache License 2.0",
+    python_requires=">=3.6",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

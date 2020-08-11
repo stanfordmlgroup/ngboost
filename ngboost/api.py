@@ -259,12 +259,12 @@ class NGBSurvival(NGBoost, BaseEstimator):
             T_val                   : DataFrame object or List or validation-set times, in Numeric format if any
             E_val                   : DataFrame object or List or validation-set event idicators, in Numeric format if any
         """
-        
+
         X = check_array(X)
-        
+
         if X_val is not None:
             X_val = check_array(X_val)
-        
+
         return super().fit(
             X,
             Y_from_censored(T, E),

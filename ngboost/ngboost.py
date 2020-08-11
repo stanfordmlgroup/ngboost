@@ -6,7 +6,7 @@ from ngboost.distns import Normal, k_categorical
 from ngboost.manifold import manifold
 from ngboost.learners import default_tree_learner, default_linear_learner
 
-from sklearn.utils import check_random_state,check_X_y,check_array
+from sklearn.utils import check_random_state, check_X_y, check_array
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 
@@ -196,12 +196,12 @@ class NGBoost(object):
         Output:
             A fit NGBRegressor object
         """
-        
+
         if Y is None:
             raise ValueError("y cannot be None")
-        
+
         X, Y = check_X_y(X, Y, y_numeric=True)
-        
+
         loss_list = []
         self.fit_init_params_to_marginal(Y)
 
@@ -306,9 +306,9 @@ class NGBoost(object):
         Output:
             A NGBoost distribution object
         """
-        
+
         X = check_array(X)
-        
+
         if (
             max_iter is not None
         ):  # get prediction at a particular iteration if asked for
@@ -356,9 +356,9 @@ class NGBoost(object):
         Output:
             Numpy array of the estimates of Y
         """
-        
+
         X = check_array(X)
-        
+
         return self.pred_dist(X, max_iter=max_iter).predict()
 
     def staged_predict(self, X, max_iter=None):
@@ -397,10 +397,7 @@ class NGBoost(object):
         params_trees = zip(*self.base_models)
         # Get the feature_importances_ for all the params and all the trees
         all_params_importances = [
-            [
-                getattr(tree, "feature_importances_")
-                for tree in trees
-            ]
+            [getattr(tree, "feature_importances_") for tree in trees]
             for trees in params_trees
         ]
 

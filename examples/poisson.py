@@ -23,7 +23,7 @@ if __name__ == "__main__":
     For more detailed NFL data, visit https://github.com/mrcaseb/nflfastR
     """
 
-    url = 'https://raw.githubusercontent.com/btatkinson/sample-data/master/nfl_tds.csv'
+    url = "https://raw.githubusercontent.com/btatkinson/sample-data/master/nfl_tds.csv"
     df = pd.read_csv(url, error_bad_lines=False)
 
     x = df.pass_touchdown.values
@@ -34,36 +34,49 @@ if __name__ == "__main__":
     print("Passing touchdowns mean: {:.4f}".format(mean))
     print("Passing touchdowns variance: {:.4f}".format(variance))
 
-    k = np.arange(x.max()+1)
+    k = np.arange(x.max() + 1)
 
-    plt.plot(k, dist.pmf(k, mean)*len(x), 'bo', markersize=9, label='expected tds')
-    sns.distplot(x, kde=False, label='actual tds')
+    plt.plot(k, dist.pmf(k, mean) * len(x), "bo", markersize=9, label="expected tds")
+    sns.distplot(x, kde=False, label="actual tds")
     plt.title("Naive Poisson Dist Using the Mean")
-    plt.legend(loc='upper right')
+    plt.legend(loc="upper right")
     plt.show()
 
-    def preprocess(df):
-        df = df.drop(columns=['season','game_id','posteam','passer_player_name','passer_player_id','defteam'])
-        
-    #     print(df.isnull().sum())
-        return df
+    # drop non-feature cols
+    df = df.drop(
+        columns=[
+            "season",
+            "game_id",
+            "posteam",
+            "passer_player_name",
+            "passer_player_id",
+            "defteam",
+        ]
+    )
 
-    df = preprocess(df)
-    target = 'pass_touchdown'
+    target = "pass_touchdown"
     X = df.drop(columns=[target]).values
     Y = df[target].values
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=SEED)
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, test_size=0.2, random_state=SEED
+    )
 
     # baseline not using predictor data
-
     avg_tds = np.mean(Y_train)
     y_dist = dist(avg_tds)
-    naive_guess = -y_dist.logpmf(Y_train).mean()
     naive_NLL = -y_dist.logpmf(Y_test).mean()
 
-    print("Mean squared error using only the mean: {:.4f}".format(mean_squared_error(np.repeat(naive_guess, len(Y_test)), Y_test))) 
-    print("Poisson negative log liklihood without using predictor variables: {:.4f}".format(naive_NLL))
+    print(
+        "Mean squared error using only the mean: {:.4f}".format(
+            mean_squared_error(np.repeat(avg_tds, len(Y_test)), Y_test)
+        )
+    )
+    print(
+        "Poisson negative log liklihood without using predictor variables: {:.4f}".format(
+            naive_NLL
+        )
+    )
 
     ngb = NGBRegressor(Dist=Poisson)
 
@@ -85,14 +98,15 @@ if __name__ == "__main__":
     feature_importance_mu = ngb.feature_importances_[0]
     feature_columns = list(df.drop(columns=[target]))
 
+    df_mu = pd.DataFrame(
+        {"feature": feature_columns, "importance": feature_importance_mu}
+    ).sort_values("importance", ascending=False)
 
-    df_mu = pd.DataFrame({'feature':feature_columns, 
-                        'importance':feature_importance_mu})\
-        .sort_values('importance',ascending=False)
-
-    fig, ax = plt.subplots(1, 1, figsize=(13,6))
+    fig, ax = plt.subplots(1, 1, figsize=(13, 6))
     fig.suptitle("Feature importance plot for distribution parameters", fontsize=17)
-    sns.barplot(x='importance',y='feature',ax=ax,data=df_mu, color="skyblue").set_title('mu param')
+    sns.barplot(
+        x="importance", y="feature", ax=ax, data=df_mu, color="skyblue"
+    ).set_title("mu param")
     plt.show()
 
     shap.initjs()
@@ -105,7 +119,7 @@ if __name__ == "__main__":
 
     print("Fitting NGBoost again after dropping unused vars...")
 
-    confounding_vars = ['roof'] 
+    confounding_vars = ["roof"]
 
     print("PREVIOUS MSE: {:.4f}".format(test_MSE))
     print("PREVIOUS NLL: {:.4f}".format(test_NLL))

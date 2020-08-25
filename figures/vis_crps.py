@@ -14,9 +14,19 @@ if __name__ == "__main__":
 
     rvs = np.random.randn(500)
 
-    crps_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).score(rvs).mean()
-    metric_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).metric()
-    grad_fn = lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis]).d_score(rvs).mean(axis=0)
+    crps_fn = (
+        lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis])
+        .score(rvs)
+        .mean()
+    )
+    metric_fn = lambda p: manifold(CRPScore, Normal)(
+        np.array(p)[:, np.newaxis]
+    ).metric()
+    grad_fn = (
+        lambda p: manifold(CRPScore, Normal)(np.array(p)[:, np.newaxis])
+        .d_score(rvs)
+        .mean(axis=0)
+    )
 
     loc = np.linspace(-3, 3, 20)
     scale = np.linspace(-0.5, 2, 20)

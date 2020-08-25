@@ -14,7 +14,6 @@ from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
 
 
-
 class NGBRegressor(NGBoost, BaseEstimator):
     """
     Constructor for NGBoost regression models.

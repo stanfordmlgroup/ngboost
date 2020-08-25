@@ -1,4 +1,5 @@
-import numpy as np
+from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 from ngboost.distns import (
     Bernoulli,
     ClassificationDistn,
@@ -11,8 +12,7 @@ from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner
 from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
-from sklearn.base import BaseEstimator
-from sklearn.utils import check_array
+
 
 
 class NGBRegressor(NGBoost, BaseEstimator):
@@ -154,7 +154,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         Parameters:
             X        : numpy array of predictors (n x p)
             max_iter : get the prediction at the specified number of boosting iterations
-            
+
         Output:
             Numpy array of the estimates of P(Y=k|X=x). Will have shape (n, K)
         """
@@ -167,7 +167,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         Parameters:
             X        : numpy array of predictors (n x p)
             max_iter : largest number of boosting iterations to get the prediction for
-            
+
         Output:
             A list of of the estimates of P(Y=k|X=x) of shape (n, K), one per boosting stage up to max_iter
         """
@@ -255,7 +255,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
 
         Parameters:
             X                       : DataFrame object or List or numpy array of predictors (n x p) in Numeric format
-            T                       : DataFrame object or List or numpy array of times to event or censoring (n). Should be floats 
+            T                       : DataFrame object or List or numpy array of times to event or censoring (n). Should be floats
             E                       : DataFrame object or List or numpy array of event indicators (n). E[i] = 1 <=> T[i] is the time of an event, else censoring time
             T_val                   : DataFrame object or List or validation-set times, in Numeric format if any
             E_val                   : DataFrame object or List or validation-set event idicators, in Numeric format if any

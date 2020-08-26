@@ -1,5 +1,4 @@
 import numpy as np
-from ngboost.helpers import Y_from_censored
 
 
 class Score:
@@ -17,7 +16,7 @@ class Score:
 class LogScore(Score):
     """
     Generic class for the log scoring rule.
-    
+
     The log scoring rule is the same as negative log-likelihood: -log(P̂(y)), also known as the maximum likelihood estimator. This scoring rule has a default method for calculating the Riemannian metric.
     """
 
@@ -35,8 +34,6 @@ class CRPScore(Score):
     """
     Generic class for the continuous ranked probability scoring rule.
     """
-
-    pass
 
 
 CRPS = CRPScore

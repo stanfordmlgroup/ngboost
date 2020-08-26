@@ -4,9 +4,11 @@ from pathlib import Path
 
 path_root = Path(__file__).parent.parent
 
-paths = [path_root.joinpath("_site"), 
-         path_root.joinpath("_build"),
-         path_root.joinpath(".sass-cache"),]
+paths = [
+    path_root.joinpath("_site"),
+    path_root.joinpath("_build"),
+    path_root.joinpath(".sass-cache"),
+]
 for path in paths:
     print(f"Removing {path}...")
     sh.rmtree(path, ignore_errors=True)

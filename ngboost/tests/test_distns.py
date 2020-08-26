@@ -1,15 +1,15 @@
 import pytest
 
-from ngboost.distns import Normal, LogNormal, Exponential, Bernoulli, k_categorical
-from ngboost.scores import LogScore, CRPScore
-from sklearn.tree import DecisionTreeRegressor
-
-from ngboost import NGBRegressor, NGBClassifier, NGBSurvival
-
 from sklearn.datasets import load_boston, load_breast_cancer
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
 
 import numpy as np
+
+from ngboost.distns import Normal, LogNormal, Exponential, Bernoulli, k_categorical
+from ngboost.scores import LogScore, CRPScore
+from ngboost import NGBRegressor, NGBClassifier, NGBSurvival
+
 
 # test all the dist methods and score implementation methods, i.e. they all return proper shapes and sizes and types
 # check metric lines up with defaults for lognormal where applicable

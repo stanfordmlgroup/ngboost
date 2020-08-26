@@ -1,8 +1,6 @@
-import numpy as np
-import scipy as sp
-import scipy.stats
-import matplotlib as mpl
 import itertools
+import numpy as np
+import matplotlib as mpl
 from ngboost.distns import Normal
 from ngboost.scores import LogScore
 from ngboost.manifold import manifold

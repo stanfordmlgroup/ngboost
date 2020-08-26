@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import numpy as np
+from ngboost.distns import Exponential
 from ngboost.api import NGBSurvival
 from ngboost.scores import MLE
 from ngboost.learners import default_linear_learner

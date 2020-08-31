@@ -2,13 +2,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import shap
-import gc
-from ngboost import NGBRegressor
-from ngboost.distns import Poisson
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from scipy.stats import poisson as dist
+
+from ngboost import NGBRegressor
+from ngboost.distns import Poisson
+
+import shap
+
 
 if __name__ == "__main__":
 
@@ -17,8 +19,8 @@ if __name__ == "__main__":
 
     """
     This NFL dataset comprises season-long rolling averages of passing stats. It's not an expanding window, so early season games
-    rely on data from the previous year. NFL passing touchdowns closely mimic a Poisson distribution. There is plenty of room for 
-    improvement, this is just an example. 
+    rely on data from the previous year. NFL passing touchdowns closely mimic a Poisson distribution. There is plenty of room for
+    improvement, this is just an example.
 
     For more detailed NFL data, visit https://github.com/mrcaseb/nflfastR
     """

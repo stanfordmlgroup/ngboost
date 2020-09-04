@@ -43,7 +43,6 @@ def k_categorical(K):
     """
     Factory function that generates classes for K-class categorical distributions for NGBoost
 
-    The generated distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
     This distribution has both LogScore and CRPScore implemented for it.
     """
 

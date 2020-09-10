@@ -62,6 +62,7 @@ class NGBoost(object):
         self.verbose = verbose
         self.verbose_eval = verbose_eval
         self.init_params = None
+        self.n_features = None
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
@@ -201,6 +202,8 @@ class NGBoost(object):
             raise ValueError("y cannot be None")
 
         X, Y = check_X_y(X, Y, y_numeric=True)
+
+        self.n_features = X.shape[1]
 
         loss_list = []
         self.fit_init_params_to_marginal(Y)
@@ -395,9 +398,13 @@ class NGBoost(object):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)
+
         # Get the feature_importances_ for all the params and all the trees
         all_params_importances = [
-            [getattr(tree, "feature_importances_") for tree in trees]
+            [
+                self._get_feature_importance(tree, tree_index)
+                for tree_index, tree in enumerate(trees)
+            ]
             for trees in params_trees
         ]
 
@@ -407,6 +414,7 @@ class NGBoost(object):
                 self.base_models[0][0].n_features_,
                 dtype=np.float64,
             )
+
         # Weighted average of importance by tree scaling factors
         all_params_importances = np.average(
             all_params_importances, axis=1, weights=self.scalings
@@ -414,3 +422,9 @@ class NGBoost(object):
         return all_params_importances / np.sum(
             all_params_importances, axis=1, keepdims=True
         )
+
+    def _get_feature_importance(self, tree, tree_index):
+        tree_feature_importance = getattr(tree, "feature_importances_")
+        total_feature_importance = np.zeros(self.n_features)
+        total_feature_importance[self.col_idxs[tree_index]] = tree_feature_importance
+        return total_feature_importance

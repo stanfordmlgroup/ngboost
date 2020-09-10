@@ -395,9 +395,24 @@ class NGBoost(object):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)
+
         # Get the feature_importances_ for all the params and all the trees
+
+        def _get_feature_importance(tree, tree_index):
+            tree_feature_importance = getattr(tree, "feature_importances_")
+            if self.col_sample == 1.:
+                return tree_feature_importance
+
+            n_features = np.max(self.col_idxs) + 1
+            total_feature_importance = np.zeros(n_features)
+            total_feature_importance[self.col_idxs[tree_index]] = tree_feature_importance
+            return total_feature_importance
+
         all_params_importances = [
-            [getattr(tree, "feature_importances_") for tree in trees]
+            [
+                _get_feature_importance(tree, tree_index)
+                for tree_index, tree in enumerate(trees)
+            ]
             for trees in params_trees
         ]
 
@@ -407,6 +422,7 @@ class NGBoost(object):
                 self.base_models[0][0].n_features_,
                 dtype=np.float64,
             )
+
         # Weighted average of importance by tree scaling factors
         all_params_importances = np.average(
             all_params_importances, axis=1, weights=self.scalings

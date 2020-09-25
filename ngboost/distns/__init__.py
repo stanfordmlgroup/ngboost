@@ -1,4 +1,4 @@
-from .distn import RegressionDistn, ClassificationDistn, Distn
+from .distn import RegressionDistn, ClassificationDistn
 from .normal import Normal, NormalFixedVar
 from .multivariate_normal import MultivariateNormal
 from .laplace import Laplace

@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 flake8 = "*"
-pytest = "*"
+pytest = "==6.0.2"
 
 [packages]
 absl-py = "==0.8.1"
@@ -31,3 +31,4 @@ sklearn = "==0.0"
 tqdm = "==4.36.1"
 Cycler = "==0.10.0"
 importlib-metadata = "==1.7.0"
+pytest = "==6.0.2"

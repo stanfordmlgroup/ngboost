@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 flake8 = "*"
-pytest = "*"
+pytest = "==6.0.2"
 
 [packages]
 absl-py = "==0.8.1"

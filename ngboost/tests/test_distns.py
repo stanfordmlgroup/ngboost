@@ -12,6 +12,8 @@ from ngboost.distns import (
     LogNormal,
     Normal,
     k_categorical,
+    TFixedDF,
+    Cauchy,
 )
 from ngboost.scores import CRPScore, LogScore, Score
 from sklearn.tree import DecisionTreeRegressor
@@ -36,7 +38,7 @@ def product_list(*its: Iterable) -> List:
 @pytest.mark.parametrize(
     ["dist", "score", "learner"],
     product_list(
-        [Normal, LogNormal, Exponential],
+        [Normal, LogNormal, Exponential, TFixedDF, Cauchy],
         [LogScore, CRPScore],
         [
             DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),

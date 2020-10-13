@@ -2,9 +2,6 @@ from ngboost.distns import RegressionDistn
 from ngboost.scores import LogScore
 import numpy as np
 from scipy.stats import t as dist
-import scipy.stats as ss
-
-ss.t.fit()
 
 
 class TFixedDFLogScore(LogScore):
@@ -12,10 +9,14 @@ class TFixedDFLogScore(LogScore):
         return -self.dist.logpdf(Y)
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
-        return (self.loc - Y) / self.var
+        num = (self.df + 1) * (2 / (self.df * self.var)) * (self.loc - Y)
+        den = (2) * (1 + (1 / (self.df * self.var)) * (self.loc - Y) ** 2)
+        return -num / den
 
     def _handle_scale_derivative(self, Y: np.ndarray) -> np.ndarray:
-        return 1 - ((self.loc - Y) ** 2) / self.var
+        num = (self.df + 1) * (self.loc - Y) ** 2
+        den = (self.df * self.var) + (self.loc - Y) ** 2
+        return 1 - (num / den)
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
@@ -23,11 +24,13 @@ class TFixedDFLogScore(LogScore):
         D[:, 1] = self._handle_scale_derivative(Y)
         return D
 
-    def metric(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = (1 + self.df) / ((self.df + 3) * self.var)
-        FI[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var ** 2)
-        return FI
+    # NOTE: the below metric is wrt scale not log(scale)
+    # From https://stats.stackexchange.com/questions/271898/expected-fishers-information-matrix-for-students-t-distribution
+    # def metric(self):
+    #     FI = np.zeros((self.var.shape[0], 2, 2))
+    #     FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+    #     FI[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var ** 2)
+    #     return FI
 
 
 class TFixedDF(RegressionDistn):
@@ -40,6 +43,7 @@ class TFixedDF(RegressionDistn):
 
     n_params = 2
     scores = [TFixedDFLogScore]
+    fixed_df = 3.0
 
     def __init__(self, params):
         super().__init__(params)
@@ -47,11 +51,11 @@ class TFixedDF(RegressionDistn):
         self.scale = np.exp(params[1])
         self.var = self.scale ** 2
         # fixed df
-        self.df = np.ones_like(self.loc) * 3
+        self.df = np.ones_like(self.loc) * self.fixed_df
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
 
     def fit(Y):
-        _, m, s = dist.fit(Y, fdf=3)
+        _, m, s = dist.fit(Y, fdf=TFixedDF.fixed_df)
         return np.array([m, np.log(s)])
 
     def sample(self, m):

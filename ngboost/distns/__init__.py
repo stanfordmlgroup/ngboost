@@ -6,5 +6,5 @@ from .lognormal import LogNormal
 from .exponential import Exponential
 from .categorical import k_categorical, Bernoulli
 from .poisson import Poisson
-from .t import TFixedDF
+from .t import TFixedDf, TFixedDfFixedVar
 from .cauchy import Cauchy

@@ -1,7 +1,14 @@
-from .t import TFixedDFLogScore, TFixedDF
+from .t import TFixedDfFixedVar, TFixedDf, TFixedDfFixedVarLogScore, TFixedDfLogScore
 
-CauchyLogScore = TFixedDFLogScore
+CauchyLogScore = TFixedDfLogScore
 
 
-class Cauchy(TFixedDF):
+class Cauchy(TFixedDf):
+    fixed_df = 1.0
+
+
+CauchyFixedVarLogScore = TFixedDfFixedVarLogScore
+
+
+class CauchyFixedVar(TFixedDfFixedVar):
     fixed_df = 1.0

@@ -1,8 +1,84 @@
 import numpy as np
 from scipy.stats import t as dist
+from scipy.special import digamma
 
 from ngboost.distns import RegressionDistn
 from ngboost.scores import LogScore
+
+
+class TLogScore(LogScore):
+    def score(self, Y):
+        return -self.dist.logpdf(Y)
+
+    def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
+        num = (self.df + 1) * (Y - self.loc)
+        den = (self.df * self.var) + (Y - self.loc) ** 2
+        return -(num / den)
+
+    def _handle_scale_derivative(self, Y: np.ndarray) -> np.ndarray:
+        num = (self.df + 1) * (Y - self.loc) ** 2
+        den = (self.df * self.var) + (Y - self.loc) ** 2
+        return 1 - (num / den)
+
+    def _handle_df_derivative(self, Y: np.ndarray) -> np.ndarray:
+        term_1 = (self.df / 2) * digamma((self.df + 1) / 2)
+        term_2 = (-self.df / 2) * digamma((self.df) / 2)
+        term_3 = -1 / 2
+        term_4_1 = (-self.df / 2) * np.log(
+            1 + ((Y - self.loc) ** 2) / (self.df * self.var)
+        )
+        term_4_2_num = (self.df + 1) * (Y - self.loc) ** 2
+        term_4_2_den = (
+            2
+            * (self.df * self.var)
+            * (1 + ((Y - self.loc) ** 2) / (self.df * self.var))
+        )
+        return -(term_1 + term_2 + term_3 + term_4_1 + term_4_2_num / term_4_2_den)
+
+    def d_score(self, Y):
+        D = np.zeros((len(Y), 3))
+        D[:, 0] = self._handle_loc_derivative(Y)
+        D[:, 1] = self._handle_scale_derivative(Y)
+        D[:, 2] = self._handle_df_derivative(Y)
+        return D
+
+
+class T(RegressionDistn):
+    """
+    Implements the student's t distribution for NGBoost.
+
+    The t distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    This distribution only has LogScore implemented for it.
+    """
+
+    n_params = 3
+    scores = [TLogScore]
+
+    def __init__(self, params):
+        super().__init__(params)
+        self.loc = params[0]
+        self.scale = np.exp(params[1])
+        self.var = self.scale ** 2
+        self.df = np.exp(params[2])
+        self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
+
+    def fit(Y):
+        df, m, s = dist.fit(Y, fdf=TFixedDf.fixed_df)
+        return np.array([m, np.log(s), np.log(df)])
+
+    def sample(self, m):
+        return np.array([self.rvs() for i in range(m)])
+
+    def __getattr__(
+        self, name
+    ):  # gives us Normal.mean() required for RegressionDist.predict()
+        if name in dir(self.dist):
+            return getattr(self.dist, name)
+        return None
+
+    @property
+    def params(self):
+        return {"loc": self.loc, "scale": self.scale}
 
 
 class TFixedDfLogScore(LogScore):
@@ -10,13 +86,13 @@ class TFixedDfLogScore(LogScore):
         return -self.dist.logpdf(Y)
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
-        num = (self.df + 1) * (self.loc - Y)
-        den = (self.df * self.var) + (self.loc - Y) ** 2
+        num = (self.df + 1) * (Y - self.loc)
+        den = (self.df * self.var) + (Y - self.loc) ** 2
         return -(num / den)
 
     def _handle_scale_derivative(self, Y: np.ndarray) -> np.ndarray:
-        num = (self.df + 1) * (self.loc - Y) ** 2
-        den = (self.df * self.var) + (self.loc - Y) ** 2
+        num = (self.df + 1) * (Y - self.loc) ** 2
+        den = (self.df * self.var) + (Y - self.loc) ** 2
         return 1 - (num / den)
 
     def d_score(self, Y):
@@ -71,8 +147,8 @@ class TFixedDfFixedVarLogScore(LogScore):
         return -self.dist.logpdf(Y)
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
-        num = (self.df + 1) * (2 / (self.df * self.var)) * (self.loc - Y)
-        den = (2) * (1 + (1 / (self.df * self.var)) * (self.loc - Y) ** 2)
+        num = (self.df + 1) * (2 / (self.df * self.var)) * (Y - self.loc)
+        den = (2) * (1 + (1 / (self.df * self.var)) * (Y - self.loc) ** 2)
         return -num / den
 
     def d_score(self, Y):

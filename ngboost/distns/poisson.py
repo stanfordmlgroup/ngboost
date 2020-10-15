@@ -20,6 +20,11 @@ class PoissonLogScore(LogScore):
         D[:, 0] = self.mu - Y
         return D
 
+    def metric(self):
+        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI[:, 0, 0] = self.mu
+        return FI
+
 
 class Poisson(RegressionDistn):
     """

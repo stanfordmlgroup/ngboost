@@ -21,7 +21,7 @@ class PoissonLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI = np.zeros((self.mu.shape[0], 1, 1))
         FI[:, 0, 0] = self.mu
         return FI
 

@@ -101,6 +101,12 @@ class TFixedDfLogScore(LogScore):
         D[:, 1] = self._handle_scale_derivative(Y)
         return D
 
+    def metric(self):
+        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+        FI[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var)
+        return FI
+
 
 class TFixedDf(RegressionDistn):
     """

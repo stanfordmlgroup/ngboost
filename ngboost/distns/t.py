@@ -69,12 +69,8 @@ class T(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(
-        self, name
-    ):  # gives us Normal.mean() required for RegressionDist.predict()
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
+    def __getattr__(self, name):
+        return getattr(self.dist, name, None)
 
     @property
     def params(self):
@@ -136,12 +132,8 @@ class TFixedDf(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(
-        self, name
-    ):  # gives us Normal.mean() required for RegressionDist.predict()
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
+    def __getattr__(self, name):
+        return getattr(self.dist, name, None)
 
     @property
     def params(self):
@@ -197,12 +189,8 @@ class TFixedDfFixedVar(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(
-        self, name
-    ):  # gives us Normal.mean() required for RegressionDist.predict()
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
+    def __getattr__(self, name):
+        return getattr(self.dist, name, None)
 
     @property
     def params(self):

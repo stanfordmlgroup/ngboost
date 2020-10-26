@@ -26,8 +26,8 @@
   "@type": "NewsArticle",
   "mainEntityOfPage": "https://stanfordmlgroup.github.io/ngboost/5-dev.html",
   "headline": "Developing NGBoost",
-  "datePublished": "2020-07-10T11:03:21-07:00",
-  "dateModified": "2020-07-10T11:03:21-07:00",
+  "datePublished": "2020-10-26T17:07:05-05:00",
+  "dateModified": "2020-10-26T17:07:05-05:00",
   "description": "        Developing NGBoost    As you work with NGBoost, you may want to experiment with distributions or scores that are not yet supported. Here we will walk...",
   "author": {
     "@type": "Person",
@@ -728,8 +728,7 @@ initFunction(initPrint)
                   <main class="jupyter-page">
     <div id="page-info"><div id="page-title">Developing NGBoost</div>
 </div>
-    
-<div class="jb_cell">
+    <div class="jb_cell">
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -770,10 +769,10 @@ initFunction(initPrint)
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="k">import</span> <span class="n">laplace</span> <span class="k">as</span> <span class="n">dist</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">laplace</span> <span class="k">as</span> <span class="n">dist</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">ngboost.distns.distn</span> <span class="k">import</span> <span class="n">RegressionDistn</span>
-<span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">LogScore</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns.distn</span> <span class="kn">import</span> <span class="n">RegressionDistn</span>
+<span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="kn">import</span> <span class="n">LogScore</span>
 
 <span class="k">class</span> <span class="nc">LaplaceLogScore</span><span class="p">(</span><span class="n">LogScore</span><span class="p">):</span> <span class="c1"># will implement this later</span>
     <span class="k">pass</span>
@@ -783,7 +782,7 @@ initFunction(initPrint)
     <span class="n">n_params</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">LaplaceLogScore</span><span class="p">]</span> <span class="c1"># will implement this later</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
         <span class="c1"># save the parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="n">params</span>
         
@@ -800,7 +799,7 @@ initFunction(initPrint)
     <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="o">.</span><span class="n">rvs</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)])</span>
     
-    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span> <span class="c1"># gives us access to Laplace.mean() required for RegressionDist.predict()</span>
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span> <span class="c1"># gives us access to Laplace.mean() required for RegressionDist.predict()</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -851,8 +850,8 @@ initFunction(initPrint)
 
     <span class="k">def</span> <span class="nf">d_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
         <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="mi">2</span><span class="p">))</span> <span class="c1"># first col is dS/d𝜇, second col is dS/d(log(b))</span>
-        <span class="n">D</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logscale</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
-        <span class="n">D</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logscale</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">D</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">D</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
         <span class="k">return</span> <span class="n">D</span>
 </pre></div>
 
@@ -921,8 +920,8 @@ initFunction(initPrint)
 
     <span class="k">def</span> <span class="nf">d_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
         <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">),</span> <span class="mi">2</span><span class="p">))</span> <span class="c1"># first col is dS/d𝜇, second col is dS/d(log(b))</span>
-        <span class="n">D</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logscale</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
-        <span class="n">D</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logscale</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">D</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">D</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
         <span class="k">return</span> <span class="n">D</span>
 
 <span class="k">class</span> <span class="nc">Laplace</span><span class="p">(</span><span class="n">RegressionDistn</span><span class="p">):</span>
@@ -930,7 +929,7 @@ initFunction(initPrint)
     <span class="n">n_params</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">LaplaceLogScore</span><span class="p">]</span> 
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
         <span class="c1"># save the parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="n">params</span>
         
@@ -947,7 +946,7 @@ initFunction(initPrint)
     <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="o">.</span><span class="n">rvs</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">)])</span>
     
-    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span> <span class="c1"># gives us access to Laplace.mean() required for RegressionDist.predict()</span>
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span> <span class="c1"># gives us access to Laplace.mean() required for RegressionDist.predict()</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -982,10 +981,10 @@ initFunction(initPrint)
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBRegressor</span>
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_boston</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="k">import</span> <span class="n">mean_squared_error</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="kn">import</span> <span class="n">NGBRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">load_boston</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_squared_error</span>
 
 <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">X_reg_train</span><span class="p">,</span> <span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">Y_reg_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
@@ -1014,13 +1013,13 @@ initFunction(initPrint)
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[iter 0] loss=3.5592 val_loss=0.0000 scale=0.5000 norm=5.1998
-[iter 100] loss=3.3162 val_loss=0.0000 scale=0.2500 norm=1.5259
-[iter 200] loss=3.3106 val_loss=0.0000 scale=0.0312 norm=0.1790
-[iter 300] loss=3.3104 val_loss=0.0000 scale=0.0000 norm=0.0001
-[iter 400] loss=3.3104 val_loss=0.0000 scale=0.0000 norm=0.0001
-Test MSE 61.24969569895786
-Test NLL 3.2824343523391057
+<pre>[iter 0] loss=3.5989 val_loss=0.0000 scale=1.0000 norm=6.8968
+[iter 100] loss=2.8432 val_loss=0.0000 scale=1.0000 norm=5.3980
+[iter 200] loss=2.4432 val_loss=0.0000 scale=1.0000 norm=3.5194
+[iter 300] loss=2.2069 val_loss=0.0000 scale=1.0000 norm=2.4722
+[iter 400] loss=2.0325 val_loss=0.0000 scale=1.0000 norm=1.9901
+Test MSE 13.593387122611777
+Test NLL 2.552651522788599
 </pre>
 </div>
 </div>
@@ -1079,8 +1078,42 @@ Test NLL 3.2824343523391057
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>As we saw, using the log score, the easiest thing to do as a developer is to lean on the default ngboost method that calculates the log score metric.</p>
-<p>However, the distribution-agnostic default method is slow because it must sample from the distribution many times to build up an approximation of the metric. If you want to make it faster, then you must derive and implement the distribution-specific Riemannian metric, which for the log score is the Fisher information matrix of that distribution. You have to derive the Fisher with respect to the internal ngboost parameterization (if that is different to the user-facing parametrization, e.g. $\log(\sigma)$, not $\sigma$). Deriving a Fisher is not necessarily easy since you have to compute an expectation analytically, but there are many examples onlne of deriving Fisher matrices that you can look through.</p>
-<p>If you don't want to use the log score (say you want CRP score, for example), then ngboost does not (yet?) have a default method for calculating the metric and you <em>must</em> derive and implement it yourself. This is harder than deriving a Fisher because there are not many worked examples. The most general derivation process should follow the outline <a href="https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/">here</a>, replacing the KL divergence (which is induced by the log score) with whichever divergence is induced by the scoring rule you want to use (e.g. L2 for CRPS), again taking care to derive with respect to the internal ngboost parameterization, not the user-facing one. For any particular score, there may be a specific closed-form expression that you can use to calculate the metric across distributions (the expression for the Fisher Info serves this purpose for the log score) or there may not be- I actually don't know the answer to this question! But if there were, that could suggest some kind of default implementation for that score's <code>metric()</code> method.</p>
+<p>However, the distribution-agnostic default method is slow because it must sample from the distribution many times to build up an approximation of the metric. If you want to make it faster, then you must derive and implement the distribution-specific Riemannian metric, which for the log score is the Fisher information matrix of that distribution. You have to derive the Fisher with respect to the internal ngboost parameterization (if that is different to the user-facing parametrization, e.g. $\log(\sigma)$, not $\sigma$). Deriving a Fisher is not necessarily easy since you have to compute an expectation analytically, but there are many examples online of deriving Fisher matrices that you can look through.</p>
+<p>For example, consider the <a href="https://mathworld.wolfram.com/Studentst-Distribution.html">Student's-t distribution</a>. This distribution is parameterised by degrees of freedom $\nu$, mean $\mu$, and standard deviation $\sigma$.</p>
+<p>The Fisher information of this distribution can be found  <a href="https://stats.stackexchange.com/questions/271898/expected-fishers-information-matrix-for-students-t-distribution">here</a>, and is</p>
+$$\begin{align*}
+\begin{bmatrix}
+\frac{\nu + 1}{(\nu + 3) \sigma^2} &amp; 0 \\ 0 &amp; \frac{\nu}{2(\nu + 3) \sigma^4}
+\end{bmatrix}
+\end{align*}$$<p>As $\sigma &gt; 0$, for NGBoost we must replace this with $\log ( \sigma )$. This requires us to reparameterise the distribution. To find the Fisher information under this reparameterisation, we can follow the procedure laid out here on <a href="https://en.wikipedia.org/wiki/Fisher_information#Reparametrization">Wikipedia</a>.</p>
+<p>$\eta = (\mu, \sigma), \theta = (\mu, \log \sigma)$</p>
+<p>$I_{\eta}(\eta) = J^T I_{\theta}(\theta) J$</p>
+<p>Where $J$ is the $2 \times 2$ Jacobian matrix defined by</p>
+$$[J]_{ij} = \dfrac{\partial \theta_i}{\partial  \eta_j}$$<p>Which evaluates to</p>
+$$\begin{align*}
+J = J^T &amp;=  \begin{bmatrix}
+1 &amp; 0 \\ 0 &amp; \frac{1}{\sigma}
+\end{bmatrix}\\
+J^{-1} &amp;=  \begin{bmatrix}
+1 &amp; 0 \\ 0 &amp; \sigma
+\end{bmatrix}\\
+\end{align*}$$<p>We can thus obtain the desired Fisher information by rearranging as such,</p>
+$$\begin{align*}
+I_{\theta}(\theta) &amp;= J^{-1} I_{\eta}(\eta) J^{-1}\\
+&amp;=  \begin{bmatrix}
+1 &amp; 0 \\ 0 &amp; \sigma
+\end{bmatrix}
+\begin{bmatrix}
+\frac{\nu + 1}{(\nu + 3) \sigma^2} &amp; 0 \\ 0 &amp; \frac{\nu}{2(\nu + 3) \sigma^4}
+\end{bmatrix}
+\begin{bmatrix}
+1 &amp; 0 \\ 0 &amp; \sigma
+\end{bmatrix}\\
+&amp;= \begin{bmatrix}
+\frac{\nu + 1}{(\nu + 3) \sigma^2} &amp; 0 \\ 0 &amp; \frac{\nu}{2(\nu + 3) \sigma^2}
+\end{bmatrix}
+\end{align*}
+$$<p>If you don't want to use the log score (say you want CRP score, for example), then ngboost does not (yet?) have a default method for calculating the metric and you <em>must</em> derive and implement it yourself. This is harder than deriving a Fisher because there are not many worked examples. The most general derivation process should follow the outline <a href="https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/">here</a>, replacing the KL divergence (which is induced by the log score) with whichever divergence is induced by the scoring rule you want to use (e.g. L2 for CRPS), again taking care to derive with respect to the internal ngboost parameterization, not the user-facing one. For any particular score, there may be a specific closed-form expression that you can use to calculate the metric across distributions (the expression for the Fisher Info serves this purpose for the log score) or there may not be- I actually don't know the answer to this question! But if there were, that could suggest some kind of default implementation for that score's <code>metric()</code> method.</p>
 
 </div>
 </div>
@@ -1115,7 +1148,7 @@ Test NLL 3.2824343523391057
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">Score</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="kn">import</span> <span class="n">Score</span>
 
 <span class="k">class</span> <span class="nc">SphericalScore</span><span class="p">(</span><span class="n">Score</span><span class="p">):</span>
     <span class="k">pass</span>

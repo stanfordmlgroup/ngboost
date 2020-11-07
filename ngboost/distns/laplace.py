@@ -10,8 +10,8 @@ class LaplaceLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
-        D[:, 0] = np.sign(self.loc - Y)/self.scale
-        D[:, 1] = 1 - np.abs(self.loc - Y)/self.scale
+        D[:, 0] = np.sign(self.loc - Y) / self.scale
+        D[:, 1] = 1 - np.abs(self.loc - Y) / self.scale
         return D
 
     def metric(self):
@@ -23,12 +23,20 @@ class LaplaceLogScore(LogScore):
 
 class LaplaceCRPScore(CRPScore):
     def score(self, Y):
-        return np.abs(Y - self.loc) + np.exp(-np.abs(Y - self.loc) / self.scale) * self.scale - 0.75 * self.scale
+        return (
+            np.abs(Y - self.loc)
+            + np.exp(-np.abs(Y - self.loc) / self.scale) * self.scale
+            - 0.75 * self.scale
+        )
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
-        D[:, 0] = np.sign(self.loc - Y) * (1 - np.exp(-np.abs(Y - self.loc) / self.scale))
-        D[:, 1] = np.exp(-np.abs(Y - self.loc) / self.scale) * (self.scale + np.abs(Y - self.loc))
+        D[:, 0] = np.sign(self.loc - Y) * (
+            1 - np.exp(-np.abs(Y - self.loc) / self.scale)
+        )
+        D[:, 1] = np.exp(-np.abs(Y - self.loc) / self.scale) * (
+            self.scale + np.abs(Y - self.loc)
+        )
         return D
 
     def metric(self):
@@ -64,5 +72,4 @@ class Laplace(RegressionDistn):
 
     @property
     def params(self):
-        return {'loc':self.loc, 'scale':self.scale}
-
+        return {"loc": self.loc, "scale": self.scale}

@@ -26,8 +26,8 @@
   "@type": "NewsArticle",
   "mainEntityOfPage": "https://stanfordmlgroup.github.io/ngboost/1-useage.html",
   "headline": "Usage",
-  "datePublished": "2020-06-03T18:28:35-07:00",
-  "dateModified": "2020-06-03T18:28:35-07:00",
+  "datePublished": "2020-10-26T17:07:05-05:00",
+  "dateModified": "2020-10-26T17:07:05-05:00",
   "description": "        Usage    We'll start with a probabilistic regression example on the Boston housing dataset:    from ngboost import NGBRegressorfrom sklearn.datasets ...",
   "author": {
     "@type": "Person",
@@ -728,8 +728,7 @@ initFunction(initPrint)
                   <main class="jupyter-page">
     <div id="page-info"><div id="page-title">Usage</div>
 </div>
-    
-<div class="jb_cell">
+    <div class="jb_cell">
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -747,11 +746,11 @@ initFunction(initPrint)
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBRegressor</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="kn">import</span> <span class="n">NGBRegressor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_boston</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="k">import</span> <span class="n">mean_squared_error</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">load_boston</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_squared_error</span>
 
 <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">Y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
@@ -921,7 +920,7 @@ Test NLL 2.8867507325340243
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">Exponential</span><span class="p">,</span> <span class="n">Normal</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="kn">import</span> <span class="n">Exponential</span><span class="p">,</span> <span class="n">Normal</span>
 
 <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">X_reg_train</span><span class="p">,</span> <span class="n">X_reg_test</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">,</span> <span class="n">Y_reg_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
@@ -1079,8 +1078,8 @@ Test NLL 2.8867507325340243
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBSurvival</span>
-<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">LogNormal</span>
+<span class="kn">from</span> <span class="nn">ngboost</span> <span class="kn">import</span> <span class="n">NGBSurvival</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="kn">import</span> <span class="n">LogNormal</span>
 
 <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">load_boston</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">X_surv_train</span><span class="p">,</span> <span class="n">X_surv_test</span><span class="p">,</span> <span class="n">Y_surv_train</span><span class="p">,</span> <span class="n">Y_surv_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
@@ -1190,9 +1189,9 @@ Test NLL 2.8867507325340243
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="k">import</span> <span class="n">NGBClassifier</span>
-<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="k">import</span> <span class="n">k_categorical</span><span class="p">,</span> <span class="n">Bernoulli</span>
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="k">import</span> <span class="n">load_breast_cancer</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost</span> <span class="kn">import</span> <span class="n">NGBClassifier</span>
+<span class="kn">from</span> <span class="nn">ngboost.distns</span> <span class="kn">import</span> <span class="n">k_categorical</span><span class="p">,</span> <span class="n">Bernoulli</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">load_breast_cancer</span>
 
 <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">load_breast_cancer</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># artificially make this a 3-class problem instead of a 2-class problem</span>
@@ -1362,12 +1361,12 @@ Test NLL 2.8867507325340243
 
 <div class="jb_cell tag_hide_output">
 
-<div class="cell border-box-sizing code_cell rendered">
+<div class="cell border-box-sizing code_cell rendered tag_hide_output">
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="k">import</span> <span class="n">LogScore</span><span class="p">,</span> <span class="n">CRPScore</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">ngboost.scores</span> <span class="kn">import</span> <span class="n">LogScore</span><span class="p">,</span> <span class="n">CRPScore</span>
 
 <span class="n">NGBRegressor</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">Exponential</span><span class="p">,</span> <span class="n">Score</span><span class="o">=</span><span class="n">CRPScore</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_reg_train</span><span class="p">,</span> <span class="n">Y_reg_train</span><span class="p">)</span>
 <span class="n">NGBClassifier</span><span class="p">(</span><span class="n">Dist</span><span class="o">=</span><span class="n">k_categorical</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">Score</span><span class="o">=</span><span class="n">LogScore</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_cls_train</span><span class="p">,</span> <span class="n">Y_cls_train</span><span class="p">)</span>
@@ -1434,12 +1433,12 @@ Test NLL 2.8867507325340243
 
 <div class="jb_cell tag_hide_output">
 
-<div class="cell border-box-sizing code_cell rendered">
+<div class="cell border-box-sizing code_cell rendered tag_hide_output">
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="k">import</span> <span class="n">DecisionTreeRegressor</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="kn">import</span> <span class="n">DecisionTreeRegressor</span>
 
 <span class="n">learner</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;friedman_mse&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
@@ -1506,7 +1505,7 @@ Test NLL 2.8867507325340243
 
 <div class="jb_cell tag_hide_output">
 
-<div class="cell border-box-sizing code_cell rendered">
+<div class="cell border-box-sizing code_cell rendered tag_hide_output">
 <div class="input">
 
 <div class="inner_cell">
@@ -1575,7 +1574,7 @@ Test NLL 2.8867507325340243
 
 <div class="jb_cell tag_hide_output">
 
-<div class="cell border-box-sizing code_cell rendered">
+<div class="cell border-box-sizing code_cell rendered tag_hide_output">
 <div class="input">
 
 <div class="inner_cell">

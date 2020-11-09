@@ -1,4 +1,9 @@
-from ngboost.distns.t import TFixedDfFixedVar, TFixedDf, TFixedDfFixedVarLogScore, TFixedDfLogScore
+from ngboost.distns.t import (
+    TFixedDfFixedVar,
+    TFixedDf,
+    TFixedDfFixedVarLogScore,
+    TFixedDfLogScore,
+)
 
 CauchyLogScore = TFixedDfLogScore
 

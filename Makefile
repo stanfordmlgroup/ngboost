@@ -6,3 +6,5 @@ clean:
 	rm -r build dist ngboost.egg-info
 upload:
 	twine upload dist/*
+format:
+	black . && isort . -rc -l 100

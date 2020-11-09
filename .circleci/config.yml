@@ -23,7 +23,7 @@ jobs:
             py.test --cov-report=xml --cov=./ngboost ./ngboost/tests
           name: Test Python
       - codecov/upload:
-          token: ADD_TOKEN_HERE
+          token: ${CODECOV_TOKEN}
 
   format:
     executor: python/default

@@ -12,6 +12,10 @@ from ngboost.distns import (
     LogNormal,
     Normal,
     k_categorical,
+    T,
+    TFixedDf,
+    TFixedDfFixedVar,
+    Cauchy,
 )
 from ngboost.scores import CRPScore, LogScore, Score
 from sklearn.tree import DecisionTreeRegressor
@@ -24,32 +28,23 @@ Tuple4Array = Tuple[np.array, np.array, np.array, np.array]
 Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
 
 
-def product_list(*its: Iterable) -> List:
-    """Convenience to create a list of the cartesian product of input iterables
-
-    This is mostly so the parametrized functions below can be a bit cleaner.
-    """
-    return list(product(*its))
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    ["dist", "score", "learner"],
-    product_list(
-        [Normal, LogNormal, Exponential],
-        [LogScore, CRPScore],
-        [
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        ],
-    ),
+    "dist", [Normal, LogNormal, Exponential, T, TFixedDf, TFixedDfFixedVar, Cauchy]
 )
-def test_dists_runs_on_examples(
-    dist: Distn, score: Score, learner, boston_data: Tuple4Array
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+    ],
+)
+def test_dists_runs_on_examples_logscore(
+    dist: Distn, learner, boston_data: Tuple4Array
 ):
     X_train, X_test, y_train, y_test = boston_data
     # TODO: test early stopping features
-    ngb = NGBRegressor(Dist=dist, Score=score, Base=learner, verbose=False)
+    ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)
@@ -57,16 +52,34 @@ def test_dists_runs_on_examples(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("dist", [Normal, LogNormal, Exponential])
 @pytest.mark.parametrize(
-    ["dist", "score", "learner"],
-    product_list(
-        [LogNormal, Exponential],
-        [LogScore, CRPScore],
-        [
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        ],
-    ),
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+    ],
+)
+def test_dists_runs_on_examples_crpscore(
+    dist: Distn, learner, boston_data: Tuple4Array
+):
+    X_train, X_test, y_train, y_test = boston_data
+    # TODO: test early stopping features
+    ngb = NGBRegressor(Dist=dist, Score=CRPScore, Base=learner, verbose=False)
+    ngb.fit(X_train, y_train)
+    y_pred = ngb.predict(X_test)
+    y_dist = ngb.pred_dist(X_test)
+    # TODO: test properties of output
+
+
+@pytest.mark.parametrize("dist", [LogNormal, Exponential])
+@pytest.mark.parametrize("score", [LogScore, CRPScore])
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+    ],
 )
 def test_survival_runs_on_examples(
     dist: Distn, score: Score, learner, boston_survival_data: Tuple5Array
@@ -101,15 +114,13 @@ def test_bernoulli(learner, breast_cancer_data: Tuple4Array):
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("k", [2, 4, 7])
 @pytest.mark.parametrize(
-    ["k", "learner"],
-    product_list(
-        [2, 4, 7],
-        [
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        ],
-    ),
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+    ],
 )
 def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
     X_train, X_test, y_train, y_test = breast_cancer_data

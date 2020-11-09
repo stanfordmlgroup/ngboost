@@ -13,7 +13,7 @@ from ngboost.distns import (
     Normal,
     k_categorical,
     T,
-    TFixedDF,
+    TFixedDf,
     TFixedDfFixedVar,
     Cauchy,
 )
@@ -40,7 +40,7 @@ def product_list(*its: Iterable) -> List:
 @pytest.mark.parametrize(
     ["dist", "score", "learner"],
     product_list(
-        [Normal, LogNormal, Exponential, T, TFixedDF, TFixedDfFixedVar, Cauchy],
+        [Normal, LogNormal, Exponential, T, TFixedDf, TFixedDfFixedVar, Cauchy],
         [LogScore, CRPScore],
         [
             DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),

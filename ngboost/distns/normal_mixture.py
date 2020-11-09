@@ -86,10 +86,6 @@ class NormalMixtureLogScore(LogScore):
         D[:, range(2 * K, (3 * K - 1))] = D_alpha1
         return D
 
-    def metric(self):
-        grads = np.stack([self.d_score(Y) for Y in self.sample(10000)])
-        return np.mean(np.einsum("sik,sij->sijk", grads, grads), axis=0)
-
 
 def k_normal_mixture(K):
     class NormalMixture(RegressionDistn):
@@ -104,19 +100,14 @@ def k_normal_mixture(K):
             self._params = params
 
             # create other objects that will be useful later
-            self.loc = params[range(K)]
+            self.loc = params[0:K]
+            self.logscale = params[K : (2 * K)]
+            self.scale = np.exp(self.logscale)
 
-            self.logscale = params[range(K, (2 * K))]
-            self.scale = np.exp(params[range(K, (2 * K))])
-
-            n = params.shape[1]
-            self.transformed_mixprop = params[range(2 * K, (3 * K - 1))]
-            mixprop = np.transpose(params[range(2 * K, (3 * K - 1))])
-            mixprop1 = []
-            for i in range(mixprop.shape[0]):
-                prop = np.exp(mixprop[i]) / (1 + np.sum(np.exp(mixprop[i])))
-                mixprop1 = np.append(mixprop1, np.append(prop, 1 - np.sum(prop)))
-            self.mixprop = np.transpose(mixprop1.reshape(n, K))
+            mix_params = np.zeros((K, params.shape[1]))
+            mix_params[0 : (K - 1), :] = params[(2 * K) : (3 * K - 1)]
+            exp_mixprop = np.exp(mix_params)
+            self.mixprop = exp_mixprop / np.sum(exp_mixprop, axis=0)
 
         def fit(Y):
             kmeans = KMeans(n_clusters=K).fit(Y.reshape(-1, 1))
@@ -138,30 +129,18 @@ def k_normal_mixture(K):
             )
 
         def sample(self, m):
-            n = self._params.shape[1]
-            final_data = []
-            for j in range(n):
-                cum_size = np.append(
-                    0, [math.floor(i) for i in np.cumsum(self.mixprop[:, j]) * m]
-                )
-                data = np.array([])
-                for i in range(K):
-                    data = np.append(
-                        data,
-                        norm.rvs(
-                            self.loc[i, j],
-                            self.scale[i, j],
-                            (cum_size[i + 1] - cum_size[i]),
-                        ),
-                    )
-                final_data = np.append(final_data, data)
-            return np.transpose(final_data.reshape(n, m))
+            component = np.array(
+                [  # it's stupid that there is no fast vectorized multinomial in python
+                    np.random.multinomial(n=1, pvals=self.mixprop[:, i], size=10)
+                    for i in range(self.mixprop.shape[1])
+                ]
+            ).transpose(1, 2, 0)
+            samples = norm.rvs(self.loc, self.scale, size=(10,) + self.loc.shape)
+            return np.sum(component * samples, axis=1)
 
-        def mean(
-            self,
-        ):  # gives us access to Laplace.mean() required for RegressionDist.predict()
+        def mean(self,):
             n = self._params.shape[1]
-            return [np.sum(self.mixprop[:, i] * self.loc[:, i]) for i in range(n)]
+            np.sum(self.mixprop * self.loc, axis=0)
 
         @property
         def params(self):

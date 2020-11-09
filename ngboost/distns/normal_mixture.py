@@ -24,7 +24,7 @@ class NormalMixtureLogScore(LogScore):
             ]
         )
 
-    def inv_f(z, j):  # helper
+    def inv_f(self, z, j):  # helper
         return 1 / np.sum(
             self.mixprop[:, j]
             * [norm.pdf(z, self.loc[i, j], self.scale[i, j]) for i in range(self.K_)]
@@ -91,7 +91,7 @@ class NormalMixtureLogScore(LogScore):
         return np.mean(np.einsum("sik,sij->sijk", grads, grads), axis=0)
 
 
-def k_NormalMixture(K):
+def k_normal_mixture(K):
     class NormalMixture(RegressionDistn):
 
         K_ = K

@@ -1,5 +1,6 @@
 from .distn import RegressionDistn, ClassificationDistn, Distn
 from .normal import Normal, NormalFixedVar
+from .normal_mixture import k_normal_mixture
 from .multivariate_normal import MultivariateNormal
 from .laplace import Laplace
 from .lognormal import LogNormal

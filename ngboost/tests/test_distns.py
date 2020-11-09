@@ -38,22 +38,42 @@ def product_list(*its: Iterable) -> List:
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    ["dist", "score", "learner"],
-    product_list(
-        [Normal, LogNormal, Exponential, T, TFixedDf, TFixedDfFixedVar, Cauchy],
-        [LogScore, CRPScore],
-        [
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-            DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        ],
-    ),
+    "dist", [Normal, LogNormal, Exponential, T, TFixedDf, TFixedDfFixedVar, Cauchy]
 )
-def test_dists_runs_on_examples(
-    dist: Distn, score: Score, learner, boston_data: Tuple4Array
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+    ],
+)
+def test_dists_runs_on_examples_logscore(
+    dist: Distn, learner, boston_data: Tuple4Array
 ):
     X_train, X_test, y_train, y_test = boston_data
     # TODO: test early stopping features
-    ngb = NGBRegressor(Dist=dist, Score=score, Base=learner, verbose=False)
+    ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
+    ngb.fit(X_train, y_train)
+    y_pred = ngb.predict(X_test)
+    y_dist = ngb.pred_dist(X_test)
+    # TODO: test properties of output
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("dist", [Normal, LogNormal, Exponential])
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+    ],
+)
+def test_dists_runs_on_examples_crpscore(
+    dist: Distn, learner, boston_data: Tuple4Array
+):
+    X_train, X_test, y_train, y_test = boston_data
+    # TODO: test early stopping features
+    ngb = NGBRegressor(Dist=dist, Score=CRPScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)

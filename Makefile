@@ -1,6 +1,6 @@
 
 install:
-	poetry install
+	pip install poetry && poetry install
 
 package:
 	poetry package

@@ -3,9 +3,9 @@ install:
 	pip install poetry && poetry install
 
 package:
-	poetry package
+	poetry build
 
-publish:
+publish: package
 	poetry publish
 
 lint:

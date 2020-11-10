@@ -1,9 +1,10 @@
+import numpy as np
+from sklearn.datasets import load_boston
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+
 from ngboost import NGBSurvival
 from ngboost.distns import LogNormal
-from sklearn.datasets import load_boston
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-import numpy as np
 
 if __name__ == "__main__":
 

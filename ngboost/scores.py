@@ -17,7 +17,9 @@ class LogScore(Score):
     """
     Generic class for the log scoring rule.
 
-    The log scoring rule is the same as negative log-likelihood: -log(P̂(y)), also known as the maximum likelihood estimator. This scoring rule has a default method for calculating the Riemannian metric.
+    The log scoring rule is the same as negative log-likelihood: -log(P̂(y)),
+    also known as the maximum likelihood estimator. This scoring rule has a default
+    method for calculating the Riemannian metric.
     """
 
     def metric(self, n_mc_samples=100):

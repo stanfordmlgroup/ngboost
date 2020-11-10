@@ -1,12 +1,14 @@
+"The NGBoost library API"
+# pylint: disable=too-many-arguments
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
+
 from ngboost.distns import (
     Bernoulli,
     ClassificationDistn,
     LogNormal,
     Normal,
     RegressionDistn,
-    Poisson,
 )
 from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner
@@ -18,12 +20,17 @@ class NGBRegressor(NGBoost, BaseEstimator):
     """
     Constructor for NGBoost regression models.
 
-    NGBRegressor is a wrapper for the generic NGBoost class that facilitates regression. Use this class if you want to predict an outcome that could take an infinite number of (ordered) values.
+    NGBRegressor is a wrapper for the generic NGBoost class that facilitates regression.
+    Use this class if you want to predict an outcome that could take an
+    infinite number of (ordered) values.
 
     Parameters:
-        Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Normal
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Dist              : assumed distributional form of Y|X=x.
+                            A distribution from ngboost.distns, e.g. Normal
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
+                            A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -32,7 +39,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        random_state      : seed for reproducibility. See
+                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
         An NGBRegressor object that can be fit.
     """
@@ -94,12 +102,17 @@ class NGBClassifier(NGBoost, BaseEstimator):
     """
     Constructor for NGBoost classification models.
 
-    NGBRegressor is a wrapper for the generic NGBoost class that facilitates classification. Use this class if you want to predict an outcome that could take a discrete number of (unordered) values.
+    NGBRegressor is a wrapper for the generic NGBoost class that facilitates classification.
+    Use this class if you want to predict an outcome that could take a discrete number of
+    (unordered) values.
 
     Parameters:
-        Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Bernoulli
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Dist              : assumed distributional form of Y|X=x.
+                            A distribution from ngboost.distns, e.g. Bernoulli
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
+                            A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -108,7 +121,8 @@ class NGBClassifier(NGBoost, BaseEstimator):
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        random_state      : seed for reproducibility. See
+                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
         An NGBRegressor object that can be fit.
     """
@@ -168,7 +182,8 @@ class NGBClassifier(NGBoost, BaseEstimator):
             max_iter : largest number of boosting iterations to get the prediction for
 
         Output:
-            A list of of the estimates of P(Y=k|X=x) of shape (n, K), one per boosting stage up to max_iter
+            A list of of the estimates of P(Y=k|X=x) of shape (n, K),
+            one per boosting stage up to max_iter
         """
         return [
             dist.class_probs() for dist in self.staged_pred_dist(X, max_iter=max_iter)
@@ -179,12 +194,17 @@ class NGBSurvival(NGBoost, BaseEstimator):
     """
     Constructor for NGBoost survival models.
 
-    NGBRegressor is a wrapper for the generic NGBoost class that facilitates survival analysis. Use this class if you want to predict an outcome that could take an infinite number of (ordered) values, but right-censoring is present in the observed data.
+    NGBRegressor is a wrapper for the generic NGBoost class that facilitates survival analysis.
+    Use this class if you want to predict an outcome that could take an infinite number of
+    (ordered) values, but right-censoring is present in the observed data.
 
      Parameters:
-        Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. LogNormal
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Dist              : assumed distributional form of Y|X=x.
+                            A distribution from ngboost.distns, e.g. LogNormal
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
+                            A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -193,7 +213,8 @@ class NGBSurvival(NGBoost, BaseEstimator):
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        random_state      : seed for reproducibility. See
+                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
         An NGBRegressor object that can be fit.
     """
@@ -249,15 +270,21 @@ class NGBSurvival(NGBoost, BaseEstimator):
         )
 
     def fit(self, X, T, E, X_val=None, T_val=None, E_val=None, **kwargs):
-        """
-        Fits an NGBoost survival model to the data. For additional parameters see ngboost.NGboost.fit
+        """Fits an NGBoost survival model to the data.
+        For additional parameters see ngboost.NGboost.fit
 
         Parameters:
-            X                       : DataFrame object or List or numpy array of predictors (n x p) in Numeric format
-            T                       : DataFrame object or List or numpy array of times to event or censoring (n). Should be floats
-            E                       : DataFrame object or List or numpy array of event indicators (n). E[i] = 1 <=> T[i] is the time of an event, else censoring time
-            T_val                   : DataFrame object or List or validation-set times, in Numeric format if any
-            E_val                   : DataFrame object or List or validation-set event idicators, in Numeric format if any
+            X                     : DataFrame object or List or
+                                    numpy array of predictors (n x p) in Numeric format
+            T                     : DataFrame object or List or
+                                    numpy array of times to event or censoring (n) (floats).
+            E                     : DataFrame object or List or
+                                    numpy array of event indicators (n).
+                                    E[i] = 1 <=> T[i] is the time of an event, else censoring time
+            T_val                 : DataFrame object or List or
+                                    validation-set times, in numeric format if any
+            E_val                 : DataFrame object or List or
+                                    validation-set event idicators, in numeric format if any
         """
 
         X = check_array(X)

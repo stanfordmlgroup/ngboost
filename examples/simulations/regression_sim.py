@@ -1,12 +1,13 @@
 from argparse import ArgumentParser
-import numpy as np
-from ngboost.distns import Normal
-from ngboost.ngboost import NGBoost
-from ngboost.learners import default_linear_learner
-from ngboost.evaluation import *
-from sklearn.metrics import r2_score
-from matplotlib import pyplot as plt
 
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.metrics import r2_score
+
+from ngboost.distns import Normal
+from ngboost.evaluation import *
+from ngboost.learners import default_linear_learner
+from ngboost.ngboost import NGBoost
 
 if __name__ == "__main__":
 

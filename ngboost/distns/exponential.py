@@ -1,8 +1,10 @@
-import scipy as sp
+"""The NGBoost Exponential distribution and scores"""
 import numpy as np
+import scipy as sp
 from scipy.stats import expon as dist
-from ngboost.distns import RegressionDistn
-from ngboost.scores import LogScore, CRPScore
+
+from ngboost.distns.distn import RegressionDistn
+from ngboost.scores import CRPScore, LogScore
 
 eps = 1e-10
 
@@ -52,13 +54,14 @@ class Exponential(RegressionDistn):
     Implements the exponential distribution for NGBoost.
 
     The exponential distribution has one parameters, scale. See scipy.stats.expon for details.
-    This distribution has both LogScore and CRPScore implemented for it and both work with right-censored data
+    This distribution has both LogScore and CRPScore implemented for it
+    and both work with right-censored data
     """
 
     n_params = 1
     censored_scores = [ExponentialLogScore, ExponentialCRPScore]
 
-    def __init__(self, params):
+    def __init__(self, params):  # pylint: disable=super-init-not-called
         self._params = params
         self.scale = np.exp(params[0])
         self.dist = dist(scale=self.scale)

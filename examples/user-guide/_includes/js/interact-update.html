@@ -19,7 +19,7 @@ function getJsonFromUrl(url) {
   });
   return result;
 }
-    
+
 function dict2param(dict) {
     params = Object.keys(dict).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(dict[k])

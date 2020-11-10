@@ -1,14 +1,14 @@
-import scipy as sp
+"""The NGBoost multivariate Normal distribution and scores"""
+# pylint: disable=unused-argument,bare-except,too-many-locals
 import numpy as np
-
+import scipy as sp
 from scipy.stats import norm as dist
-
 
 eps = 1e-6
 
 
-class MultivariateNormal(object):
-    # TODO: make n_params general
+class MultivariateNormal:  # pylint: disable=too-many-instance-attributes
+    # make n_params general
     n_params = 5
 
     def __init__(self, params, temp_scale=1.0):
@@ -65,7 +65,7 @@ class MultivariateNormal(object):
                 )
             )
             return -(cens + uncens)
-        except:
+        except:  # NOQA
             diff = Y - self.loc
             M = diff[:, None, :] @ self.cov_inv @ diff[:, :, None]
             half_log_det = np.log(eps + np.diagonal(self.L, axis1=1, axis2=2)).sum(-1)
@@ -73,6 +73,7 @@ class MultivariateNormal(object):
             logpdf = -const - half_log_det - 0.5 * M.flatten()
             return -logpdf
 
+    # pylint: disable=too-many-statements
     def D_nll(self, Y_):
         try:
             E = Y_["Event"]
@@ -180,7 +181,7 @@ class MultivariateNormal(object):
 
             return D
 
-        except:
+        except:  # NOQA
             # reshape Jacobian
             tril_indices = np.tril_indices(self.p)
             J = self.dCovdL[:, :, :, tril_indices[0], tril_indices[1]]
@@ -237,16 +238,14 @@ class MultivariateNormal(object):
 
     def fit(Y):
         try:
-            E = Y["Event"]
-            T = np.log(Y["Time"] + eps)
             # place holder
             m = np.array([8.0, 8.0])
             sigma = np.array([[2.0, 1.0], [1.0, 2.0]])
             L = sp.linalg.cholesky(sigma, lower=True)
             return np.concatenate([m, L[np.tril_indices(2)]])
-        except:
+        except:  # NOQA
             N, p = Y.shape
-            m = Y.mean(axis=0)
+            m = Y.mean(axis=0)  # pylint: disable=unexpected-keyword-arg
             diff = Y - m
             sigma = 1 / N * (diff[:, :, None] @ diff[:, None, :]).sum(0)
             L = sp.linalg.cholesky(sigma, lower=True)

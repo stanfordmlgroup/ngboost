@@ -1,8 +1,10 @@
-import scipy as sp
+"""The NGBoost LogNormal distribution and scores"""
 import numpy as np
+import scipy as sp
 from scipy.stats import lognorm as dist
-from ngboost.distns import RegressionDistn
-from ngboost.scores import LogScore, CRPScore
+
+from ngboost.distns.distn import RegressionDistn
+from ngboost.scores import CRPScore, LogScore
 
 
 class LogNormalLogScoreCensored(LogScore):
@@ -92,12 +94,14 @@ class LogNormal(RegressionDistn):
     Implements the log-normal distribution for NGBoost.
 
     The normal distribution has two parameters, s and scale (see scipy.stats.lognorm)
-    This distribution has both LogScore and CRPScore implemented for it and both work for right-censored data.
+    This distribution has both LogScore and CRPScore implemented
+    for it and both work for right-censored data.
     """
 
     n_params = 2
     censored_scores = [LogNormalLogScoreCensored, LogNormalCRPScoreCensored]
 
+    # pylint: disable=super-init-not-called
     def __init__(self, params):
         self._params = params
         self.loc = params[0]

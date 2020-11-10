@@ -1,11 +1,10 @@
 import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+
 from ngboost import NGBClassifier
 from ngboost.distns import Bernoulli
-
-from sklearn.datasets import load_breast_cancer
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
-
 
 if __name__ == "__main__":
 

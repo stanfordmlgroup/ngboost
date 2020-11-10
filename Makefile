@@ -1,8 +1,18 @@
-all:
-	python3 -m pylint ngboost
-pkg:
-	python3 setup.py sdist bdist_wheel
+
+install:
+	pip install poetry && poetry install
+
+package:
+	poetry package
+
+publish:
+	poetry publish
+
+lint:
+	poetry run pre-commit run --hook-stage manual --all-files
+
+test:
+	poetry run pytest --slow -v
+
 clean:
 	rm -r build dist ngboost.egg-info
-upload:
-	twine upload dist/*

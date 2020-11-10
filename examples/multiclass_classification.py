@@ -1,8 +1,8 @@
-from ngboost import NGBClassifier
-from ngboost.distns import k_categorical
-
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
+
+from ngboost import NGBClassifier
+from ngboost.distns import k_categorical
 
 if __name__ == "__main__":
 

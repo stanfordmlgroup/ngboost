@@ -1,8 +1,10 @@
-from ngboost.distns import ClassificationDistn
-from ngboost.scores import LogScore, CRPScore
+"""The NGBoost categorial distribution and scores"""
+# pylint: disable=invalid-unary-operand-type, unused-argument, no-self-use
 import numpy as np
 import scipy as sp
-import scipy.special
+
+from ngboost.distns.distn import ClassificationDistn
+from ngboost.scores import CRPScore, LogScore
 
 
 class CategoricalLogScore(LogScore):
@@ -59,8 +61,11 @@ def k_categorical(K):
             self.logits = np.zeros((K, N))
             self.logits[1:K, :] = params  # default the 0th class logits to 0
             self.probs = sp.special.softmax(self.logits, axis=0)
-            # self.dist = dist(n=1, p=self.probs) # scipy doesn't allow vectorized multinomial (!?!?) why allow vectorized versions of the others?
-            # this makes me want to refactor all the other code to use lists of distributions, would be more readable imo
+            # self.dist = dist(n=1, p=self.probs)
+            # scipy doesn't allow vectorized multinomial (!?!?)
+            # why allow vectorized versions of the others?
+            # this makes me want to refactor all the other code to use lists
+            # of distributions, would be more readable imo
 
         def fit(Y):
             _, n = np.unique(Y, return_counts=True)
@@ -81,6 +86,7 @@ def k_categorical(K):
 
         @property
         def params(self):
+            # pylint: disable=unnecessary-comprehension
             names = [f"p{j}" for j in range(self.n_params + 1)]
             return {name: p for name, p in zip(names, self.probs)}
 

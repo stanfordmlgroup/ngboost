@@ -1,12 +1,13 @@
 import itertools
-import numpy as np
-import matplotlib as mpl
-from ngboost.distns import Normal
-from ngboost.scores import LogScore
-from ngboost.manifold import manifold
-from tqdm import tqdm
-from matplotlib import pyplot as plt
 
+import matplotlib as mpl
+import numpy as np
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
+from ngboost.distns import Normal
+from ngboost.manifold import manifold
+from ngboost.scores import LogScore
 
 if __name__ == "__main__":
 

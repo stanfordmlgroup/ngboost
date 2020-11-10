@@ -112,3 +112,4 @@ venv.bak/
 *.pkl
 
 .DS_Store
+poetry.lock

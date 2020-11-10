@@ -19,9 +19,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "slow: "
-    )
+    config.addinivalue_line("markers", "slow: ")
+
 
 @pytest.fixture(scope="session")
 def boston_data() -> Tuple4Array:

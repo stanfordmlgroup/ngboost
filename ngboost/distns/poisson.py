@@ -1,10 +1,10 @@
-from ngboost.distns import RegressionDistn
-from ngboost.scores import LogScore
-import scipy as sp
+"""The NGBoost Poisson distribution and scores"""
 import numpy as np
+from scipy.optimize import Bounds, minimize
 from scipy.stats import poisson as dist
-from scipy.special import factorial
-from scipy.optimize import minimize, Bounds
+
+from ngboost.distns.distn import RegressionDistn
+from ngboost.scores import LogScore
 
 
 def negative_log_likelihood(params, data):
@@ -36,6 +36,7 @@ class Poisson(RegressionDistn):
     n_params = 1
     scores = [PoissonLogScore]
 
+    # pylint: disable=super-init-not-called
     def __init__(self, params):
         # save the parameters
         self._params = params

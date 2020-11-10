@@ -10,4 +10,3 @@ python3 -m examples.experiments.regression_exp --dataset=protein  --score=MLE --
 python3 -m examples.experiments.regression_exp --dataset=wine  --score=MLE
 python3 -m examples.experiments.regression_exp --dataset=yacht  --score=MLE
 python3 -m examples.experiments.regression_exp --dataset=msd  --score=MLE
-

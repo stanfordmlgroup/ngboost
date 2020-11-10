@@ -1,7 +1,9 @@
+"""The NGBoost Laplace distribution and scores"""
 import numpy as np
 from scipy.stats import laplace as dist
+
 from ngboost.distns.distn import RegressionDistn
-from ngboost.scores import LogScore, CRPScore
+from ngboost.scores import CRPScore, LogScore
 
 
 class LaplaceLogScore(LogScore):
@@ -51,6 +53,7 @@ class Laplace(RegressionDistn):
     n_params = 2
     scores = [LaplaceLogScore, LaplaceCRPScore]
 
+    # pylint: disable=super-init-not-called
     def __init__(self, params):
         self._params = params
         self.loc = params[0]

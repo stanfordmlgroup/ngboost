@@ -1,10 +1,10 @@
-from ngboost.distns import k_categorical
-from ngboost import NGBClassifier
 from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import Ridge
 
+from ngboost import NGBClassifier
+from ngboost.distns import k_categorical
 
 if __name__ == "__main__":
     # An example where the base learner is also searched over (this is how you would vary tree depth):

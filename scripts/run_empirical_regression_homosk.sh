@@ -10,4 +10,3 @@ python3 -m examples.experiments.regression_exp --dataset=protein  --score=MLE --
 python3 -m examples.experiments.regression_exp --dataset=wine  --score=MLE --distn=NormalFixedVar --natural
 python3 -m examples.experiments.regression_exp --dataset=yacht  --score=MLE --distn=NormalFixedVar --natural
 python3 -m examples.experiments.regression_exp --dataset=msd  --score=MLE --distn=NormalFixedVar --natural
-

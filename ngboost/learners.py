@@ -1,5 +1,5 @@
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import Ridge
+from sklearn.tree import DecisionTreeRegressor
 
 default_tree_learner = DecisionTreeRegressor(
     criterion="friedman_mse",

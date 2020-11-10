@@ -1,26 +1,26 @@
-from itertools import product
-from typing import List, Iterable, Tuple
-
+from typing import Tuple
 
 import numpy as np
 import pytest
+from sklearn.tree import DecisionTreeRegressor
+
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
 from ngboost.distns import (
     Bernoulli,
+    Cauchy,
     Distn,
     Exponential,
     LogNormal,
     Normal,
-    k_categorical,
     T,
     TFixedDf,
     TFixedDfFixedVar,
-    Cauchy,
+    k_categorical,
 )
 from ngboost.scores import CRPScore, LogScore, Score
-from sklearn.tree import DecisionTreeRegressor
 
-# test all the dist methods and score implementation methods, i.e. they all return proper shapes and sizes and types
+# test all the dist methods and score implementation methods,#
+# i.e. they all return proper shapes and sizes and types
 # check metric lines up with defaults for lognormal where applicable
 
 
@@ -123,7 +123,7 @@ def test_bernoulli(learner, breast_cancer_data: Tuple4Array):
     ],
 )
 def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
-    X_train, X_test, y_train, y_test = breast_cancer_data
+    X_train, X_test, y_train, _ = breast_cancer_data
     dist = k_categorical(k)
     y_train = np.random.randint(0, k, (len(y_train)))
     # test early stopping features

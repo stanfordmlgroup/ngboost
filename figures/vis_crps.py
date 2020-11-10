@@ -1,14 +1,15 @@
+import itertools
+
+import matplotlib as mpl
 import numpy as np
 import scipy as sp
 import scipy.stats
-import matplotlib as mpl
-import itertools
-from ngboost.distns import Normal
-from ngboost.scores import CRPScore
-from ngboost.manifold import manifold
-from tqdm import tqdm
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
+from ngboost.distns import Normal
+from ngboost.manifold import manifold
+from ngboost.scores import CRPScore
 
 if __name__ == "__main__":
 

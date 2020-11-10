@@ -4,7 +4,10 @@ from ngboost.distns import Bernoulli, Normal
 
 # TODO: This is non-deterministic in the model fitting
 def test_classification(breast_cancer_data):
-    from sklearn.metrics import roc_auc_score, log_loss
+    from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
+        log_loss,
+        roc_auc_score,
+    )
 
     x_train, x_test, y_train, y_test = breast_cancer_data
     ngb = NGBClassifier(Dist=Bernoulli, verbose=False)
@@ -32,7 +35,9 @@ def test_classification(breast_cancer_data):
 
 # TODO: This is non-deterministic in the model fitting
 def test_regression(boston_data):
-    from sklearn.metrics import mean_squared_error
+    from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
+        mean_squared_error,
+    )
 
     x_train, x_test, y_train, y_test = boston_data
     ngb = NGBRegressor(verbose=False)

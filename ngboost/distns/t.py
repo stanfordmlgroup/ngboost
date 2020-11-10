@@ -1,8 +1,9 @@
+"""The NGBoost Student T distribution and scores"""
 import numpy as np
-from scipy.stats import t as dist
 from scipy.special import digamma
+from scipy.stats import t as dist
 
-from ngboost.distns import RegressionDistn
+from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
 
 
@@ -47,7 +48,8 @@ class T(RegressionDistn):
     """
     Implements the student's t distribution for NGBoost.
 
-    The t distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    The t distribution has two parameters, loc and scale, which are
+    the mean and standard deviation, respectively.
     This distribution only has LogScore implemented for it.
     """
 
@@ -108,7 +110,8 @@ class TFixedDf(RegressionDistn):
     """
     Implements the student's t distribution with df=3 for NGBoost.
 
-    The t distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    The t distribution has two parameters, loc and scale, which are the
+    mean and standard deviation, respectively.
     This distribution only has LogScore implemented for it.
     """
 
@@ -164,7 +167,8 @@ class TFixedDfFixedVar(RegressionDistn):
     """
     Implements the student's t distribution with df=3 and var=1 for NGBoost.
 
-    The t distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    The t distribution has two parameters, loc and scale, which are the
+    mean and standard deviation, respectively.
     This distribution only has LogScore implemented for it.
     """
 

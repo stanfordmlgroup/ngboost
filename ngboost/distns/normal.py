@@ -1,8 +1,10 @@
-from ngboost.distns import RegressionDistn
-from ngboost.scores import LogScore, CRPScore
-import scipy as sp
+"""The NGBoost Normal distribution and scores"""
 import numpy as np
+import scipy as sp
 from scipy.stats import norm as dist
+
+from ngboost.distns.distn import RegressionDistn
+from ngboost.scores import CRPScore, LogScore
 
 
 class NormalLogScore(LogScore):
@@ -54,7 +56,8 @@ class Normal(RegressionDistn):
     """
     Implements the normal distribution for NGBoost.
 
-    The normal distribution has two parameters, loc and scale, which are the mean and standard deviation, respectively.
+    The normal distribution has two parameters, loc and scale, which are
+    the mean and standard deviation, respectively.
     This distribution has both LogScore and CRPScore implemented for it.
     """
 
@@ -87,7 +90,7 @@ class Normal(RegressionDistn):
         return {"loc": self.loc, "scale": self.scale}
 
 
-### Fixed Variance Normal ###
+# ### Fixed Variance Normal ###
 class NormalFixedVarLogScore(LogScore):
     def score(self, Y):
         return -self.dist.logpdf(Y)
@@ -136,6 +139,7 @@ class NormalFixedVar(Normal):
     n_params = 1
     scores = [NormalFixedVarLogScore, NormalFixedVarCRPScore]
 
+    # pylint: disable=super-init-not-called
     def __init__(self, params):
         self.loc = params[0]
         self.var = np.ones_like(self.loc)
@@ -144,5 +148,5 @@ class NormalFixedVar(Normal):
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):
-        m, s = sp.stats.norm.fit(Y)
+        m, _ = sp.stats.norm.fit(Y)
         return m

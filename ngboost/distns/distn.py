@@ -1,14 +1,16 @@
+"""The NGBoost base distribution"""
 from warnings import warn
 
 import numpy as np
+
 from ngboost.helpers import Y_from_censored
 
 
-class Distn(object):
+class Distn:
     """
     User should define:
     - __init__(params) to hold self.params_ = params
-    - X_scoring(self, Y) 
+    - X_scoring(self, Y)
     - D_X_scoring(self, Y)
     - sample(self, n)
     - fit(Y)
@@ -27,23 +29,25 @@ class Distn(object):
     @classmethod
     def implementation(cls, Score, scores=None):
         """
-        Finds the distribution-appropriate implementation of Score 
+        Finds the distribution-appropriate implementation of Score
         (using the provided scores if cls.scores is empty)
         """
         if scores is None:
             scores = cls.scores
         if Score in scores:
             warn(
-                f"Using Dist={Score.__name__} is unnecessary. NGBoost automatically selects the correct implementation when LogScore or CRPScore is used"
+                f"Using Dist={Score.__name__} is unnecessary. "
+                "NGBoost automatically selects the correct implementation "
+                "when LogScore or CRPScore is used"
             )
             return Score
-        else:
-            try:
-                return {S.__bases__[-1]: S for S in scores}[Score]
-            except KeyError as err:
-                raise ValueError(
-                    f"The scoring rule {Score.__name__} is not implemented for the {cls.__name__} distribution."
-                ) from err
+        try:
+            return {S.__bases__[-1]: S for S in scores}[Score]
+        except KeyError as err:
+            raise ValueError(
+                f"The scoring rule {Score.__name__} is not "
+                f"implemented for the {cls.__name__} distribution."
+            ) from err
 
     @classmethod
     def uncensor(cls, Score):

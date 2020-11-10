@@ -1,28 +1,34 @@
+"""The NGBoost library"""
+# pylint: disable=line-too-long,too-many-instance-attributes,too-many-arguments
+# pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
+# pylint: disable=redundant-keyword-arg,protected-access
 import numpy as np
-import scipy as sp
-
-from ngboost.scores import LogScore
-from ngboost.distns import Normal, k_categorical
-from ngboost.manifold import manifold
-from ngboost.learners import default_tree_learner, default_linear_learner
-
-from sklearn.utils import check_random_state, check_X_y, check_array
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.utils import check_array, check_random_state, check_X_y
 
-# import pdb
+from ngboost.distns import Normal, k_categorical
+from ngboost.learners import default_tree_learner
+from ngboost.manifold import manifold
+from ngboost.scores import LogScore
 
 
-class NGBoost(object):
+class NGBoost:
     """
     Constructor for all NGBoost models.
 
-    This class implements the methods that are common to all NGBoost models. Unless you are implementing a new kind of regression (e.g. interval-censored, etc.), you should probably use one of NGBRegressor, NGBClassifier, or NGBSurvival.
+    This class implements the methods that are common to all NGBoost models.
+    Unless you are implementing a new kind of regression (e.g. interval-censored, etc.),
+    you should probably use one of NGBRegressor, NGBClassifier, or NGBSurvival.
 
     Parameters:
-        Dist              : assumed distributional form of Y|X=x. A distribution from ngboost.distns, e.g. Normal
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y. A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm. Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Dist              : assumed distributional form of Y|X=x.
+                            A distribution from ngboost.distns, e.g. Normal
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
+                            A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -30,7 +36,8 @@ class NGBoost(object):
         verbose           : flag indicating whether output should be printed during fitting
         verbose_eval      : increment (in boosting iterations) at which output should be printed
         tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        random_state      : seed for reproducibility.
+                            See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
         An NGBRegressor object that can be fit.
     """
@@ -89,7 +96,6 @@ class NGBoost(object):
         self.init_params = self.Manifold.fit(
             Y
         )  # would be best to put sample weights here too
-        return
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -139,7 +145,6 @@ class NGBoost(object):
         return fitted
 
     def line_search(self, resids, start, Y, sample_weight=None, scale_init=1):
-        S = self.Score
         D_init = self.Manifold(start.T)
         loss_init = D_init.total_score(Y, sample_weight)
         scale = scale_init
@@ -184,15 +189,27 @@ class NGBoost(object):
         Fits an NGBoost model to the data
 
         Parameters:
-            X                       : DataFrame object or List or numpy array of predictors (n x p) in Numeric format
-            Y                       : DataFrame object or List or numpy array of outcomes (n) in Numeric format. Should be floats for regression and integers from 0 to K-1 for K-class classification
-            X_val                   : DataFrame object or List or numpy array of validation-set predictors in Numeric format, if any
-            Y_val                   : DataFrame object or List or numpy array of validation-set outcomes in Numeric format, if any
-            sample_weight           : how much to weigh each example in the training set. numpy array of size (n) (defaults to 1)
-            val_sample_weight       : how much to weigh each example in the validation set. (defaults to 1)
-            train_loss_monitor      : a custom score or set of scores to track on the training set during training. Defaults to the score defined in the NGBoost constructor
-            val_loss_monitor        : a custom score or set of scores to track on the validation set during training. Defaults to the score defined in the NGBoost constructor
-            early_stopping_rounds   : the number of consecutive boosting iterations during which the loss has to increase before the algorithm stops early
+            X                     : DataFrame object or List or
+                                    numpy array of predictors (n x p) in Numeric format
+            Y                     : DataFrame object or List or numpy array of outcomes (n)
+                                    in numeric format. Should be floats for regression and
+                                    integers from 0 to K-1 for K-class classification
+            X_val                 : DataFrame object or List or
+                                    numpy array of validation-set predictors in numeric format
+            Y_val                 : DataFrame object or List or
+                                    numpy array of validation-set outcomes in numeric format
+            sample_weight         : how much to weigh each example in the training set.
+                                    numpy array of size (n) (defaults to 1)
+            val_sample_weight     : how much to weigh each example in the validation set.
+                                    (defaults to 1)
+            train_loss_monitor    : a custom score or set of scores to track on the training set
+                                    during training. Defaults to the score defined in the NGBoost
+                                    constructor
+            val_loss_monitor      : a custom score or set of scores to track on the validation set
+                                    during training. Defaults to the score defined in the NGBoost
+                                    constructor
+            early_stopping_rounds : the number of consecutive boosting iterations during which
+                                    the loss has to increase before the algorithm stops early.
 
         Output:
             A fit NGBRegressor object
@@ -216,12 +233,14 @@ class NGBoost(object):
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D, Y, W: D.total_score(Y, sample_weight=W)
+            train_loss_monitor = lambda D, Y, W: D.total_score(  # NOQA
+                Y, sample_weight=W
+            )
 
         if not val_loss_monitor:
-            val_loss_monitor = lambda D, Y: D.total_score(
+            val_loss_monitor = lambda D, Y: D.total_score(  # NOQA
                 Y, sample_weight=val_sample_weight
-            )
+            )  # NOQA
 
         for itr in range(self.n_estimators):
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
@@ -265,7 +284,7 @@ class NGBoost(object):
                     < np.min(np.array(val_loss_list[-early_stopping_rounds:]))
                 ):
                     if self.verbose:
-                        print(f"== Early stopping achieved.")
+                        print("== Early stopping achieved.")
                         print(
                             f"== Best iteration / VAL{self.best_val_loss_itr} (val_loss={best_val_loss:.4f})"
                         )
@@ -303,8 +322,9 @@ class NGBoost(object):
         Predict the conditional distribution of Y at the points X=x
 
         Parameters:
-            X        : DataFrame object or List or numpy array of predictors (n x p) in Numeric Format
-            max_iter : get the prediction at the specified number of boosting iterations
+            X         : DataFrame object or List or
+                        numpy array of predictors (n x p) in numeric format.
+            max_iter  : get the prediction at the specified number of boosting iterations
 
         Output:
             A NGBoost distribution object
@@ -353,8 +373,9 @@ class NGBoost(object):
         Point prediction of Y at the points X=x
 
         Parameters:
-            X        : DataFrame object or List or numpy array of predictors (n x p) in Numeric Format
-            max_iter : get the prediction at the specified number of boosting iterations
+            X         : DataFrame object or List or numpy array of predictors (n x p)
+                        in numeric Format
+            max_iter  : get the prediction at the specified number of boosting iterations
 
         Output:
             Numpy array of the estimates of Y
@@ -379,16 +400,14 @@ class NGBoost(object):
 
     @property
     def feature_importances_(self):
-        """
-        Return the feature importances for all parameters in the distribution
+        """Return the feature importances for all parameters in the distribution
             (the higher, the more important the feature).
 
-        Returns
-        -------
-        feature_importances_ : array, shape = [n_params, n_features]
-            The summation along second axis of this array is an array of ones,
-            unless all trees are single node trees consisting of only the root
-            node, in which case it will be an array of zeros.
+        Returns:
+            feature_importances_ : array, shape = [n_params, n_features]
+                The summation along second axis of this array is an array of ones,
+                unless all trees are single node trees consisting of only the root
+                node, in which case it will be an array of zeros.
         """
         # Check whether the model is fitted
         if not self.base_models:

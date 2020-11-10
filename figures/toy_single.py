@@ -1,14 +1,15 @@
 from argparse import ArgumentParser
+
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.neighbors import KNeighborsRegressor as KNR
-from ngboost.evaluation import *
-from ngboost.ngboost import NGBoost
-from ngboost.learners import default_tree_learner
-from ngboost.distns import Normal
-from ngboost.scores import MLE
+from sklearn.preprocessing import PolynomialFeatures
 
+from ngboost.distns import Normal
+from ngboost.evaluation import *
+from ngboost.learners import default_tree_learner
+from ngboost.ngboost import NGBoost
+from ngboost.scores import MLE
 
 np.random.seed(1)
 

@@ -1,6 +1,7 @@
+"""The NGBoost Cauchy distribution and scores"""
 from ngboost.distns.t import (
-    TFixedDfFixedVar,
     TFixedDf,
+    TFixedDfFixedVar,
     TFixedDfFixedVarLogScore,
     TFixedDfLogScore,
 )

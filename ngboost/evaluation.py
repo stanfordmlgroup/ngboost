@@ -1,7 +1,7 @@
 import numpy as np
-from tqdm import tqdm
 from lifelines import KaplanMeierFitter
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 
 def calibration_regression(Forecast, Y, bins=11, eps=1e-3):
@@ -99,11 +99,10 @@ def calculate_concordance_naive(preds, Y, E):
     counter = 0
     for i in tqdm(range(N)):
         for j in range(i + 1, N):
-            if (
-                (E[i] and E[j])
-                or (E[i] and not E[j] and Y[i] < Y[j])
-                or (not E[i] and E[j] and Y[i] > Y[j])
-            ):
+            cond_1 = E[i] and E[j]
+            cond_2 = E[i] and not E[j] and Y[i] < Y[j]
+            cond_3 = not E[i] and E[j] and Y[i] > Y[j]
+            if cond_1 or cond_2 or cond_3:
                 if (preds[i] < preds[j] and trues[i] < trues[j]) or (
                     preds[i] > preds[j] and trues[i] > trues[j]
                 ):

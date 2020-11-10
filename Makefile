@@ -9,7 +9,7 @@ publish:
 	poetry publish
 
 lint:
-	pre-commit run --hook-stage manual --all-files
+	poetry run pre-commit run --hook-stage manual --all-files
 
 pytest:
 	poetry run pytest --slow -v

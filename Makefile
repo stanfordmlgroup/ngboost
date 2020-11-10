@@ -11,7 +11,7 @@ publish:
 lint:
 	poetry run pre-commit run --hook-stage manual --all-files
 
-pytest:
+test:
 	poetry run pytest --slow -v
 
 clean:

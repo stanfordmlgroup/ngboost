@@ -1,9 +1,14 @@
 """The NGBoost base distribution"""
 from warnings import warn
 
-import numpy as np
+from jax import grad, jacfwd
+import jax.numpy as np
+import scipy as sp
+from inspect import signature
 
-from ngboost.helpers import Y_from_censored
+
+def n_params(dist):
+    return len(signature(dist.transform_params).parameters)
 
 
 class Distn:
@@ -18,13 +23,17 @@ class Distn:
     """
 
     def __init__(self, params):
-        self._params = params
+        self._params = self.untransform_params(params)
 
     def __getitem__(self, key):
-        return self.__class__(self._params[:, key])
+        return self.__class__(self.transform_params(self._params[:, key]))
 
     def __len__(self):
         return self._params.shape[1]
+
+    @property
+    def params(self):
+        return _params
 
     @classmethod
     def implementation(cls, Score, scores=None):
@@ -49,26 +58,18 @@ class Distn:
                 f"implemented for the {cls.__name__} distribution."
             ) from err
 
-    @classmethod
-    def uncensor(cls, Score):
-        DistScore = cls.implementation(Score, cls.censored_scores)
-
-        class UncensoredScore(DistScore, DistScore.__base__):
-            def score(self, Y):
-                return super().score(Y_from_censored(Y))
-
-            def d_score(self, Y):
-                return super().d_score(Y_from_censored(Y))
-
-        class DistWithUncensoredScore(cls):
-            scores = [UncensoredScore]
-
-        return DistWithUncensoredScore
-
 
 class RegressionDistn(Distn):
     def predict(self):  # predictions for regression are typically conditional means
         return self.mean()
+
+    @classmethod
+    def pdf(cls, Y, **kwargs):
+        return np.diag(jacfwd(cls.cdf)(Y, **kwargs))  # might be inefficient...
+
+    @classmethod
+    def logpdf(cls, Y, **kwargs):
+        return np.log(cls.pdf(Y, **kwargs))
 
 
 class ClassificationDistn(Distn):

@@ -1,4 +1,5 @@
-import numpy as np
+import jax.numpy as np
+from jax import jacfwd
 
 
 class Score:
@@ -21,6 +22,19 @@ class LogScore(Score):
     also known as the maximum likelihood estimator. This scoring rule has a default
     method for calculating the Riemannian metric.
     """
+
+    def score(self, Y):
+        return self.logpdf(Y, **self._params)
+
+    def d_score(self, Y):
+        return np.array(
+            [
+                np.diag(grad)
+                for grad in jacfwd(lambda Y, params: self.logpdf(Y, **params), 1)(
+                    Y, self._params
+                ).values()
+            ]
+        ).T
 
     def metric(self, n_mc_samples=100):
         grads = np.stack([self.d_score(Y) for Y in self.sample(n_mc_samples)])

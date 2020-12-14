@@ -1,17 +1,21 @@
 """The NGBoost base distribution"""
 from warnings import warn
 
-from jax import grad, jacfwd
+from jax import grad, vmap
 import jax.numpy as np
+from toolz.functoolz import compose
+
 import scipy as sp
 from inspect import signature
 
 
 def n_params(dist):
-    return len(signature(dist.transform_params).parameters)
+    return len(signature(dist.params_to_internal).parameters)
 
 
 class Distn:
+    # functions that are like _fn operate on the internal array parametrization
+
     """
     User should define:
     - __init__(params) to hold self.params_ = params
@@ -23,17 +27,17 @@ class Distn:
     """
 
     def __init__(self, params):
-        self._params = self.untransform_params(params)
+        self._params = params
 
     def __getitem__(self, key):
-        return self.__class__(self.transform_params(self._params[:, key]))
+        return self.__class__(self._params[:, key])
 
     def __len__(self):
         return self._params.shape[1]
 
     @property
     def params(self):
-        return _params
+        return self.params_to_user(self._params)
 
     @classmethod
     def implementation(cls, Score, scores=None):
@@ -60,16 +64,32 @@ class Distn:
 
 
 class RegressionDistn(Distn):
+    def __init__(self, params):
+        super().__init__(params)
+        self._cdf = lambda y, params: self.cdf(
+            y, **self.params_to_user(params)
+        )  # y, params -> quantile (vectorized)
+        self._pdf = grad(self._cdf)  # y, params -> likelihood (scalar)
+        self._logpdf = compose(
+            np.log, self._pdf
+        )  # y, params -> log-likelihood (scalar)
+
+    @classmethod
+    def derive_cdf(cls):
+        return lambda y, params: cls.cdf(y, **cls.params_to_user(params))
+
+    @classmethod
+    def derive_pdf(cls):
+        cdf = cls.derive_cdf()
+        return grad(cdf)
+
+    @classmethod
+    def derive_logpdf(cls):
+        pdf = cls.derive_pdf()
+        return compose(np.log, pdf)
+
     def predict(self):  # predictions for regression are typically conditional means
         return self.mean()
-
-    @classmethod
-    def pdf(cls, Y, **kwargs):
-        return np.diag(jacfwd(cls.cdf)(Y, **kwargs))  # might be inefficient...
-
-    @classmethod
-    def logpdf(cls, Y, **kwargs):
-        return np.log(cls.pdf(Y, **kwargs))
 
 
 class ClassificationDistn(Distn):

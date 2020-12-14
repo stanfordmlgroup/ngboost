@@ -145,14 +145,14 @@ class NGBoost:
         return fitted
 
     def line_search(self, resids, start, Y, sample_weight=None, scale_init=1):
-        D_init = self.Manifold(start.T)
+        D_init = self.Manifold(start)
         loss_init = D_init.total_score(Y, sample_weight)
         scale = scale_init
 
         # first scale up
         while True:
             scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
+            D = self.Manifold(start - scaled_resids)
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if not np.isfinite(loss) or loss > loss_init or scale > 256:
@@ -162,7 +162,7 @@ class NGBoost:
         # then scale down
         while True:
             scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
+            D = self.Manifold(start - scaled_resids)
             loss = D.total_score(Y, sample_weight)
             norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
             if norm < self.tol:
@@ -248,7 +248,7 @@ class NGBoost:
             )
             self.col_idxs.append(col_idx)
 
-            D = self.Manifold(P_batch.T)
+            D = self.Manifold(P_batch)
 
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
@@ -273,7 +273,7 @@ class NGBoost:
                         [m.predict(X_val[:, col_idx]) for m in self.base_models[-1]]
                     ).T
                 )
-                val_loss = val_loss_monitor(self.Manifold(val_params.T), Y_val)
+                val_loss = val_loss_monitor(self.Manifold(val_params), Y_val)
                 val_loss_list += [val_loss]
                 if val_loss < best_val_loss:
                     best_val_loss, self.best_val_loss_itr = val_loss, itr
@@ -338,7 +338,7 @@ class NGBoost:
             dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
         else:
             params = np.asarray(self.pred_param(X, max_iter))
-            dist = self.Dist(params.T)
+            dist = self.Dist(params)
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):
@@ -361,7 +361,7 @@ class NGBoost:
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
             dists = self.Dist(
-                np.copy(params.T)
+                np.copy(params)
             )  # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)
             if max_iter and i == max_iter:

@@ -1,15 +1,21 @@
+from jax import jit, vmap, grad
 import jax.numpy as np
-from jax import jacfwd
+from toolz.functoolz import partial
+
+import pdb
 
 
 class Score:
-    def total_score(self, Y, sample_weight=None):
-        return np.average(self.score(Y), weights=sample_weight)
+    @classmethod
+    def total_score(cls, Y, _params, sample_weight=None):
+        # pdb.set_trace()
+        return np.average(cls.score(Y, _params), weights=sample_weight)
 
-    def grad(self, Y, natural=True):
-        grad = self.d_score(Y)
+    @classmethod
+    def grad(cls, Y, _params, natural=True):
+        grad = cls.d_score(Y, _params)
         if natural:
-            metric = self.metric()
+            metric = cls.metric(_params)
             grad = np.linalg.solve(metric, grad)
         return grad
 
@@ -23,21 +29,21 @@ class LogScore(Score):
     method for calculating the Riemannian metric.
     """
 
-    def score(self, Y):
-        return self.logpdf(Y, **self._params)
+    # def __init__(self):
+    #     self.score = jit(lambda y: vmap(self._logpdf)(y, self._params))
+    #     self.d_score = jit(lambda y: vmap(grad(self._logpdf, 1))(y, self._params))
 
-    def d_score(self, Y):
-        return np.array(
-            [
-                np.diag(grad)
-                for grad in jacfwd(lambda Y, params: self.logpdf(Y, **params), 1)(
-                    Y, self._params
-                ).values()
-            ]
-        ).T
+    @classmethod
+    def derive_score(cls, Dist):
+        return jit(vmap(Dist._logpdf))
 
-    def metric(self, n_mc_samples=100):
-        grads = np.stack([self.d_score(Y) for Y in self.sample(n_mc_samples)])
+    @classmethod
+    def derive_d_score(cls, Dist):
+        return jit(vmap(grad(Dist._logpdf, 1)))
+
+    @classmethod
+    def metric(cls, _params, n_mc_samples=100):
+        grads = np.stack([self.d_score(Y, _params) for Y in self.sample(n_mc_samples)])
         return np.mean(np.einsum("sik,sij->sijk", grads, grads), axis=0)
 
     # autofit method from d_score?

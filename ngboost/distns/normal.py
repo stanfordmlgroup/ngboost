@@ -11,6 +11,8 @@ from ngboost.scores import CRPScore, LogScore
 
 
 class NormalLogScore(LogScore):
+    pass
+
     @classmethod
     def metric(cls, _params):
         loc, scale = Normal.params_to_user(_params).values()
@@ -62,10 +64,6 @@ class Normal(RegressionDistn):
         return norm.cdf(Y, loc=loc, scale=scale)
 
     # @classmethod
-    # def pdf(cls, Y, loc, scale):
-    #     return norm.pdf(Y, loc=loc, scale=scale)
-
-    # @classmethod
     # def logpdf(cls, Y, loc, scale):
     #     return norm.logpdf(Y, loc=loc, scale=scale)
 
@@ -76,9 +74,7 @@ class Normal(RegressionDistn):
 
     ### Automatable?
     def sample(self, m):  # automate based on cdf?
-        return np.array(
-            [sp.stats.norm.rvs(**self.params_to_user(self._params)) for i in range(m)]
-        )
+        return np.array([sp.stats.norm.rvs(**self.params) for i in range(m)])
 
     @classmethod
     def fit(cls, Y):  # automate based on cdf?

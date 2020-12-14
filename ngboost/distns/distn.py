@@ -74,22 +74,29 @@ class RegressionDistn(Distn):
             np.log, self._pdf
         )  # y, params -> log-likelihood (scalar)
 
-    @classmethod
-    def derive_cdf(cls):
-        return lambda y, params: cls.cdf(y, **cls.params_to_user(params))
-
-    @classmethod
-    def derive_pdf(cls):
-        cdf = cls.derive_cdf()
-        return grad(cdf)
-
-    @classmethod
-    def derive_logpdf(cls):
-        pdf = cls.derive_pdf()
-        return compose(np.log, pdf)
-
     def predict(self):  # predictions for regression are typically conditional means
         return self.mean()
+
+    @classmethod
+    def build(cls):
+        class BuiltDist(cls):
+
+            if not hasattr(cls, "cdf"):
+                raise ValueError(
+                    f"The distribution {cls.__name__} has no CDF defined."
+                    f" clsributions for regression must define at least a CDF."
+                )
+
+            if not hasattr(cls, "_cdf"):
+                _cdf = lambda y, params: cls.cdf(y, **cls.params_to_user(params))
+
+            if not hasattr(cls, "_likelihood"):
+                _likelihood = grad(_cdf)
+
+            if not hasattr(cls, "_nll"):
+                _nll = compose(lambda x: -x, np.log, _likelihood)
+
+        return BuiltDist
 
 
 class ClassificationDistn(Distn):

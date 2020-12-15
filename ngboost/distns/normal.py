@@ -23,7 +23,7 @@ class NormalLogScore(LogScore):
         return FI
 
     # @classmethod
-    # def fit(cls, Y):
+    # def fit_marginal(cls, Y):
     #     loc, scale = sp.stats.norm.fit(Y)
     #     return {"loc": loc, "scale": scale}
 

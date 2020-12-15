@@ -18,7 +18,7 @@ class Score:
         return grad
 
     @classmethod
-    def _fit(cls, Y):
+    def _fit_marginal(cls, Y):
         return cls.params_to_internal(**cls.fit(Y))
 
 
@@ -52,7 +52,9 @@ class LogScore(Score):
             if not hasattr(ImplementedScore, "fit"):
 
                 @classmethod
-                def _fit(cls, y):  # may be generalized or improved with global search
+                def _fit_marginal(
+                    cls, y
+                ):  # may be generalized or improved with global search
                     n = len(y)
                     return basinhopping(
                         func=lambda params: np.average(

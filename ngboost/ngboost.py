@@ -93,7 +93,7 @@ class NGBoost:
         self.__dict__ = state_dict
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
-        self.init_params = self.Manifold.fit(
+        self.init_params = self.Manifold._fit(
             Y
         )  # would be best to put sample weights here too
 

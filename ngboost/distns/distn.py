@@ -86,6 +86,10 @@ class Distn:
         return self._params.shape[1]
 
     @classmethod
+    def _fit(cls, Y):
+        return cls.params_to_internal(cls.fit(Y))
+
+    @classmethod
     def params_to_user(cls, _params):
         return {
             param_name: parametrization.to_user(_param)
@@ -153,9 +157,6 @@ class RegressionDistn(Distn):
         self._logpdf = compose(
             np.log, self._pdf
         )  # y, params -> log-likelihood (scalar)
-
-    def predict(self):  # predictions for regression are typically conditional means
-        return self.mean()
 
     @classmethod
     def build(cls):

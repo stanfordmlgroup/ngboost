@@ -43,8 +43,7 @@ class Normal(RegressionDistn):
     def cdf(cls, Y, loc, scale):
         return norm.cdf(Y, loc=loc, scale=scale)
 
-    ### Inadvisably automatable?
-    def mean(self):  # gives us Normal.mean() required for RegressionDist.predict()
+    def predict(self):  # automate based on self.sample
         loc, scale = self.params.values()
         return loc
 
@@ -54,4 +53,4 @@ class Normal(RegressionDistn):
 
     @classmethod
     def fit(cls, Y):  # automate based on cdf?
-        return cls.params_to_internal(*sp.stats.norm.fit(Y))
+        return sp.stats.norm.fit(Y)

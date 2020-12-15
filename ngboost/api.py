@@ -6,7 +6,6 @@ from sklearn.utils import check_array
 from ngboost.distns import (
     Bernoulli,
     ClassificationDistn,
-    LogNormal,
     Normal,
     RegressionDistn,
 )

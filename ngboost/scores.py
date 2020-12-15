@@ -2,13 +2,10 @@ from jax import jit, vmap, grad
 import jax.numpy as np
 from toolz.functoolz import partial
 
-import pdb
-
 
 class Score:
     @classmethod
     def _total_score(cls, Y, _params, sample_weight=None):
-        # pdb.set_trace()
         return np.average(cls.score(Y, _params), weights=sample_weight)
 
     @classmethod

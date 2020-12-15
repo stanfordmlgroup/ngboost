@@ -1,6 +1,7 @@
 from jax import jit, vmap, grad
 import jax.numpy as np
 from toolz.functoolz import partial
+from scipy.optimize import basinhopping
 
 
 class Score:
@@ -15,6 +16,10 @@ class Score:
             metric = cls.metric(_params)
             grad = np.linalg.solve(metric, grad)
         return grad
+
+    @classmethod
+    def _fit(cls, Y):
+        return cls.params_to_internal(**cls.fit(Y))
 
 
 class LogScore(Score):
@@ -44,9 +49,28 @@ class LogScore(Score):
             if not hasattr(ImplementedScore, "d_score"):
                 d_score = jit(vmap(grad(Dist._nll, 1)))
 
-        return BuiltScore
+            if not hasattr(ImplementedScore, "fit"):
 
-    # autofit method from d_score? Simple gradient descent?
+                @classmethod
+                def _fit(cls, y):  # may be generalized or improved with global search
+                    n = len(y)
+                    return basinhopping(
+                        func=lambda params: np.average(
+                            cls.score(y, np.ones((n, cls.n_params())) * params)
+                        ),
+                        x0=np.zeros((cls.n_params(),)),
+                        niter=100,
+                        stepsize=100,
+                        niter_success=5,
+                        minimizer_kwargs=dict(
+                            jac=lambda params: np.average(
+                                cls.d_score(y, np.ones((n, cls.n_params())) * params),
+                                axis=0,
+                            )
+                        ),
+                    ).x
+
+        return BuiltScore
 
 
 MLE = LogScore

@@ -22,6 +22,11 @@ class NormalLogScore(LogScore):
         FI = index_update(FI, index[:, 1, 1], 2)
         return FI
 
+    # @classmethod
+    # def fit(cls, Y):
+    #     loc, scale = sp.stats.norm.fit(Y)
+    #     return {"loc": loc, "scale": scale}
+
 
 class Normal(RegressionDistn):
     """
@@ -29,7 +34,7 @@ class Normal(RegressionDistn):
 
     The normal distribution has two parameters, loc and scale, which are
     the mean and standard deviation, respectively.
-    This distribution has both LogScore and CRPScore implemented for it.
+    This distribution has LogScore implemented for it.
     """
 
     scores = [NormalLogScore]
@@ -43,14 +48,10 @@ class Normal(RegressionDistn):
     def cdf(cls, Y, loc, scale):
         return norm.cdf(Y, loc=loc, scale=scale)
 
-    def predict(self):  # automate based on self.sample
+    def predict(self):  # automate based on self.sample?
         loc, scale = self.params.values()
         return loc
 
     ### Automatable?
     def sample(self, m):  # automate based on cdf?
         return np.array([sp.stats.norm.rvs(**self.params) for i in range(m)])
-
-    @classmethod
-    def fit(cls, Y):  # automate based on cdf?
-        return sp.stats.norm.fit(Y)

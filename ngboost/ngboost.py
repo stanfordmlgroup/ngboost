@@ -8,7 +8,7 @@ from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
-from ngboost.distns import Normal, k_categorical, n_params
+from ngboost.distns import Normal, k_categorical
 from ngboost.learners import default_tree_learner
 from ngboost.manifold import manifold
 from ngboost.scores import LogScore
@@ -83,7 +83,7 @@ class NGBoost:
         del state["Manifold"]
         if self.Dist.__name__ == "Categorical":
             del state["Dist"]
-            state["K"] = n_params(self.Dist) + 1
+            state["K"] = self.Dist.n_params() + 1
         return state
 
     def __setstate__(self, state_dict):
@@ -99,7 +99,7 @@ class NGBoost:
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
-        params = np.ones((m, n_params(self.Manifold))) * self.init_params
+        params = np.ones((m, self.Manifold.n_params())) * self.init_params
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
@@ -354,7 +354,7 @@ class NGBoost:
         """
         predictions = []
         m, n = X.shape
-        params = np.ones((m, n_params(self.Dist))) * self.init_params
+        params = np.ones((m, self.Dist.n_params())) * self.init_params
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):

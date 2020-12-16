@@ -15,11 +15,12 @@ class Score:
         if natural:
             metric = cls.metric(_params)
             grad = np.linalg.solve(metric, grad)
+
         return grad
 
     @classmethod
     def _fit_marginal(cls, Y):
-        return cls.params_to_internal(**cls.fit(Y))
+        return cls.params_to_internal(**cls.fit_marginal(Y))
 
 
 class LogScore(Score):
@@ -49,7 +50,7 @@ class LogScore(Score):
             if not hasattr(ImplementedScore, "d_score"):
                 d_score = jit(vmap(grad(Dist._nll, 1)))
 
-            if not hasattr(ImplementedScore, "fit"):
+            if not hasattr(ImplementedScore, "fit_marginal"):
 
                 @classmethod
                 def _fit_marginal(
@@ -60,9 +61,8 @@ class LogScore(Score):
                         func=lambda params: np.average(
                             cls.score(y, np.ones((n, cls.n_params())) * params)
                         ),
-                        x0=np.zeros((cls.n_params(),)),
-                        niter=100,
-                        stepsize=100,
+                        x0=np.ones((cls.n_params(),)) * np.mean(y),
+                        stepsize=1000,
                         niter_success=5,
                         minimizer_kwargs=dict(
                             jac=lambda params: np.average(

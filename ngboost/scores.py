@@ -7,20 +7,33 @@ from scipy.optimize import basinhopping
 class Score:
     @classmethod
     def _total_score(cls, Y, _params, sample_weight=None):
-        return np.average(cls.score(Y, _params), weights=sample_weight)
+        return np.average(cls._score(Y, _params), weights=sample_weight)
 
     @classmethod
     def _grad(cls, Y, _params, natural=True):
-        grad = cls.d_score(Y, _params)
+        grad = cls._d_score(Y, _params)
         if natural:
-            metric = cls.metric(_params)
+            metric = cls._metric(_params)
             grad = np.linalg.solve(metric, grad)
 
         return grad
 
     @classmethod
-    def _fit_marginal(cls, Y):
-        return cls.params_to_internal(**cls.fit_marginal(Y))
+    def _fit_marginal(cls, y):  # may be generalized or improved with global search
+        n = len(y)
+        return basinhopping(
+            func=lambda params: np.average(
+                cls._score(y, np.ones((n, cls.n_params())) * params)
+            ),
+            x0=np.ones((cls.n_params(),)) * np.mean(y),
+            stepsize=1000,
+            niter_success=5,
+            minimizer_kwargs=dict(
+                jac=lambda params: np.average(
+                    cls._d_score(y, np.ones((n, cls.n_params())) * params), axis=0,
+                )
+            ),
+        ).x
 
 
 class LogScore(Score):
@@ -33,9 +46,9 @@ class LogScore(Score):
     """
 
     @classmethod
-    def metric(cls, _params, n_mc_samples=100):
+    def _metric(cls, _params, n_mc_samples=100):
         grads = np.stack(
-            [cls.d_score(Y, _params) for Y in cls(_params).sample(n_mc_samples)]
+            [cls._d_score(Y, _params) for Y in cls(_params).sample(n_mc_samples)]
         )
         return np.mean(np.einsum("sik,sij->sijk", grads, grads), axis=0)
 
@@ -44,33 +57,11 @@ class LogScore(Score):
         ImplementedScore = Dist.implementation(cls)
 
         class BuiltScore(ImplementedScore):
-            if not hasattr(ImplementedScore, "score"):
-                score = jit(vmap(Dist._nll))
+            if not hasattr(ImplementedScore, "_score"):
+                _score = jit(vmap(Dist._nll))
 
-            if not hasattr(ImplementedScore, "d_score"):
-                d_score = jit(vmap(grad(Dist._nll, 1)))
-
-            if not hasattr(ImplementedScore, "fit_marginal"):
-
-                @classmethod
-                def _fit_marginal(
-                    cls, y
-                ):  # may be generalized or improved with global search
-                    n = len(y)
-                    return basinhopping(
-                        func=lambda params: np.average(
-                            cls.score(y, np.ones((n, cls.n_params())) * params)
-                        ),
-                        x0=np.ones((cls.n_params(),)) * np.mean(y),
-                        stepsize=1000,
-                        niter_success=5,
-                        minimizer_kwargs=dict(
-                            jac=lambda params: np.average(
-                                cls.d_score(y, np.ones((n, cls.n_params())) * params),
-                                axis=0,
-                            )
-                        ),
-                    ).x
+            if not hasattr(ImplementedScore, "_d_score"):
+                _d_score = jit(vmap(grad(Dist._nll, 1)))
 
         return BuiltScore
 
@@ -82,6 +73,21 @@ class CRPScore(Score):
     """
     Generic class for the continuous ranked probability scoring rule.
     """
+
+    @classmethod
+    def build(cls, Dist):
+        ImplementedScore = Dist.implementation(cls)
+
+        class BuiltScore(ImplementedScore):
+            if not hasattr(ImplementedScore, "_score"):
+                raise ValueError(
+                    "Children of CRPSScore must be implemented with a `_score` method."
+                )
+
+            if not hasattr(ImplementedScore, "_d_score"):
+                _d_score = jit(vmap(grad(cls._score, 1)))
+
+        return BuiltScore
 
 
 CRPS = CRPScore

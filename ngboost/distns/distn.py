@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from inspect import signature
 
-import pdb
+from ngboost.scores import Score as ScoreRoot
 
 
 @dataclass
@@ -86,6 +86,10 @@ class Distn:
         return self._params.shape[1]
 
     @classmethod
+    def parametrize_internally(cls, fun):
+        return lambda Y, _params: fun(Y, **cls.params_to_user(_params))
+
+    @classmethod
     def params_to_user(cls, _params):
         return {
             param_name: parametrization.to_user(_param)
@@ -127,33 +131,18 @@ class Distn:
         """
         if scores is None:
             scores = cls.scores
-        if Score in scores:
-            warn(
-                f"Using Dist={Score.__name__} is unnecessary. "
-                "NGBoost automatically selects the correct implementation "
-                "when LogScore or CRPScore is used"
-            )
+        if Score.__bases__[-1] is ScoreRoot and Score in scores:
             return Score
         try:
             return {S.__bases__[-1]: S for S in scores}[Score]
         except KeyError as err:
             raise ValueError(
                 f"The scoring rule {Score.__name__} is not "
-                f"implemented for the {cls.__name__} distribution."
+                f"implemented for the {cls.__bases__[-1].__name__} distribution."
             ) from err
 
 
 class RegressionDistn(Distn):
-    def __init__(self, params):
-        super().__init__(params)
-        self._cdf = lambda y, params: self.cdf(
-            y, **self.params_to_user(params)
-        )  # y, params -> quantile (vectorized)
-        self._pdf = grad(self._cdf)  # y, params -> likelihood (scalar)
-        self._logpdf = compose(
-            np.log, self._pdf
-        )  # y, params -> log-likelihood (scalar)
-
     @classmethod
     def build(cls):
         class BuiltDist(cls):
@@ -165,13 +154,16 @@ class RegressionDistn(Distn):
                 )
 
             if not hasattr(cls, "_cdf"):
-                _cdf = lambda y, params: cls.cdf(y, **cls.params_to_user(params))
+                _cdf = cls.parametrize_internally(cls.cdf)
 
             if not hasattr(cls, "_likelihood"):
                 _likelihood = grad(_cdf)
 
             if not hasattr(cls, "_nll"):
-                _nll = compose(lambda x: -x, np.log, _likelihood)
+                if hasattr(cls, "nll"):
+                    _nll = cls.parametrize_internally(cls.nll)
+                else:
+                    _nll = compose(lambda x: -x, np.log, _likelihood)
 
         return BuiltDist
 

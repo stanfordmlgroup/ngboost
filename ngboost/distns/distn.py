@@ -3,7 +3,6 @@ from warnings import warn
 
 from jax import grad, vmap
 import jax.numpy as np
-from toolz.functoolz import compose
 from dataclasses import dataclass
 
 from inspect import signature
@@ -75,6 +74,9 @@ def Parameter(min=None, max=None):
 
 class Distn:
     # functions that are like _fn operate on the internal array parametrization
+    @classmethod
+    def has(cls, *attributes):
+        return all(hasattr(cls, attribute) for attribute in attributes)
 
     def __init__(self, params):
         self._params = params
@@ -87,7 +89,7 @@ class Distn:
 
     @classmethod
     def parametrize_internally(cls, fun):
-        return lambda Y, _params: fun(Y, **cls.params_to_user(_params))
+        return lambda _params, Y: fun(Y, **cls.params_to_user(_params))
 
     @classmethod
     def params_to_user(cls, _params):
@@ -124,7 +126,7 @@ class Distn:
         return self.params_to_user(self._params)
 
     @classmethod
-    def implementation(cls, Score, scores=None):
+    def find_implementation(cls, Score, scores=None):
         """
         Finds the distribution-appropriate implementation of Score
         (using the provided scores if cls.scores is empty)
@@ -138,34 +140,24 @@ class Distn:
         except KeyError as err:
             raise ValueError(
                 f"The scoring rule {Score.__name__} is not "
-                f"implemented for the {cls.__bases__[-1].__name__} distribution."
+                f"implemented for the {cls.__name__} distribution."
             ) from err
+
+    @classmethod
+    def build(cls):
+
+        if cls.has("cdf") and not cls.has("_cdf"):
+            cls._cdf = cls.parametrize_internally(cls.cdf)
+
+        if not cls.has("_pdf"):
+            if cls.has("pdf"):
+                cls._pdf = cls.parametrize_internally(cls.pdf)
+            elif cls.has("_cdf"):
+                cls._pdf = grad(cls._cdf, 1)  # grad w.r.t. y, not params
 
 
 class RegressionDistn(Distn):
-    @classmethod
-    def build(cls):
-        class BuiltDist(cls):
-
-            if not hasattr(cls, "cdf"):
-                raise ValueError(
-                    f"The distribution {cls.__name__} has no CDF defined."
-                    f" clsributions for regression must define at least a CDF."
-                )
-
-            if not hasattr(cls, "_cdf"):
-                _cdf = cls.parametrize_internally(cls.cdf)
-
-            if not hasattr(cls, "_likelihood"):
-                _likelihood = grad(_cdf)
-
-            if not hasattr(cls, "_nll"):
-                if hasattr(cls, "nll"):
-                    _nll = cls.parametrize_internally(cls.nll)
-                else:
-                    _nll = compose(lambda x: -x, np.log, _likelihood)
-
-        return BuiltDist
+    pass
 
 
 class ClassificationDistn(Distn):

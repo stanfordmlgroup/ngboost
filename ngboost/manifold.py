@@ -9,14 +9,15 @@ def manifold(Score, Dist):
     """
 
     # pylint: disable=too-few-public-methods
-    BuiltDist = Dist.build()
-    BuiltScore = Score.build(BuiltDist)
+    Dist.build()
+    ImplementedScore = Dist.find_implementation(Score)
+    ImplementedScore.build(Dist)
 
-    class Manifold(BuiltDist, BuiltScore):
+    class Manifold(Dist, ImplementedScore):
         def total_score(self, Y, sample_weight=None):
-            return self._total_score(Y, self._params, sample_weight)
+            return self._total_score(self._params, Y, sample_weight)
 
         def grad(self, Y, natural=True):
-            return self._grad(Y, self._params, natural)
+            return self._grad(self._params, Y, natural)
 
     return Manifold

@@ -1,17 +1,17 @@
 from jax import jit, vmap, grad
 import jax.numpy as np
-from toolz.functoolz import partial
+from toolz.functoolz import compose
 from scipy.optimize import basinhopping
 
 
 class Score:
     @classmethod
-    def _total_score(cls, Y, _params, sample_weight=None):
-        return np.average(cls._score(Y, _params), weights=sample_weight)
+    def _total_score(cls, _params, Y, sample_weight=None):
+        return np.average(cls._score(_params, Y), weights=sample_weight)
 
     @classmethod
-    def _grad(cls, Y, _params, natural=True):
-        grad = cls._d_score(Y, _params)
+    def _grad(cls, _params, Y, natural=True):
+        grad = cls._d_score(_params, Y)
         if natural:
             metric = cls._metric(_params)
             grad = np.linalg.solve(metric, grad)
@@ -23,17 +23,21 @@ class Score:
         n = len(y)
         return basinhopping(
             func=lambda params: np.average(
-                cls._score(y, np.ones((n, cls.n_params())) * params)
+                cls._score(np.ones((n, cls.n_params())) * params, y)
             ),
             x0=np.ones((cls.n_params(),)) * np.mean(y),
             stepsize=1000,
             niter_success=5,
             minimizer_kwargs=dict(
                 jac=lambda params: np.average(
-                    cls._d_score(y, np.ones((n, cls.n_params())) * params), axis=0,
+                    cls._d_score(np.ones((n, cls.n_params())) * params, y), axis=0,
                 )
             ),
         ).x
+
+    @classmethod
+    def has(cls, *attributes):
+        return all(hasattr(cls, attribute) for attribute in attributes)
 
 
 class LogScore(Score):
@@ -48,22 +52,31 @@ class LogScore(Score):
     @classmethod
     def _metric(cls, _params, n_mc_samples=100):
         grads = np.stack(
-            [cls._d_score(Y, _params) for Y in cls(_params).sample(n_mc_samples)]
+            [cls._d_score(_params, Y) for Y in cls(_params).sample(n_mc_samples)]
         )
         return np.mean(np.einsum("sik,sij->sijk", grads, grads), axis=0)
 
     @classmethod
     def build(cls, Dist):
-        ImplementedScore = Dist.implementation(cls)
 
-        class BuiltScore(ImplementedScore):
-            if not hasattr(ImplementedScore, "_score"):
-                _score = jit(vmap(Dist._nll))
-
-            if not hasattr(ImplementedScore, "_d_score"):
-                _d_score = jit(vmap(grad(Dist._nll, 1)))
-
-        return BuiltScore
+        if not cls.has("_d_score"):
+            if cls.has("_score"):
+                cls._d_score = jit(vmap(grad(cls._score)))
+            elif cls.has("score"):
+                cls._score = Dist.parametrize_internally(cls.score)
+                cls._d_score = jit(vmap(grad(cls._score)))
+            else:
+                if Dist.has("_pdf"):
+                    _score_scalar = compose(lambda x: -x, np.log, Dist._pdf)
+                    cls._score = jit(vmap(_score_scalar))
+                    cls._d_score = jit(vmap(grad(_score_scalar)))
+                else:
+                    raise ValueError(
+                        f"Distributions must have _pdf implemented to "
+                        f"autogenerate _score and _d_score when using LogScore. "
+                        f"{Dist.__name__} has no _pdf method or method from which to "
+                        f"generate it (e.g. pdf, _cdf, or cdf)."
+                    )
 
 
 MLE = LogScore
@@ -76,18 +89,17 @@ class CRPScore(Score):
 
     @classmethod
     def build(cls, Dist):
-        ImplementedScore = Dist.implementation(cls)
 
-        class BuiltScore(ImplementedScore):
-            if not hasattr(ImplementedScore, "_score"):
+        if not cls.has("_d_score"):
+            if cls.has("_score"):
+                cls._d_score = jit(vmap(grad(cls._score)))
+            elif cls.has("score"):
+                cls._score = Dist.parametrize_internally(cls.score)
+                cls._d_score = jit(vmap(grad(cls._score)))
+            else:
                 raise ValueError(
-                    "Children of CRPSScore must be implemented with a `_score` method."
+                    "Implementations of CRPSScore must have a `_score` or `score` method."
                 )
-
-            if not hasattr(ImplementedScore, "_d_score"):
-                _d_score = jit(vmap(grad(cls._score, 1)))
-
-        return BuiltScore
 
 
 CRPS = CRPScore

@@ -20,11 +20,11 @@ class NormalLogScore(LogScore):
     pass
 
     @classmethod
-    def _score(cls, Y, _params):
+    def _score(cls, _params, Y):
         return -norm.logpdf(Y, **cls.params_to_user(_params))
 
     @classmethod
-    def _d_score(cls, Y, _params):
+    def _d_score(cls, _params, Y):
         loc, scale, var = get_params(_params)
 
         D = np.zeros((len(Y), 2))
@@ -103,16 +103,16 @@ class Normal(RegressionDistn):
     def cdf(cls, Y, loc, scale):
         return norm.cdf(Y, loc=loc, scale=scale)
 
-    @classmethod
-    def nll(cls, Y, loc, scale):
-        return -norm.logpdf(Y, loc=loc, scale=scale)
-
     def predict(self):
-        loc, scale = self.params.values()
-        return loc
+        return self.params["loc"]
 
     def sample(self, m):
         return np.array([sp.stats.norm.rvs(**self.params) for i in range(m)])
+
+
+class NormalFixedVarLogScore(LogScore):
+    def score(Y, loc):
+        return -norm.logpdf(Y, loc=loc, scale=1)
 
 
 class NormalFixedVar(RegressionDistn):
@@ -125,10 +125,6 @@ class NormalFixedVar(RegressionDistn):
     @classmethod
     def cdf(cls, Y, loc):
         return norm.cdf(Y, loc=loc, scale=1)
-
-    @classmethod
-    def nll(cls, Y, loc):
-        return -norm.logpdf(Y, loc=loc, scale=1)
 
     def predict(self):
         return self.params["loc"]

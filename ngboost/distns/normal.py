@@ -49,7 +49,7 @@ class NormalLogScore(LogScore):
 
 class NormalCRPScore(CRPScore):
     @classmethod
-    def _score(cls, Y, _params):
+    def _score(cls, _params, Y):
         loc, scale, var = get_params(_params)
 
         Z = (Y - loc) / scale
@@ -58,13 +58,13 @@ class NormalCRPScore(CRPScore):
         )
 
     @classmethod
-    def _d_score(cls, Y, _params):
+    def _d_score(cls, _params, Y):
         loc, scale, var = get_params(_params)
 
         Z = (Y - loc) / scale
         D = np.zeros((len(Y), 2))
         D = index_update(D, index[:, 0], -(2 * norm.cdf(Z) - 1))
-        D = index_update(D, index[:, 1], cls._score(Y, _params) + (Y - loc) * D[:, 0])
+        D = index_update(D, index[:, 1], cls._score(_params, Y) + (Y - loc) * D[:, 0])
         return D
 
     @classmethod
@@ -114,9 +114,14 @@ class NormalFixedVarLogScore(LogScore):
     def score(Y, loc):
         return -norm.logpdf(Y, loc=loc, scale=1)
 
+    # @classmethod
+    # def _fit_marginal(cls, Y):
+    #     loc, scale = sp.stats.norm.fit(Y)
+    #     return cls.params_to_internal(loc=loc)
+
 
 class NormalFixedVar(RegressionDistn):
-    scores = [LogScore]
+    scores = [NormalFixedVarLogScore]
 
     parametrization = {
         "loc": Parameter(),

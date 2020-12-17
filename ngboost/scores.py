@@ -19,18 +19,18 @@ class Score:
         return grad
 
     @classmethod
-    def _fit_marginal(cls, y):  # may be generalized or improved with global search
+    def _fit_marginal(cls, y):
         n = len(y)
         return basinhopping(
-            func=lambda params: np.average(
-                cls._score(np.ones((n, cls.n_params())) * params, y)
+            func=lambda _params: np.average(
+                cls._score(np.ones((n, cls.n_params())) * _params, y)
             ),
             x0=np.ones((cls.n_params(),)) * np.mean(y),
             stepsize=1000,
             niter_success=5,
             minimizer_kwargs=dict(
-                jac=lambda params: np.average(
-                    cls._d_score(np.ones((n, cls.n_params())) * params, y), axis=0,
+                jac=lambda _params: np.average(
+                    cls._d_score(np.ones((n, cls.n_params())) * _params, y), axis=0,
                 )
             ),
         ).x
@@ -63,7 +63,7 @@ class LogScore(Score):
             if cls.has("_score"):
                 cls._d_score = jit(vmap(grad(cls._score)))
             elif cls.has("score"):
-                cls._score = Dist.parametrize_internally(cls.score)
+                cls._score = jit(Dist.parametrize_internally(cls.score))
                 cls._d_score = jit(vmap(grad(cls._score)))
             else:
                 if Dist.has("_pdf"):

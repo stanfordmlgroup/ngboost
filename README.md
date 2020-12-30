@@ -9,7 +9,13 @@ ngboost is a Python library that implements Natural Gradient Boosting, as descri
 ## Installation
 
 ```sh
-pip install --upgrade git+https://github.com/stanfordmlgroup/ngboost.git
+via pip
+
+pip install --upgrade ngboost
+
+via conda-forge
+
+conda install -c conda-forge ngboost
 ```
 
 ## Usage

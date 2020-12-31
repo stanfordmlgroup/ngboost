@@ -1,12 +1,11 @@
 """The NGBoost Normal distribution and scores"""
-from jax.ops import index_update, index
 import jax.numpy as np
 
 import scipy as sp
 from jax.scipy.stats import norm
 
 from ngboost.distns.distn import RegressionDistn, Parameter
-from ngboost.scores import CRPScore, LogScore
+from ngboost.scores import LogScore
 
 
 class Normal(RegressionDistn):

@@ -9,10 +9,10 @@ from ngboost.distns import (
     Normal,
     RegressionDistn,
 )
-from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner
 from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
+from ngboost.censored import CensoredOutcome
 
 
 class NGBRegressor(NGBoost, BaseEstimator):
@@ -54,6 +54,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         learning_rate=0.01,
         minibatch_frac=1.0,
         col_sample=1.0,
+        censored=False,
         verbose=True,
         verbose_eval=100,
         tol=1e-4,
@@ -63,38 +64,34 @@ class NGBRegressor(NGBoost, BaseEstimator):
             Dist, RegressionDistn
         ), f"{Dist.__name__} is not useable for regression."
 
-        if not hasattr(
-            Dist, "scores"
-        ):  # user is trying to use a dist that only has censored scores implemented
-            Dist = Dist.uncensor(Score)
-
         super().__init__(
-            Dist,
-            Score,
-            Base,
-            natural_gradient,
-            n_estimators,
-            learning_rate,
-            minibatch_frac,
-            col_sample,
-            verbose,
-            verbose_eval,
-            tol,
-            random_state,
+            Dist=Dist,
+            Score=Score,
+            Base=Base,
+            natural_gradient=natural_gradient,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            minibatch_frac=minibatch_frac,
+            col_sample=col_sample,
+            censored=censored,
+            verbose=verbose,
+            verbose_eval=verbose_eval,
+            tol=tol,
+            random_state=random_state,
         )
 
-    def __getstate__(self):
-        state = super().__getstate__()
-        # Remove the unpicklable entries.
-        if self.Dist.__name__ == "DistWithUncensoredScore":
-            state["Dist"] = self.Dist.__base__
-            state["uncensor"] = True
-        return state
 
-    def __setstate__(self, state_dict):
-        if "uncensor" in state_dict.keys():
-            state_dict["Dist"] = state_dict["Dist"].uncensor(state_dict["Score"])
-        super().__setstate__(state_dict)
+class NGBCensored(NGBRegressor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, censored=True)
+
+    def check_X_y(self, X, Y):
+        X = check_array(X)
+        assert (
+            type(Y) is CensoredOutcome
+        ), f"Y must be a ngboost.censored.CensoredOutcome object"
+
+        return X, Y
 
 
 class NGBClassifier(NGBoost, BaseEstimator):
@@ -145,18 +142,18 @@ class NGBClassifier(NGBoost, BaseEstimator):
             Dist, ClassificationDistn
         ), f"{Dist.__name__} is not useable for classification."
         super().__init__(
-            Dist,
-            Score,
-            Base,
-            natural_gradient,
-            n_estimators,
-            learning_rate,
-            minibatch_frac,
-            col_sample,
-            verbose,
-            verbose_eval,
-            tol,
-            random_state,
+            Dist=Dist,
+            Score=Score,
+            Base=Base,
+            natural_gradient=natural_gradient,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            minibatch_frac=minibatch_frac,
+            col_sample=col_sample,
+            verbose=verbose,
+            verbose_eval=verbose_eval,
+            tol=tol,
+            random_state=random_state,
         )
 
     def predict_proba(self, X, max_iter=None):

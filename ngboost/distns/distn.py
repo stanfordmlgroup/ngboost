@@ -126,34 +126,22 @@ class Distn:
         return self.params_to_user(self._params)
 
     @classmethod
-    def find_implementation(cls, Score, scores=None):
+    def find_implementation(cls, Score):
         """
         Finds the distribution-appropriate implementation of Score
-        (using the provided scores if cls.scores is empty)
         """
-        if scores is None:
-            scores = cls.scores
-        if Score.__bases__[-1] is ScoreRoot and Score in scores:
-            return Score
+
         try:
-            return {S.__bases__[-1]: S for S in scores}[Score]
+            return {*cls.__subclasses__()}.intersection({*Score.__subclasses__()}).pop()
         except KeyError as err:
-            raise ValueError(
-                f"The scoring rule {Score.__name__} is not "
-                f"implemented for the {cls.__name__} distribution."
-            ) from err
-
-    @classmethod
-    def build(cls):
-
-        if cls.has("cdf") and not cls.has("_cdf"):
-            cls._cdf = cls.parametrize_internally(cls.cdf)
-
-        if not cls.has("_pdf"):
-            if cls.has("pdf"):
-                cls._pdf = cls.parametrize_internally(cls.pdf)
-            elif cls.has("_cdf"):
-                cls._pdf = grad(cls._cdf, 1)  # grad w.r.t. y, not params
+            if Score.__bases__[-1] is ScoreRoot and Score.from_scratch:
+                # build a manifold inheriting from dist and score on-the-fly
+                return type(f"{cls.__name__}{Score.__name__}Manifold", (cls, Score), {})
+            else:
+                raise ValueError(
+                    f"The scoring rule {Score.__name__} is not "
+                    f"implemented for the {cls.__name__} distribution and cannot be computationally derived"
+                )
 
 
 class RegressionDistn(Distn):

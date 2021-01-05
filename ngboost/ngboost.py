@@ -10,7 +10,8 @@ from sklearn.utils import check_array, check_random_state, check_X_y
 
 from ngboost.distns import Normal, k_categorical
 from ngboost.learners import default_tree_learner
-from ngboost.manifold import manifold
+
+# from ngboost.manifold import manifold
 from ngboost.scores import LogScore
 
 
@@ -52,20 +53,27 @@ class NGBoost:
         learning_rate=0.01,
         minibatch_frac=1.0,
         col_sample=1.0,
+        censored=False,
         verbose=True,
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
     ):
+
+        Manifold = Dist.find_implementation(Score)
+        Manifold.build()
+        # if censored:
+        #     ImplementedScore = ImplementedScore.censor(Dist)
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
-        self.Manifold = manifold(Score, Dist)
+        self.Manifold = Manifold
         self.natural_gradient = natural_gradient
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.minibatch_frac = minibatch_frac
         self.col_sample = col_sample
+        self.censored = censored
         self.verbose = verbose
         self.verbose_eval = verbose_eval
         self.init_params = None
@@ -76,6 +84,9 @@ class NGBoost:
         self.tol = tol
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
+
+    def check_X_y(self, X, Y):
+        return check_X_y(X, Y, y_numeric=True)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -89,7 +100,9 @@ class NGBoost:
     def __setstate__(self, state_dict):
         if "K" in state_dict.keys():
             state_dict["Dist"] = k_categorical(state_dict["K"])
-        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
+        state_dict["Manifold"] = manifold(
+            state_dict["Score"], state_dict["Dist"], state_dict["censored"]
+        )
         self.__dict__ = state_dict
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
@@ -218,7 +231,7 @@ class NGBoost:
         if Y is None:
             raise ValueError("y cannot be None")
 
-        X, Y = check_X_y(X, Y, y_numeric=True)
+        X, Y = self.check_X_y(X, Y)
 
         self.n_features = X.shape[1]
 
@@ -227,7 +240,7 @@ class NGBoost:
 
         params = self.pred_param(X)
         if X_val is not None and Y_val is not None:
-            X_val, Y_val = check_X_y(X_val, Y_val, y_numeric=True)
+            X_val, Y_val = self.check_X_y(X_val, Y_val)
             val_params = self.pred_param(X_val)
             val_loss_list = []
             best_val_loss = np.inf

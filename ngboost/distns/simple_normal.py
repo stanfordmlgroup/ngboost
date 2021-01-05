@@ -17,8 +17,6 @@ class Normal(RegressionDistn):
     This distribution has LogScore implemented for it.
     """
 
-    scores = [LogScore]
-
     parametrization = {
         "loc": Parameter(),
         "scale": Parameter(min=0),

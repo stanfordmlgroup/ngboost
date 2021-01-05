@@ -67,6 +67,7 @@ class Normal(RegressionDistn):
 
     @classmethod
     def _d_cdf(cls, _params, Y):
+        # see e.g. https://www.wolframalpha.com/input/?i=d%2Fdm+0.5*%281+%2B+erf%28%28x-m%29%2F%28e%5Eb+*+sqrt%282%29%29%29%29
         loc, scale, var = get_params(_params)
         likelihood = cls._pdf(_params, Y)
 

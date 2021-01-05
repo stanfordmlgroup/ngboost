@@ -7,7 +7,7 @@ from warnings import warn
 
 from jax.ops import index_update, index
 
-import pdb
+from ngboost.censored import CensoredOutcome
 
 
 class Score:
@@ -49,6 +49,8 @@ class Score:
 
     @classmethod
     def _fit_marginal(cls, Y):
+        if type(Y) is not CensoredOutcome:
+            return cls._fit_marginal_obs(Y)
         return cls._fit_marginal_obs(Y.observed)
 
     @classmethod
@@ -70,33 +72,25 @@ class LogScore(Score):
 
     @classmethod
     def _score(cls, _params, Y):
-        result = np.zeros(Y.shape)
+        if type(Y) is not CensoredOutcome:
+            return cls._score_obs(_params, Y)
 
-        result = index_update(
-            result, index[Y.ix_obs], cls._score_obs(_params[Y.ix_obs, :], Y.observed),
-        )
-        result = index_update(
-            result, index[Y.ix_cen], cls._score_cen(_params[Y.ix_cen, :], Y.censored),
-        )
+        # ----> CHECK THAT NANS LINE UP WITH Y.IX_OBS AND Y.IX_CEN <-----
 
-        return result
+        return np.nan_to_num(cls._score_obs(_params, Y.observed_all)) + np.nan_to_num(
+            cls._score_cen(_params, Y.censored_all)
+        )
 
     @classmethod
     def _d_score(cls, _params, Y):
-        result = np.zeros(_params.shape)
+        if type(Y) is not CensoredOutcome:
+            return cls._d_score_obs(_params, Y)
 
-        result = index_update(
-            result,
-            index[Y.ix_obs, :],
-            cls._d_score_obs(_params[Y.ix_obs, :], Y.observed),
-        )
-        result = index_update(
-            result,
-            index[Y.ix_cen, :],
-            cls._d_score_cen(_params[Y.ix_cen, :], Y.censored),
-        )
+        # ----> CHECK THAT NANS LINE UP WITH Y.IX_OBS AND Y.IX_CEN <-----
 
-        return result
+        return np.nan_to_num(cls._d_score_obs(_params, Y.observed_all)) + np.nan_to_num(
+            cls._d_score_cen(_params, Y.censored_all)
+        )
 
     @classmethod
     def _metric(cls, _params, n_mc_samples=100):

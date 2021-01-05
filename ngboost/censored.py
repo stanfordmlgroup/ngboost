@@ -6,6 +6,8 @@ class CensoredOutcome:
         self.observed_all = observed_all
         self.censored_all = censored_all
 
+        # check/force observed rows in `censored` have NA entries
+
         self.ix_cen = np.isnan(self.observed_all)
         self.ix_obs = ~self.ix_cen
 

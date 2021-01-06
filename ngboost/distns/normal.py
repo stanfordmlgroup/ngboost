@@ -10,29 +10,38 @@ from sympy.stats import BetaBinomial, density
 from sympy import exp, log, lambdify, Symbol
 import sympy as sym
 
+from sympy.printing.lambdarepr import NumPyPrinter
+from sympy.utilities.lambdify import lambdastr
+import numpy
+
+def newlambdify(args, funs):
+    funcstr = lambdastr(args, funs, printer=NumPyPrinter)
+    return eval(funcstr)
+
+mu, logsigma, x = sym.symbols('mu logsigma x')
+
+def logscore_sympy(mu, logsigma, x):
+    return -sym.log(density( sym.stats.Normal('dist', mu, sym.exp(logsigma)) ).pdf(x))
+
+def d_logscore_sympy_d_mu(mu, logsigma, x):
+    return sym.diff(logscore_sympy(mu, logsigma, x), mu)
+
+def d_logscore_sympy_d_logsigma(mu, logsigma, x):
+    return sym.diff(logscore_sympy(mu, logsigma, x), logsigma)
+
+logscore_sympy_numpy = newlambdify( (mu, logsigma, x), logscore_sympy(mu, logsigma, x) )
+d_logscore_sympy_d_mu_numpy = newlambdify( (mu, logsigma, x), d_logscore_sympy_d_mu(mu, logsigma, x) )
+d_logscore_sympy_d_logsigma_numpy = newlambdify( (mu, logsigma, x), d_logscore_sympy_d_logsigma(mu, logsigma, x) )
+
 class NormalLogScore(LogScore):
-    def logscore_sympy(self, mu, logsigma, x):
-        return -sym.log(density( sym.stats.Normal('dist', mu, sym.exp(logsigma)) ).pdf(x))
-    
-    def d_logscore_sympy_d_mu(self, mu, logsigma, x):
-        return sym.diff(self.logscore_sympy(mu, logsigma, x), mu)
 
-    def d_logscore_sympy_d_logsigma(self, mu, logsigma, x):
-        return sym.diff(self.logscore_sympy(mu, logsigma, x), logsigma)
-           
     def score(self, Y):
-        mu, logsigma, x = sym.symbols('mu logsigma x')
-        logscore = sym.lambdify((mu, logsigma, x), self.logscore_sympy(mu, logsigma, x), 'numpy')
-        return logscore(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        return logscore_sympy_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
 
-    def d_score(self, Y):
-        mu, logsigma, x = sym.symbols('mu logsigma x')
-        d_logscore_d_mu = sym.lambdify((mu, logsigma, x), self.d_logscore_sympy_d_mu(mu, logsigma, x), 'numpy')
-        d_logscore_d_logsigma = sym.lambdify((mu, logsigma, x), self.d_logscore_sympy_d_logsigma(mu, logsigma, x), 'numpy')
-        
+    def d_score(self, Y):        
         D = np.zeros((len(Y), 2))
-        D[:, 0] = d_logscore_d_mu(mu=self.loc, logsigma=np.log(self.scale), x=Y)
-        D[:, 1] = d_logscore_d_logsigma(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 0] = d_logscore_sympy_d_mu_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 1] = d_logscore_sympy_d_logsigma_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
         return D
 
     def metric(self):

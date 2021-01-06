@@ -6,15 +6,33 @@ from scipy.stats import norm as dist
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import CRPScore, LogScore
 
+from sympy.stats import BetaBinomial, density
+from sympy import exp, log, lambdify, Symbol
+import sympy as sym
 
 class NormalLogScore(LogScore):
+    def logscore_sympy(self, mu, logsigma, x):
+        return -sym.log(density( sym.stats.Normal('dist', mu, sym.exp(logsigma)) ).pdf(x))
+    
+    def d_logscore_sympy_d_mu(self, mu, logsigma, x):
+        return sym.diff(self.logscore_sympy(mu, logsigma, x), mu)
+
+    def d_logscore_sympy_d_logsigma(self, mu, logsigma, x):
+        return sym.diff(self.logscore_sympy(mu, logsigma, x), logsigma)
+           
     def score(self, Y):
-        return -self.dist.logpdf(Y)
+        mu, logsigma, x = sym.symbols('mu logsigma x')
+        logscore = sym.lambdify((mu, logsigma, x), self.logscore_sympy(mu, logsigma, x), 'numpy')
+        return logscore(mu=self.loc, logsigma=np.log(self.scale), x=Y)
 
     def d_score(self, Y):
+        mu, logsigma, x = sym.symbols('mu logsigma x')
+        d_logscore_d_mu = sym.lambdify((mu, logsigma, x), self.d_logscore_sympy_d_mu(mu, logsigma, x), 'numpy')
+        d_logscore_d_logsigma = sym.lambdify((mu, logsigma, x), self.d_logscore_sympy_d_logsigma(mu, logsigma, x), 'numpy')
+        
         D = np.zeros((len(Y), 2))
-        D[:, 0] = (self.loc - Y) / self.var
-        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
+        D[:, 0] = d_logscore_d_mu(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 1] = d_logscore_d_logsigma(mu=self.loc, logsigma=np.log(self.scale), x=Y)
         return D
 
     def metric(self):

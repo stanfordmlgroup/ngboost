@@ -16,7 +16,7 @@ def neg_loglikelihood_sympy(mu, logsigma, x):
 
 neg_loglikelihood = sym.lambdify((mu, logsigma, x), neg_loglikelihood_sympy(mu, logsigma, x), 'numpy')
 D_0 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), mu), 'numpy')
-d_1 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), logsigma), 'numpy')
+D_1 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), logsigma), 'numpy')
 
 class NormalLogScore(LogScore):
 
@@ -26,7 +26,7 @@ class NormalLogScore(LogScore):
     def d_score(self, Y):        
         D = np.zeros((len(Y), 2))
         D[:, 0] = D_0(mu=self.loc, logsigma=np.log(self.scale), x=Y)
-        D[:, 1] = d_1(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 1] = D_1(mu=self.loc, logsigma=np.log(self.scale), x=Y)
         return D
 
     def metric(self):

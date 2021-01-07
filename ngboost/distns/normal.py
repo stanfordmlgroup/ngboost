@@ -6,42 +6,27 @@ from scipy.stats import norm as dist
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import CRPScore, LogScore
 
-from sympy.stats import BetaBinomial, density
-from sympy import exp, log, lambdify, Symbol
 import sympy as sym
-
-from sympy.printing.lambdarepr import NumPyPrinter
-from sympy.utilities.lambdify import lambdastr
-import numpy
-
-def newlambdify(args, funs):
-    funcstr = lambdastr(args, funs, printer=NumPyPrinter)
-    return eval(funcstr)
+from sympy import stats as symstats
 
 mu, logsigma, x = sym.symbols('mu logsigma x')
 
-def logscore_sympy(mu, logsigma, x):
-    return -sym.log(density( sym.stats.Normal('dist', mu, sym.exp(logsigma)) ).pdf(x))
+def neg_loglikelihood_sympy(mu, logsigma, x):
+    return -sym.log(symstats.density( symstats.Normal('dist', mu, sym.exp(logsigma)) ).pdf(x))
 
-def d_logscore_sympy_d_mu(mu, logsigma, x):
-    return sym.diff(logscore_sympy(mu, logsigma, x), mu)
-
-def d_logscore_sympy_d_logsigma(mu, logsigma, x):
-    return sym.diff(logscore_sympy(mu, logsigma, x), logsigma)
-
-logscore_sympy_numpy = newlambdify( (mu, logsigma, x), logscore_sympy(mu, logsigma, x) )
-d_logscore_sympy_d_mu_numpy = newlambdify( (mu, logsigma, x), d_logscore_sympy_d_mu(mu, logsigma, x) )
-d_logscore_sympy_d_logsigma_numpy = newlambdify( (mu, logsigma, x), d_logscore_sympy_d_logsigma(mu, logsigma, x) )
+neg_loglikelihood = sym.lambdify((mu, logsigma, x), neg_loglikelihood_sympy(mu, logsigma, x), 'numpy')
+D_0 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), mu), 'numpy')
+d_1 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), logsigma), 'numpy')
 
 class NormalLogScore(LogScore):
 
     def score(self, Y):
-        return logscore_sympy_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        return neg_loglikelihood(mu=self.loc, logsigma=np.log(self.scale), x=Y)
 
     def d_score(self, Y):        
         D = np.zeros((len(Y), 2))
-        D[:, 0] = d_logscore_sympy_d_mu_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
-        D[:, 1] = d_logscore_sympy_d_logsigma_numpy(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 0] = D_0(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 1] = d_1(mu=self.loc, logsigma=np.log(self.scale), x=Y)
         return D
 
     def metric(self):

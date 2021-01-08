@@ -9,3 +9,4 @@ from .multivariate_normal import MultivariateNormal  # NOQA
 from .normal import Normal, NormalFixedVar  # NOQA
 from .poisson import Poisson  # NOQA
 from .t import T, TFixedDf, TFixedDfFixedVar  # NOQA
+from .gamma import Gamma

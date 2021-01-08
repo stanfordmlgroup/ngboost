@@ -6,21 +6,41 @@ from scipy.stats import norm as dist
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import CRPScore, LogScore
 
+import sympy as sym
+from sympy import stats as symstats
+
+mu, logsigma, x = sym.symbols('mu logsigma x')
+
+distr = symstats.Normal('dist', mu, sym.exp(logsigma))
+score = -sym.log(symstats.density( distr ).pdf(x))
+def neg_loglikelihood_sympy(mu, logsigma, x):
+    return score
+
+neg_loglikelihood = sym.lambdify((mu, logsigma, x), neg_loglikelihood_sympy(mu, logsigma, x), 'numpy')
+D_0 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), mu), 'numpy')
+D_1 = sym.lambdify( (mu, logsigma, x), sym.diff(neg_loglikelihood_sympy(mu, logsigma, x), logsigma), 'numpy')
+FI_0_0 = sym.lambdify( (mu, logsigma), sym.factor(sym.expand(symstats.E(sym.factor(sym.expand(sym.diff(sym.diff(score, mu), mu))).subs(x, distr)))), 'numpy')
+FI_0_1 = sym.lambdify( (mu, logsigma), sym.factor(sym.expand(symstats.E(sym.factor(sym.expand(sym.diff(sym.diff(score, mu), logsigma))).subs(x, distr)))), 'numpy')
+FI_1_0 = sym.lambdify( (mu, logsigma), sym.factor(sym.expand(symstats.E(sym.factor(sym.expand(sym.diff(sym.diff(score, logsigma), mu))).subs(x, distr)))), 'numpy')
+FI_1_1 = sym.lambdify( (mu, logsigma), sym.factor(sym.expand(symstats.E(sym.factor(sym.expand(sym.diff(sym.diff(score, logsigma), logsigma))).subs(x, distr)))), 'numpy')
 
 class NormalLogScore(LogScore):
-    def score(self, Y):
-        return -self.dist.logpdf(Y)
 
-    def d_score(self, Y):
+    def score(self, Y):
+        return neg_loglikelihood(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+
+    def d_score(self, Y):        
         D = np.zeros((len(Y), 2))
-        D[:, 0] = (self.loc - Y) / self.var
-        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
+        D[:, 0] = D_0(mu=self.loc, logsigma=np.log(self.scale), x=Y)
+        D[:, 1] = D_1(mu=self.loc, logsigma=np.log(self.scale), x=Y)
         return D
 
     def metric(self):
         FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / self.var
-        FI[:, 1, 1] = 2
+        FI[:, 0, 0] = FI_0_0(mu=self.loc, logsigma=np.log(self.scale))
+        FI[:, 0, 1] = FI_0_1(mu=self.loc, logsigma=np.log(self.scale))
+        FI[:, 1, 0] = FI_1_0(mu=self.loc, logsigma=np.log(self.scale))
+        FI[:, 1, 1] = FI_1_1(mu=self.loc, logsigma=np.log(self.scale))
         return FI
 
 

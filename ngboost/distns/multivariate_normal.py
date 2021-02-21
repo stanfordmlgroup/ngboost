@@ -157,13 +157,14 @@ def get_chol_factor(lower_tri_vals):
 
 
 def MultivariateNormal(k):
-    #   """
-    #  Factory function that generates classes for k-dimensional multivariate normal distribution for NGBoost
+    """
+    #  Factory function that generates classes for
+    #  k-dimensional multivariate normal distributions for NGBoost
 
     # This distribution has LogScore implemented for it.
 
     # Currently only for a regression implementation.
-    # """
+    """
     assert k >= 2, ValueError(
         "Use k>=2 for MultivariateNormal."
         "If k=1 use the ngboost.distns.Normal Distribution."
@@ -202,7 +203,7 @@ def MultivariateNormal(k):
             # rest are the lower triangle of L.
             # Where Sigma_inverse = L@L.transpose()
             # Diagonals modelled on the log scale.
-            self.loc = np.array(params[: self.p, :]).T
+            self.loc = np.transpose(np.array(params[: self.p, :]))
             self.tril_L = np.array(params[self.p :, :])
 
             # Returns 3d array, shape (p, p, N)
@@ -271,7 +272,8 @@ def MultivariateNormal(k):
         @property
         def cov(self):
             # Covariance matrix is for computing the fisher information
-            # If it is singular it is set an extremely large value. This likely won't affect anything.
+            # If it is singular it is set an extremely large value.
+            # This will probably not affect anything.
             if self._cov_mat is None:
                 try:
                     self._cov_mat = np.linalg.inv(self.cov_inv)

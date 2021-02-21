@@ -11,6 +11,16 @@ from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
 
 
+def get_tril_idxs(p):
+    tril_indices = np.tril_indices(p)
+    mask_diag = tril_indices[0] == tril_indices[1]
+
+    off_diags = np.where(np.invert(mask_diag))[0]
+    diags = np.where(mask_diag)[0]
+
+    return tril_indices, diags, off_diags
+
+
 class MVNLogScore(LogScore):
     def score(self, Y):
         return -self.logpdf(Y)
@@ -36,6 +46,7 @@ class MVNLogScore(LogScore):
         grad_mu = grad_mu.squeeze()
         gradient[:, : self.p] = grad_mu
 
+        tril_indices, diags, off_diags = get_tril_idxs(self.p)
         # Gradient of the diagonal
         diagonal_elements = np.diagonal(self.L, axis1=1, axis2=2)
         grad_diag = (
@@ -43,12 +54,11 @@ class MVNLogScore(LogScore):
         )
         grad_diag = grad_diag.squeeze()
         grad_reference = gradient[:, self.p :]
-        grad_reference[:, self.mask_diag] = grad_diag
-
+        grad_reference[:, diags] = grad_diag
         # Off diagonal elements of L gradient:
-        for par_idx in self.off_diags:
-            i = self.tril_indices[0][par_idx]
-            j = self.tril_indices[1][par_idx]
+        for par_idx in off_diags:
+            i = tril_indices[0][par_idx]
+            j = tril_indices[1][par_idx]
             grad_reference[:, par_idx] = eta[:, j] * diff[:, i, 0]
 
         return gradient
@@ -75,34 +85,36 @@ class MVNLogScore(LogScore):
         # E[diff_i eta_j] is the following
         cov_sum = self.L.transpose(0, 2, 1) @ self.cov
 
+        tril_indices, diags, off_diags = get_tril_idxs(self.p)
+
         # Following loop is
         # E[d^2l / dlog(a_ii) dlog(a_kk)]
         # and
         # E[d^2l / dlog(a_ii) dlog(a_kq)]
         # where a_ik = exp(L_ki) if i=k and a_ik=L_ki otherwise.
-        for diag_idx in self.diags:
-            i = self.tril_indices[0][diag_idx]
+        for diag_idx in diags:
+            i = tril_indices[0][diag_idx]
             value = (
                 self.L[:, i, i] * self.cov[:, i, i] * self.L[:, i, i]
                 + cov_sum[:, i, i] * self.L[:, i, i]
             )
             VarComp[:, diag_idx, diag_idx] = value
             VarComp[:, diag_idx, diag_idx] = value
-            for par_idx in self.off_diags:
-                q = self.tril_indices[0][par_idx]
-                k = self.tril_indices[1][par_idx]
+            for par_idx in off_diags:
+                q = tril_indices[0][par_idx]
+                k = tril_indices[1][par_idx]
                 if i == k:
                     value = self.cov[:, q, i] * self.L[:, i, i]
                     VarComp[:, diag_idx, par_idx] = value
                     VarComp[:, par_idx, diag_idx] = value
 
         # Off diagonals  w.r.t. off diagonals
-        for par_idx in self.off_diags:
-            j = self.tril_indices[0][par_idx]
-            i = self.tril_indices[1][par_idx]
-            for par_idx2 in self.off_diags:
-                k = self.tril_indices[0][par_idx2]
-                q = self.tril_indices[1][par_idx2]
+        for par_idx in off_diags:
+            j = tril_indices[0][par_idx]
+            i = tril_indices[1][par_idx]
+            for par_idx2 in off_diags:
+                k = tril_indices[0][par_idx2]
+                q = tril_indices[1][par_idx2]
                 if i == q:
                     value = self.cov[:, k, j]
                     VarComp[:, par_idx, par_idx2] = value
@@ -114,7 +126,8 @@ def get_chol_factor(lower_tri_vals):
     """
 
     Args:
-        lower_tri_vals: numpy array, shaped as the number of lower triangular elements, number of observations.
+        lower_tri_vals: numpy array, shaped as the number of lower triangular
+                        elements, number of observations.
                         The values ordered according to np.tril_indices(p)
                         where p is the dimension of the multivariate normal distn
 
@@ -156,6 +169,7 @@ def MultivariateNormal(k):
         "If k=1 use the ngboost.distns.Normal Distribution."
     )
 
+    # pylint: disable=too-many-instance-attributes
     class MVN(RegressionDistn):
         """
         Implementation of the Multivariate normal distribution for regression.
@@ -194,19 +208,14 @@ def MultivariateNormal(k):
             # Returns 3d array, shape (p, p, N)
             self.L = get_chol_factor(self.tril_L)
 
-            # The following are useful for the Fisher Information operations
-            self.tril_indices = np.tril_indices(self.p)
-            self.mask_diag = self.tril_indices[0] == self.tril_indices[1]
-
-            self.off_diags = np.where(np.invert(self.mask_diag))[0]
-            self.diags = np.where(self.mask_diag)[0]
-
-            self.diag_incides_row = self.tril_indices[0][self.diags]
-            self.diag_incides_col = self.tril_indices[1][self.diags]
-
             # The remainder is just for utility.
             self.cov_inv = self.L @ self.L.transpose(0, 2, 1)
 
+            # _cov_mat and _Lcov are place holders, relatively expensive to compute
+            # The inverse of self.cov_inv. Access through self.cov
+            self._cov_mat = None
+            # cholesky factor of _cov_mat, useful for random number generation
+            self._Lcov = None
             # Saving the pdf constant and means in an accessible format.
             self.pdf_constant = -self.p / 2 * np.log(2 * np.pi)
 
@@ -224,7 +233,7 @@ def MultivariateNormal(k):
             return diff, eta
 
         def logpdf(self, Y):
-            diff, eta = self.summaries(Y)
+            _, eta = self.summaries(Y)
             # the exponentiated part of the pdf:
             p1 = -0.5 * np.sum(np.square(eta), axis=1)
             p1 = p1.squeeze()
@@ -246,11 +255,11 @@ def MultivariateNormal(k):
 
         def rv(self):
             # This is only useful for generating rvs so only compute it in rv.
-            if not hasattr(self, "L_cov"):
-                self.L_cov = np.linalg.cholesky(np.linalg.inv(self.cov_inv))
+            if self._Lcov is None:
+                self._Lcov = np.linalg.cholesky(np.linalg.inv(self.cov_inv))
 
             u = np.random.normal(loc=0, scale=1, size=(self.N, self.p, 1))
-            sample = np.expand_dims(self.loc, 2) + self.L_cov @ u
+            sample = np.expand_dims(self.loc, 2) + self._Lcov @ u
             return np.squeeze(sample)
 
         def rvs(self, n):
@@ -263,14 +272,12 @@ def MultivariateNormal(k):
         def cov(self):
             # Covariance matrix is for computing the fisher information
             # If it is singular it is set an extremely large value. This likely won't affect anything.
-            # Could cov = ... inside the metric function but covariance
-            # is a useful quantity to return with predictions.
-            if not hasattr(self, "cov_mat"):
+            if self._cov_mat is None:
                 try:
-                    self.cov_mat = np.linalg.inv(self.cov_inv)
+                    self._cov_mat = np.linalg.inv(self.cov_inv)
                 except np.linalg.LinAlgError:
-                    self.cov_mat = np.identity(self.p) * 1e20
-            return self.cov_mat
+                    self._cov_mat = np.identity(self.p) * 1e20
+            return self._cov_mat
 
         @property
         def params(self):

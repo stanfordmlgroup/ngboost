@@ -11,12 +11,12 @@ from ngboost.distns import (
     Distn,
     Exponential,
     LogNormal,
+    MultivariateNormal,
     Normal,
     T,
     TFixedDf,
     TFixedDfFixedVar,
     k_categorical,
-    MultivariateNormal,
 )
 from ngboost.scores import CRPScore, LogScore, Score
 
@@ -134,6 +134,10 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
     y_prob = ngb.predict_proba(X_test)
     y_dist = ngb.pred_dist(X_test)
     # test properties of output
+    import pickle
+
+    ngb = pickle.loads(pickle.dumps(ngb))
+    ngb.pred_dist(X_test)
 
 
 @pytest.mark.slow
@@ -170,4 +174,7 @@ def test_multivariatenormal(k: 2, learner):
     y_dist.rv()
     y_dist.params
     scipy_list = y_dist.scipy_distribution()
+    import pickle
 
+    ngb = pickle.loads(pickle.dumps(ngb))
+    ngb.pred_dist(X_test)

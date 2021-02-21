@@ -5,7 +5,6 @@ Peter Martin Williams 1996
 """
 
 import numpy as np
-
 import scipy as sp
 
 from ngboost.distns.distn import RegressionDistn

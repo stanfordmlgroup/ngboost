@@ -8,7 +8,7 @@ from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
-from ngboost.distns import Normal, k_categorical, MultivariateNormal
+from ngboost.distns import MultivariateNormal, Normal, k_categorical
 from ngboost.learners import default_tree_learner
 from ngboost.manifold import manifold
 from ngboost.scores import LogScore

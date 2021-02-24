@@ -4,6 +4,8 @@ taken from Using Neural Networks to Model Conditional Multivariate Densities
 Peter Martin Williams 1996
 """
 
+import warnings
+
 import numpy as np
 import scipy as sp
 
@@ -43,7 +45,7 @@ class MVNLogScore(LogScore):
         # Gradient of the mean
         # N x 1 x p matrix by N x p x p
         grad_mu = np.expand_dims(eta, 1) @ self.L.transpose(0, 2, 1)
-        grad_mu = grad_mu.squeeze()
+        grad_mu = grad_mu.squeeze(axis=1)
         gradient[:, : self.p] = grad_mu
 
         tril_indices, diags, off_diags = get_tril_idxs(self.p)
@@ -52,7 +54,7 @@ class MVNLogScore(LogScore):
         grad_diag = (
             diff * np.expand_dims(eta, 2) * np.expand_dims(diagonal_elements, 2) - 1
         )
-        grad_diag = grad_diag.squeeze()
+        grad_diag = grad_diag.squeeze(axis=2)
         grad_reference = gradient[:, self.p :]
         grad_reference[:, diags] = grad_diag
         # Off diagonal elements of L gradient:
@@ -95,7 +97,7 @@ class MVNLogScore(LogScore):
         for diag_idx in diags:
             i = tril_indices[0][diag_idx]
             value = (
-                self.L[:, i, i] * self.cov[:, i, i] * self.L[:, i, i]
+                self.L[:, i, i] ** 2 * self.cov[:, i, i]
                 + cov_sum[:, i, i] * self.L[:, i, i]
             )
             VarComp[:, diag_idx, diag_idx] = value
@@ -165,10 +167,10 @@ def MultivariateNormal(k):
 
     # Currently only for a regression implementation.
     """
-    assert k >= 2, ValueError(
-        "Use k>=2 for MultivariateNormal."
-        "If k=1 use the ngboost.distns.Normal Distribution."
-    )
+    if k == 1:
+        warnings.warn(
+            "Using Multivariate normal with k=1. Using ngboost.distn.Normal instead is advised."
+        )
 
     # pylint: disable=too-many-instance-attributes
     class MVN(RegressionDistn):
@@ -230,7 +232,10 @@ def MultivariateNormal(k):
                 eta: N x p which is L@diff
             """
             diff = np.expand_dims(self.loc - Y, 2)
-            eta = np.squeeze(np.matmul(self.L.transpose(0, 2, 1), diff))
+
+            # N x 2 x 2 @ N x p x 1
+            # -> N x p x 1 we remove the last index
+            eta = np.squeeze(np.matmul(self.L.transpose(0, 2, 1), diff), axis=2)
             return diff, eta
 
         def logpdf(self, Y):
@@ -238,7 +243,7 @@ def MultivariateNormal(k):
             # the exponentiated part of the pdf:
             p1 = -0.5 * np.sum(np.square(eta), axis=1)
             p1 = p1.squeeze()
-            # this is the sqrt(determinant(Sigma) component of the pdf
+            # this is the sqrt(determinant(Sigma)) component of the pdf
             p2 = np.sum(np.log(np.diagonal(self.L, axis1=1, axis2=2)), axis=1)
 
             ret = p1 + p2 + self.pdf_constant
@@ -275,10 +280,7 @@ def MultivariateNormal(k):
             # If it is singular it is set an extremely large value.
             # This will probably not affect anything.
             if self._cov_mat is None:
-                try:
-                    self._cov_mat = np.linalg.inv(self.cov_inv)
-                except np.linalg.LinAlgError:
-                    self._cov_mat = np.identity(self.p) * 1e20
+                self._cov_mat = np.linalg.inv(self.cov_inv)
             return self._cov_mat
 
         @property

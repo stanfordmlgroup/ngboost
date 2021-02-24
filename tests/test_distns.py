@@ -137,7 +137,7 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("k", [2, 3])
+@pytest.mark.parametrize("k", [1, 2, 3])
 @pytest.mark.parametrize(
     "learner",
     [
@@ -145,6 +145,8 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
     ],
 )
+# Ignore the k=1 warning
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_multivariatenormal(k: 2, learner):
     dist = MultivariateNormal(k)
 
@@ -165,7 +167,5 @@ def test_multivariatenormal(k: 2, learner):
     y_dist = ngb.pred_dist(X_test)
 
     mean = y_dist.mean
-    cmat = y_dist.cov
     sample = y_dist.rv()
-    params = y_dist.params
     scipy_list = y_dist.scipy_distribution()

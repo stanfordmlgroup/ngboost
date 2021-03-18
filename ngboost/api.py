@@ -124,7 +124,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         random_state      : seed for reproducibility. See
                             https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
-        An NGBRegressor object that can be fit.
+        An NGBClassifier object that can be fit.
     """
 
     def __init__(
@@ -216,7 +216,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         random_state      : seed for reproducibility. See
                             https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
     Output:
-        An NGBRegressor object that can be fit.
+        An NGBSurvival object that can be fit.
     """
 
     def __init__(

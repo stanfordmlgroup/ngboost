@@ -12,6 +12,7 @@ from ngboost.distns import (
 )
 from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner
+from ngboost.manifold import manifold
 from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
 
@@ -190,6 +191,25 @@ class NGBClassifier(NGBoost, BaseEstimator):
         ]
 
 
+def SurvivalDistnClass(Dist):
+    """
+    Returns:
+        SurvivalDistn class, this is only used in NGBSurvival
+    """
+
+    class SurvivalDistn(
+        Dist
+    ):  # Creates a new dist class from a given dist. The new class has its implemented scores
+        scores = (
+            Dist.censored_scores
+        )  # set to the censored versions of the scores implemented for dist
+
+        def fit(Y):  # and expects a {time, event} array as Y.
+            return Dist.fit(Y["Time"])
+
+    return SurvivalDistn
+
+
 class NGBSurvival(NGBoost, BaseEstimator):
     """
     Constructor for NGBoost survival models.
@@ -243,16 +263,10 @@ class NGBSurvival(NGBoost, BaseEstimator):
                 f"The {Dist.__name__} distribution does not have any censored scores implemented."
             )
 
-        class SurvivalDistn(
-            Dist
-        ):  # Creates a new dist class from a given dist. The new class has its implemented scores
-            scores = (
-                Dist.censored_scores
-            )  # set to the censored versions of the scores implemented for dist
+        SurvivalDistn = SurvivalDistnClass(Dist)
 
-            def fit(Y):  # and expects a {time, event} array as Y.
-                return Dist.fit(Y["Time"])
-
+        # Need to store the original distribution for pickling.
+        self._basedist = Dist
         # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
         super().__init__(
             SurvivalDistn,
@@ -268,6 +282,20 @@ class NGBSurvival(NGBoost, BaseEstimator):
             tol,
             random_state,
         )
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        # Both of the below contain SurvivalDistn
+        del state["Manifold"]
+        del state["Dist"]
+        return state
+
+    def __setstate__(self, state_dict):
+        # Recreate the object which could not be pickled
+        state_dict["Dist"] = SurvivalDistnClass(state_dict["_basedist"])
+        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
+        self.__dict__ = state_dict
 
     def fit(self, X, T, E, X_val=None, T_val=None, E_val=None, **kwargs):
         """Fits an NGBoost survival model to the data.

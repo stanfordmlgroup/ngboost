@@ -161,7 +161,9 @@ def test_multivariatenormal(k: 2, learner):
     y_train = np.hstack(y_cols)
     X_test = np.random.randn(N, k)
 
-    ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
+    ngb = NGBRegressor(
+        Dist=dist, Score=LogScore, Base=learner, verbose=False, n_estimators=50
+    )
     ngb.fit(X_train, y_train)
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)

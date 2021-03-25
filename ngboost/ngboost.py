@@ -95,7 +95,7 @@ class NGBoost:
         return state
 
     def __setstate__(self, state_dict):
-        # Recreate the object which could not pickle
+        # Recreate the object which could not be pickled
         name_to_dist_dict = {"Categorical": k_categorical, "MVN": MultivariateNormal}
         if "K" in state_dict.keys():
             state_dict["Dist"] = name_to_dist_dict[state_dict["Dist_name"]](

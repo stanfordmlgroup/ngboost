@@ -76,19 +76,31 @@ class NGBoost:
         self.tol = tol
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
+        if hasattr(self.Dist, "multi_output"):
+            self.multi_output = self.Dist.multi_output
+        else:
+            self.multi_output = False
 
     def __getstate__(self):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         del state["Manifold"]
+        state["Dist_name"] = self.Dist.__name__
         if self.Dist.__name__ == "Categorical":
             del state["Dist"]
             state["K"] = self.Dist.n_params + 1
+        elif self.Dist.__name__ == "MVN":
+            del state["Dist"]
+            state["K"] = (-3 + (9 + 8 * (self.Dist.n_params)) ** 0.5) / 2
         return state
 
     def __setstate__(self, state_dict):
+        # Recreate the object which could not pickle
+        name_to_dist_dict = {"Categorical": k_categorical, "MVN": MultivariateNormal}
         if "K" in state_dict.keys():
-            state_dict["Dist"] = k_categorical(state_dict["K"])
+            state_dict["Dist"] = name_to_dist_dict[state_dict["Dist_name"]](
+                state_dict["K"]
+            )
         state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
 
@@ -137,6 +149,7 @@ class NGBoost:
         )
 
     def fit_base(self, X, grads, sample_weight=None):
+        
         models = [
             clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
         ]
@@ -218,7 +231,7 @@ class NGBoost:
         if Y is None:
             raise ValueError("y cannot be None")
 
-        X, Y = check_X_y(X, Y, y_numeric=True)
+        X, Y = check_X_y(X, Y, y_numeric=True, multi_output=self.multi_output)
 
         self.n_features = X.shape[1]
 
@@ -227,7 +240,9 @@ class NGBoost:
 
         params = self.pred_param(X)
         if X_val is not None and Y_val is not None:
-            X_val, Y_val = check_X_y(X_val, Y_val, y_numeric=True)
+            X_val, Y_val = check_X_y(
+                X_val, Y_val, y_numeric=True, multi_output=self.multi_output
+            )
             val_params = self.pred_param(X_val)
             val_loss_list = []
             best_val_loss = np.inf

@@ -10,3 +10,6 @@ from .normal import Normal, NormalFixedVar  # NOQA
 from .poisson import Poisson  # NOQA
 from .t import T, TFixedDf, TFixedDfFixedVar  # NOQA
 from .gamma import Gamma
+from .beta import Beta
+from .logitnormal import LogitNormal
+from .betabernoulli import BetaBernoulli

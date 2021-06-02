@@ -5,14 +5,13 @@ from sklearn.utils import check_array
 def Y_from_censored(T, E=None):
     if T is None:
         return None
-    elif T.dtype == [
+    if T.dtype == [
         ("Event", "?"),
         ("Time", "<f8"),
     ]:  # already processed. Necessary for when d_score() calls score() as in LogNormalCRPScore
         return T
-    else:
-        T = check_array(T, ensure_2d=False)
-        T = T.reshape(T.shape[0])
+    T = check_array(T, ensure_2d=False)
+    T = T.reshape(T.shape[0])
     if E is None:
         E = np.ones_like(T)
     else:

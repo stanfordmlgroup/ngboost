@@ -6,7 +6,7 @@ from ngboost.distns import k_categorical
 
 if __name__ == "__main__":
 
-    X, y = load_breast_cancer(True)
+    X, y = load_breast_cancer(return_X_y=True)
     y[0:15] = 2  # artificially make this a 3-class problem instead of a 2-class problem
     X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2)
 

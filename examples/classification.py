@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     np.random.seed(12345)
 
-    X, Y = load_breast_cancer(True)
+    X, Y = load_breast_cancer(return_X_y=True)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
     ngb = NGBClassifier(Dist=Bernoulli)

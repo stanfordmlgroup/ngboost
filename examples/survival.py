@@ -8,7 +8,7 @@ from ngboost.distns import LogNormal
 
 if __name__ == "__main__":
 
-    X, Y = load_boston(True)
+    X, Y = load_boston(return_X_y=True)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
     # introduce administrative censoring

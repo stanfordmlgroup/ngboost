@@ -11,6 +11,7 @@ from ngboost.distns import (
     Distn,
     Exponential,
     LogNormal,
+    MultivariateNormal,
     Normal,
     T,
     TFixedDf,
@@ -135,4 +136,38 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
     # test properties of output
 
 
-# test slicing and ._params
+@pytest.mark.slow
+@pytest.mark.parametrize("k", [1, 2, 3])
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+    ],
+)
+# Ignore the k=1 warning
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_multivariatenormal(k: 2, learner):
+    dist = MultivariateNormal(k)
+
+    # Generate some sample data
+    N = 500
+    X_train = np.random.randn(N, k)
+    y_fns = [np.sin, np.cos, np.exp]
+    y_cols = [
+        fn(X_train[:, num_col]).reshape(-1, 1) + np.random.randn(N, 1)
+        for num_col, fn in enumerate(y_fns[:k])
+    ]
+    y_train = np.hstack(y_cols)
+    X_test = np.random.randn(N, k)
+
+    ngb = NGBRegressor(
+        Dist=dist, Score=LogScore, Base=learner, verbose=False, n_estimators=50
+    )
+    ngb.fit(X_train, y_train)
+    y_pred = ngb.predict(X_test)
+    y_dist = ngb.pred_dist(X_test)
+
+    mean = y_dist.mean
+    sample = y_dist.rv()
+    scipy_list = y_dist.scipy_distribution()

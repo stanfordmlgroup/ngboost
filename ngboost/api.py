@@ -2,6 +2,7 @@
 # pylint: disable=too-many-arguments
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
+from sklearn.model_selection import train_test_split
 
 from ngboost.distns import (
     Bernoulli,
@@ -99,6 +100,112 @@ class NGBRegressor(NGBoost, BaseEstimator):
             state_dict["Dist"] = state_dict["Dist"].uncensor(state_dict["Score"])
         super().__setstate__(state_dict)
 
+
+class NGBESRegressor(NGBRegressor):
+    """
+    Constructor for NGBESRegressor regression models.
+    NGBESRegressor is a wrapper for the NGBRegressor class which adopts Sklearn HistGradientBoostingRegressor-like automatic early stopping.
+    Initial parameters are the same as NGBRegressor except for two extra params
+    validation_fraction and early_stopping_rounds (definitions below)
+
+    Parameters:
+        Dist              : assumed distributional form of Y|X=x.
+                            A distribution from ngboost.distns, e.g. Normal
+        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
+                            A score from ngboost.scores, e.g. LogScore
+        Base              : base learner to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        natural_gradient  : logical flag indicating whether the natural gradient should be used
+        n_estimators      : the number of boosting iterations to fit
+        learning_rate     : the learning rate
+        minibatch_frac    : the percent subsample of rows to use in each boosting iteration
+        col_sample        : the percent subsample of columns to use in each boosting iteration
+        verbose           : flag indicating whether output should be printed during fitting
+        verbose_eval      : increment (in boosting iterations) at which output should be printed
+        tol               : numerical tolerance to be used in optimization
+        random_state      : seed for reproducibility. See
+                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        validation_fraction: Proportion of training data to set aside as validation data for early stopping.
+        early_stopping_rounds: the number of consecutive boosting iterations during which
+                               the loss has to increase before the algorithm stops early.
+                               Set to None to disable early stopping and validation.  None enables running over the full data set.
+    Output:
+        An NGBESRegressor object that can be fit.
+    """
+
+    def __init__(
+        self,
+        Dist=Normal,
+        Score=LogScore,
+        Base=default_tree_learner,
+        natural_gradient=True,
+        n_estimators=500,
+        learning_rate=0.01,
+        minibatch_frac=1.0,
+        col_sample=1.0,
+        verbose=True,
+        verbose_eval=100,
+        tol=1e-4,
+        random_state=None,
+        validation_fraction=0.1,
+        early_stopping_rounds=10
+    ):
+        self.validation_fraction = validation_fraction
+        self.early_stopping_rounds = early_stopping_rounds
+        super().__init__(
+            Dist,
+            Score,
+            Base,
+            natural_gradient,
+            n_estimators,
+            learning_rate,
+            minibatch_frac,
+            col_sample,
+            verbose,
+            verbose_eval,
+            tol,
+            random_state,
+        )
+
+    def fit(self, X, Y, sample_weight=None):
+        """Fits an NGBoost survival model to the data.
+        For additional parameters see ngboost.NGboost.fit
+        Parameters:
+            X                     : DataFrame object or List or
+                                    numpy array of predictors (n x p) in Numeric format
+            Y                     : DataFrame object or List or numpy array of outcomes (n)
+                                    in numeric format. Should be floats for regression and
+                                    integers from 0 to K-1 for K-class classification
+            sample_weight         : how much to weigh each example in the training set.
+                                    numpy array of size (n) (defaults to 1)
+        """
+        # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
+        if self.early_stopping_rounds is not None:
+            if sample_weight is None:
+                X_train, X_val, y_train, y_val = train_test_split(X, Y,
+                    test_size=self.validation_fraction)
+                sample_weight_train = val_sample_weight = None
+            else:
+                (X_train, X_val, y_train, y_val, sample_weight_train,
+                val_sample_weight) = train_test_split(X, Y, sample_weight,
+                    test_size=self.validation_fraction)
+            #run fit with all of the validation parameters and with early stopping
+            return super().fit(
+                X_train,
+                y_train,
+                X_val=X_val,
+                Y_val=y_val,
+                sample_weight=sample_weight_train,
+                val_sample_weight=val_sample_weight,
+                early_stopping_rounds=self.early_stopping_rounds
+            )
+        #if no early stopping is specified, run for the whole data set.  No validation.
+        else:
+            return super().fit(
+                X,
+                Y,
+                sample_weight=sample_weight,
+            )
 
 class NGBClassifier(NGBoost, BaseEstimator):
     """

@@ -243,8 +243,6 @@ class NGBoost:
         loss_list = []
         self.fit_init_params_to_marginal(Y)
 
-        params = self.pred_param(X)
-
         self.validation_fraction
         self.auto_early_stopping_rounds
 
@@ -262,6 +260,8 @@ class NGBoost:
                                                                                           Y,
                                                                                           sample_weight,
                                                                                           test_size=self.validation_fraction)
+
+        params = self.pred_param(X)
 
         if X_val is not None and Y_val is not None:
             X_val, Y_val = check_X_y(
@@ -282,7 +282,6 @@ class NGBoost:
             )  # NOQA
 
         for itr in range(self.n_estimators):
-            print(len(X), len(Y))
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
                 X, Y, sample_weight, params
             )

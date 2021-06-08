@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
+from sklearn.model_selection import train_test_split
 
 from ngboost.distns import MultivariateNormal, Normal, k_categorical
 from ngboost.learners import default_tree_learner
@@ -56,6 +57,8 @@ class NGBoost:
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
+        validation_fraction=0.1,
+        auto_early_stopping_rounds = 10 # Distinct from early_stopping_rounds
     ):
         self.Dist = Dist
         self.Score = Score
@@ -76,6 +79,9 @@ class NGBoost:
         self.tol = tol
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
+        self.validation_fraction = validation_fraction
+        self.auto_early_stopping_rounds = auto_early_stopping_rounds
+
         if hasattr(self.Dist, "multi_output"):
             self.multi_output = self.Dist.multi_output
         else:
@@ -238,6 +244,21 @@ class NGBoost:
         self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
+
+        self.validation_fraction
+        self.auto_early_stopping_rounds
+
+        # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
+        if self.auto_early_stopping_rounds is not None:
+            if sample_weight is None:
+                X, X_val, Y, Y_val = train_test_split(X, Y,
+                    test_size=self.validation_fraction)
+                sample_weight = val_sample_weight = None
+            else:
+                (X, X_val, Y, Y_val, sample_weight,
+                val_sample_weight) = train_test_split(X, Y, sample_weight,
+                    test_size=self.validation_fraction)
+
         if X_val is not None and Y_val is not None:
             X_val, Y_val = check_X_y(
                 X_val, Y_val, y_numeric=True, multi_output=self.multi_output

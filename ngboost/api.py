@@ -62,6 +62,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
+        validation_fraction=0.1,
+        auto_early_stopping_rounds=10
     ):
         assert issubclass(
             Dist, RegressionDistn
@@ -85,6 +87,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
             verbose_eval,
             tol,
             random_state,
+            validation_fraction,
+            auto_early_stopping_rounds
         )
 
     def __getstate__(self):

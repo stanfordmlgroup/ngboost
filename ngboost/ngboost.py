@@ -248,6 +248,9 @@ class NGBoost:
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         if self.auto_early_stopping_rounds is not None:
+
+            early_stopping_rounds = self.auto_early_stopping_rounds
+
             if sample_weight is None:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,

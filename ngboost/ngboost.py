@@ -248,16 +248,16 @@ class NGBoost:
         self.validation_fraction
         self.auto_early_stopping_rounds
 
-        # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
-        if self.auto_early_stopping_rounds is not None:
-            if sample_weight is None:
-                X, X_val, Y, Y_val = train_test_split(X, Y,
-                    test_size=self.validation_fraction)
-                sample_weight = val_sample_weight = None
-            else:
-                (X, X_val, Y, Y_val, sample_weight,
-                val_sample_weight) = train_test_split(X, Y, sample_weight,
-                    test_size=self.validation_fraction)
+        ## if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
+        #if self.auto_early_stopping_rounds is not None:
+        #    if sample_weight is None:
+        #        X, X_val, Y, Y_val = train_test_split(X, Y,
+        #            test_size=self.validation_fraction)
+        #        sample_weight = val_sample_weight = None
+        #    else:
+        #        (X, X_val, Y, Y_val, sample_weight,
+        #        val_sample_weight) = train_test_split(X, Y, sample_weight,
+        #            test_size=self.validation_fraction)
 
         if X_val is not None and Y_val is not None:
             X_val, Y_val = check_X_y(

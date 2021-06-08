@@ -282,6 +282,7 @@ class NGBoost:
             )  # NOQA
 
         for itr in range(self.n_estimators):
+            print(len(X), len(Y), len(sample_weight))
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
                 X, Y, sample_weight, params
             )

@@ -254,15 +254,16 @@ class NGBoost:
             if sample_weight is None:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,
-                                                      test_size=self.validation_fraction)
-                print(len(X), len(Y))
+                                                      test_size=self.validation_fraction,
+                                                      random_state =self.random_state)
                 sample_weight = None
                 val_sample_weight = None
             else:
                 (X, X_val, Y, Y_val, sample_weight, val_sample_weight) = train_test_split(X,
                                                                                           Y,
                                                                                           sample_weight,
-                                                                                          test_size=self.validation_fraction)
+                                                                                          test_size=self.validation_fraction,
+                                                                                          random_state = self.random_state)
 
         params = self.pred_param(X)
 

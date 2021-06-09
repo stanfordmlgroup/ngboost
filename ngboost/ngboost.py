@@ -254,7 +254,7 @@ class NGBoost:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,
                                                       test_size=self.validation_fraction,
-                                                      random_state = self.random_state)
+                                                      random_state = 41)
                 sample_weight = None
                 val_sample_weight = None
 
@@ -264,7 +264,7 @@ class NGBoost:
                                                                                         Y,
                                                                                         sample_weight,
                                                                                         test_size=self.validation_fraction,
-                                                                                        random_state = self.random_state)
+                                                                                        random_state = 41)
 
         params = self.pred_param(X)
 

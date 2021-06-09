@@ -40,7 +40,7 @@ class NGBoost:
         random_state      : seed for reproducibility.
                             See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
         validation_fraction: Proportion of training data to set aside as validation data for early stopping.
-        auto_early_stopping_rounds: The number of consecutive boosting iterations during which the
+        early_stopping_rounds: The number of consecutive boosting iterations during which the
                                     loss has to increase before the algorithm stops early.
                                     Set to None to disable early stopping and validation.
                                     None enables running over the full data set.

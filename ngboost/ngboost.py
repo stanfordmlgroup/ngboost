@@ -247,6 +247,7 @@ class NGBoost:
         # This will overwrite any X_val and Y_val values passed by the user directly.
         
         if self.auto_early_stopping_rounds is not None:
+            print(self.random_state)
 
             early_stopping_rounds = self.auto_early_stopping_rounds
 

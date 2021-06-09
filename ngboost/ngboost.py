@@ -258,7 +258,7 @@ class NGBoost:
                 sample_weight = None
                 val_sample_weight = None
 
-                print(X[0], X[100], X_val[0], X_val[100])
+                print(X[0], X[20], X_val[0], X_val[20])
             else:
                 X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(X,
                                                                                         Y,

@@ -65,7 +65,7 @@ class NGBoost:
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        early_stopping_rounds = None
+        early_stopping_rounds=None
     ):
         self.Dist = Dist
         self.Score = Score
@@ -242,7 +242,6 @@ class NGBoost:
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
-        
         if self.early_stopping_rounds is not None:
 
             early_stopping_rounds = self.early_stopping_rounds
@@ -251,15 +250,14 @@ class NGBoost:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,
                                                       test_size=self.validation_fraction,
-                                                      random_state = self.random_state)
+                                                      random_state=self.random_state)
 
             else:
                 X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(X,
                                                                                         Y,
                                                                                         sample_weight,
                                                                                         test_size=self.validation_fraction,
-                                                                                        random_state = self.random_state)
-
+                                                                                        random_state=self.random_state)
 
         if Y is None:
             raise ValueError("y cannot be None")

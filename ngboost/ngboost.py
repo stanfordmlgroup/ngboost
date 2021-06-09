@@ -39,6 +39,13 @@ class NGBoost:
         tol               : numerical tolerance to be used in optimization
         random_state      : seed for reproducibility.
                             See https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        validation_fraction: Proportion of training data to set aside as validation data for early stopping.
+        auto_early_stopping_rounds: The number of consecutive boosting iterations during which the
+                                    loss has to increase before the algorithm stops early.
+                                    Set to None to disable early stopping and validation.
+                                    None enables running over the full data set.
+
+
     Output:
         An NGBRegressor object that can be fit.
     """
@@ -58,7 +65,7 @@ class NGBoost:
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        auto_early_stopping_rounds = None # Distinct from early_stopping_rounds, but doesn't need to be.
+        early_stopping_rounds = None # Distinct from early_stopping_rounds, but doesn't need to be.
     ):
         self.Dist = Dist
         self.Score = Score
@@ -80,7 +87,7 @@ class NGBoost:
         self.random_state = check_random_state(random_state)
         self.best_val_loss_itr = None
         self.validation_fraction = validation_fraction
-        self.auto_early_stopping_rounds = auto_early_stopping_rounds
+        self.early_stopping_rounds = early_stopping_rounds
 
         if hasattr(self.Dist, "multi_output"):
             self.multi_output = self.Dist.multi_output
@@ -236,9 +243,9 @@ class NGBoost:
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
         
-        if self.auto_early_stopping_rounds is not None:
+        if self.early_stopping_rounds is not None:
 
-            early_stopping_rounds = self.auto_early_stopping_rounds
+            early_stopping_rounds = self.early_stopping_rounds
 
             if sample_weight is None:
                 X, X_val, Y, Y_val = train_test_split(X,

@@ -63,7 +63,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        auto_early_stopping_rounds=10
+        auto_early_stopping_rounds=None
     ):
         assert issubclass(
             Dist, RegressionDistn

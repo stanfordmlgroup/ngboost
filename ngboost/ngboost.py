@@ -58,7 +58,7 @@ class NGBoost:
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        auto_early_stopping_rounds = 10 # Distinct from early_stopping_rounds
+        auto_early_stopping_rounds = None # Distinct from early_stopping_rounds, but doesn't need to be.
     ):
         self.Dist = Dist
         self.Score = Score
@@ -243,10 +243,9 @@ class NGBoost:
         loss_list = []
         self.fit_init_params_to_marginal(Y)
 
-        self.validation_fraction
-        self.auto_early_stopping_rounds
-
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
+        # This will overwrite any X_val and Y_val values passed by the user directly.
+        
         if self.auto_early_stopping_rounds is not None:
 
             early_stopping_rounds = self.auto_early_stopping_rounds

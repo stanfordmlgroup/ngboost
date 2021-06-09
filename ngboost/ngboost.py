@@ -247,7 +247,6 @@ class NGBoost:
         # This will overwrite any X_val and Y_val values passed by the user directly.
         
         if self.auto_early_stopping_rounds is not None:
-            print(self.random_state)
 
             early_stopping_rounds = self.auto_early_stopping_rounds
 
@@ -255,9 +254,11 @@ class NGBoost:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,
                                                       test_size=self.validation_fraction,
-                                                      random_state =41)
-                #sample_weight = None
-                #val_sample_weight = None
+                                                      random_state = self.random_state)
+                sample_weight = None
+                val_sample_weight = None
+
+                print(X[0], X[100], X_val[0], X_val[100])
             else:
                 X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(X,
                                                                                         Y,

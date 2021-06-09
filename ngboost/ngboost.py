@@ -233,16 +233,6 @@ class NGBoost:
             A fit NGBRegressor object
         """
 
-        if Y is None:
-            raise ValueError("y cannot be None")
-
-        X, Y = check_X_y(X, Y, y_numeric=True, multi_output=self.multi_output)
-
-        self.n_features = X.shape[1]
-
-        loss_list = []
-        self.fit_init_params_to_marginal(Y)
-
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
         
@@ -254,7 +244,7 @@ class NGBoost:
                 X, X_val, Y, Y_val = train_test_split(X,
                                                       Y,
                                                       test_size=self.validation_fraction,
-                                                      random_state = 41)
+                                                      random_state = self.random_state)
                 sample_weight = None
                 val_sample_weight = None
 
@@ -264,7 +254,18 @@ class NGBoost:
                                                                                         Y,
                                                                                         sample_weight,
                                                                                         test_size=self.validation_fraction,
-                                                                                        random_state = 41)
+                                                                                        random_state = self.random_state)
+
+
+        if Y is None:
+            raise ValueError("y cannot be None")
+
+        X, Y = check_X_y(X, Y, y_numeric=True, multi_output=self.multi_output)
+
+        self.n_features = X.shape[1]
+
+        loss_list = []
+        self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
 

@@ -245,10 +245,7 @@ class NGBoost:
                                                       Y,
                                                       test_size=self.validation_fraction,
                                                       random_state = self.random_state)
-                sample_weight = None
-                val_sample_weight = None
 
-                print(X[0][0], X[20][0], X_val[0][0], X_val[20][0], Y[20], Y_val[20])
             else:
                 X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(X,
                                                                                         Y,

@@ -65,7 +65,7 @@ class NGBoost:
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        early_stopping_rounds = None # Distinct from early_stopping_rounds, but doesn't need to be.
+        early_stopping_rounds = None
     ):
         self.Dist = Dist
         self.Score = Score

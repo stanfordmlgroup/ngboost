@@ -5,9 +5,9 @@
 # pylint: disable=redundant-keyword-arg,protected-access
 import numpy as np
 from sklearn.base import clone
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
-from sklearn.model_selection import train_test_split
 
 from ngboost.distns import MultivariateNormal, Normal, k_categorical
 from ngboost.learners import default_tree_learner
@@ -65,7 +65,7 @@ class NGBoost:
         tol=1e-4,
         random_state=None,
         validation_fraction=0.1,
-        early_stopping_rounds=None
+        early_stopping_rounds=None,
     ):
         self.Dist = Dist
         self.Score = Score
@@ -247,17 +247,21 @@ class NGBoost:
             early_stopping_rounds = self.early_stopping_rounds
 
             if sample_weight is None:
-                X, X_val, Y, Y_val = train_test_split(X,
-                                                      Y,
-                                                      test_size=self.validation_fraction,
-                                                      random_state=self.random_state)
+                X, X_val, Y, Y_val = train_test_split(
+                    X,
+                    Y,
+                    test_size=self.validation_fraction,
+                    random_state=self.random_state,
+                )
 
             else:
-                X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(X,
-                                                                                        Y,
-                                                                                        sample_weight,
-                                                                                        test_size=self.validation_fraction,
-                                                                                        random_state=self.random_state)
+                X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(
+                    X,
+                    Y,
+                    sample_weight,
+                    test_size=self.validation_fraction,
+                    random_state=self.random_state,
+                )
 
         if Y is None:
             raise ValueError("y cannot be None")

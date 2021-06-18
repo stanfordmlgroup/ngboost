@@ -1,35 +1,56 @@
 """The NGBoost mixture of K Normal distributions and scores"""
 
-import scipy
-from scipy.stats import norm
-from scipy.stats import laplace as dist
-import numpy as np
 import math as math
+
+import numpy as np
 import pandas as pd
-from ngboost.distns.distn import RegressionDistn
-from ngboost.scores import LogScore
+import scipy
+from scipy.stats import laplace as dist
+from scipy.stats import norm
 from sklearn.cluster import KMeans
 
+from ngboost.distns.distn import RegressionDistn
+from ngboost.scores import LogScore
 
 
 class NormalMixtureLogScore(LogScore):
     def score(self, Y):
-        return -np.log(np.sum(norm.pdf(Y, self.loc, self.scale)*self.mixprop, axis = 0))
-
+        return -np.log(np.sum(norm.pdf(Y, self.loc, self.scale) * self.mixprop, axis=0))
 
     def d_score(self, Y):
         K = self.K_
         D = np.zeros((len(Y), (3 * K - 1)))
 
-        D[:, range(K)] = np.transpose(-1/(np.sum(norm.pdf(Y, self.loc, self.scale)*self.mixprop, axis = 0))*self.mixprop*((Y - self.loc) / pow(self.scale, 2))*norm.pdf(Y, self.loc, self.scale))
-        
-        D[:, range(K, (2 * K))] = np.transpose(-1/(np.sum(norm.pdf(Y, self.loc, self.scale)*self.mixprop, axis = 0))*self.mixprop*((pow((Y - self.loc), 2) - pow(self.scale, 2)) / pow(self.scale, 2))*norm.pdf(Y, self.loc, self.scale))
-        
-        D_alpha = np.transpose(-1/(np.sum(norm.pdf(Y, self.loc, self.scale)*self.mixprop, axis = 0))*(norm.pdf(Y, self.loc, self.scale)[range(K-1)] - norm.pdf(Y, self.loc, self.scale)[K-1]))
-                    
-        m = np.einsum("ij, kj -> jik", self.mixprop[range(K-1)], mixprop[range(K-1)])
+        D[:, range(K)] = np.transpose(
+            -1
+            / (np.sum(norm.pdf(Y, self.loc, self.scale) * self.mixprop, axis=0))
+            * self.mixprop
+            * ((Y - self.loc) / pow(self.scale, 2))
+            * norm.pdf(Y, self.loc, self.scale)
+        )
+
+        D[:, range(K, (2 * K))] = np.transpose(
+            -1
+            / (np.sum(norm.pdf(Y, self.loc, self.scale) * self.mixprop, axis=0))
+            * self.mixprop
+            * ((pow((Y - self.loc), 2) - pow(self.scale, 2)) / pow(self.scale, 2))
+            * norm.pdf(Y, self.loc, self.scale)
+        )
+
+        D_alpha = np.transpose(
+            -1
+            / (np.sum(norm.pdf(Y, self.loc, self.scale) * self.mixprop, axis=0))
+            * (
+                norm.pdf(Y, self.loc, self.scale)[range(K - 1)]
+                - norm.pdf(Y, self.loc, self.scale)[K - 1]
+            )
+        )
+
+        m = np.einsum(
+            "ij, kj -> jik", self.mixprop[range(K - 1)], mixprop[range(K - 1)]
+        )
         d = np.einsum("ijj -> ij", m)
-        d -= np.einsum("i...", self.mixprop[range(K-1)])
+        d -= np.einsum("i...", self.mixprop[range(K - 1)])
 
         D[:, range(2 * K, (3 * K - 1))] = np.einsum("ij, ijl -> il", D_alpha, -m)
         return D
@@ -55,7 +76,7 @@ def k_normal_mixture(K):
             mix_params = np.zeros((K, params.shape[1]))
             mix_params[0 : (K - 1), :] = params[(2 * K) : (3 * K - 1)]
             exp_mixprop = np.exp(mix_params)
-            self.mixprop = exp_mixprop/np.sum(exp_mixprop, axis=0)
+            self.mixprop = exp_mixprop / np.sum(exp_mixprop, axis=0)
 
         def fit(Y):
             kmeans = KMeans(n_clusters=K).fit(Y.reshape(-1, 1))
@@ -95,4 +116,3 @@ def k_normal_mixture(K):
             return {"loc": self.loc, "scale": self.scale, "mix_prop": self.mixprop}
 
     return NormalMixture
-

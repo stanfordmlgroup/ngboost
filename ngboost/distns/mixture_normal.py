@@ -1,11 +1,6 @@
 """The NGBoost mixture of K Normal distributions and scores"""
 
-import math as math
-
 import numpy as np
-import pandas as pd
-import scipy
-from scipy.stats import laplace as dist
 from scipy.stats import norm
 from sklearn.cluster import KMeans
 
@@ -47,7 +42,7 @@ class NormalMixtureLogScore(LogScore):
         )
 
         m = np.einsum(
-            "ij, kj -> jik", self.mixprop[range(K - 1)], mixprop[range(K - 1)]
+            "ij, kj -> jik", self.mixprop[range(K - 1)], self.mixprop[range(K - 1)]
         )
         d = np.einsum("ijj -> ij", m)
         d -= np.einsum("i...", self.mixprop[range(K - 1)])
@@ -108,7 +103,6 @@ def k_normal_mixture(K):
             return np.sum(component * samples, axis=1)
 
         def mean(self,):
-            n = self._params.shape[1]
             np.sum(self.mixprop * self.loc, axis=0)
 
         @property

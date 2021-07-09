@@ -297,10 +297,10 @@ class NGBSurvival(NGBoost, BaseEstimator):
                                     validation-set event idicators, in numeric format if any
         """
 
-        X = check_array(X)
+        X = check_array(X, accept_sparse=True)
 
         if X_val is not None:
-            X_val = check_array(X_val)
+            X_val = check_array(X_val, accept_sparse=True)
 
         return super().fit(
             X,

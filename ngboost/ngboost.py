@@ -344,7 +344,7 @@ class NGBoost:
             A NGBoost distribution object
         """
 
-        X = check_array(X)
+        X = check_array(X, accept_sparse=True)
 
         if (
             max_iter is not None
@@ -395,7 +395,7 @@ class NGBoost:
             Numpy array of the estimates of Y
         """
 
-        X = check_array(X)
+        X = check_array(X, accept_sparse=True)
 
         return self.pred_dist(X, max_iter=max_iter).predict()
 

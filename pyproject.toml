@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ngboost"
-version = "0.3.12dev"
+version = "0.3.13dev"
 description = "Library for probabilistic predictions via gradient boosting."
 authors = ["Stanford ML Group <avati@cs.stanford.edu>"]
 readme = "README.md"

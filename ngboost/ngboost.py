@@ -398,8 +398,7 @@ class NGBoost:
                    }
 
         return params
-    
-    
+   
     def score(self, X, Y):  # for sklearn
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 

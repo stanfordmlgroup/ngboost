@@ -43,7 +43,7 @@ def plot_pit_histogram(predicted, observed, **kwargs):
         align="edge",
         fill=False,
         edgecolor="black",
-        **kwargs
+        **kwargs,
     )
     plt.xlim((0, 1))
     plt.xlabel("Probability Integral Transform")
@@ -62,7 +62,7 @@ def plot_calibration_curve(predicted, observed):
         np.linspace(0, 1),
         np.linspace(0, 1) * slope + intercept,
         "--",
-        label="Slope: %.2f, Intercept: %.2f" % (slope, intercept),
+        label=f"Slope: {slope:.2f}, Intercept: {intercept:.2f}",
         alpha=0.5,
         color="black",
     )

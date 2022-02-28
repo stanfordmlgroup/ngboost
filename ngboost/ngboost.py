@@ -385,20 +385,21 @@ class NGBoost:
         ----------
         params : returns an dictionary of parameters.
         """
-        params = {'Dist' : self.Dist,
-                  'Score' : self.Score,
-                  'Base' : self.Base,
-                  'natural_gradient' : self.natural_gradient,
-                   'n_estimators' : self.n_estimators,
-                   'learning_rate' : self.learning_rate,
-                   'minibatch_frac' : self.minibatch_frac,
-                   'col_sample' : self.col_sample,
-                   'verbose' : self.verbose,
-                   'random_state' : self.random_state,
-                   }
+        params = {
+            "Dist": self.Dist,
+            "Score": self.Score,
+            "Base": self.Base,
+            "natural_gradient": self.natural_gradient,
+            "n_estimators": self.n_estimators,
+            "learning_rate": self.learning_rate,
+            "minibatch_frac": self.minibatch_frac,
+            "col_sample": self.col_sample,
+            "verbose": self.verbose,
+            "random_state": self.random_state,
+        }
 
         return params
-   
+
     def score(self, X, Y):  # for sklearn
         return self.Manifold(self.pred_dist(X)._params).total_score(Y)
 

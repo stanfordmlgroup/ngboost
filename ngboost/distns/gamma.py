@@ -13,8 +13,10 @@ class GammaLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
-        D[:, 0] = self.alpha * (sp.special.digamma(self.alpha) - np.log(self.eps + self.beta * Y))  # d(-log(PDF))/dalpha
-        D[:, 1] = (self.beta * Y) - self.alpha                                                      # d(-log(PDF))/dbeta
+        # d(-log(PDF))/dalpha
+        D[:, 0] = self.alpha * (sp.special.digamma(self.alpha) - np.log(self.eps + self.beta * Y))
+        # d(-log(PDF))/dbeta
+        D[:, 1] = (self.beta * Y) - self.alpha
         return D
 
     def metric(self):

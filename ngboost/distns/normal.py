@@ -68,7 +68,7 @@ class Normal(RegressionDistn):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        self.var = self.scale**2
+        self.var = self.scale ** 2
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):

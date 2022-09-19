@@ -20,7 +20,7 @@ def gen_data(n=50, bound=1, deg=3, beta=1, noise=0.9, intcpt=-1):
     x = np.linspace(-bound, bound, n)[:, np.newaxis]
     h = np.linspace(-bound, bound, n)[:, np.newaxis]
     e = np.random.randn(*x.shape) * (0.1 + 10 * np.abs(x))
-    y = 50 * (x**deg) + h * beta + noise * e + intcpt
+    y = 50 * (x ** deg) + h * beta + noise * e + intcpt
     return x, y.squeeze(), np.c_[h, np.ones_like(h)]
 
 

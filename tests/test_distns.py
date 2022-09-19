@@ -32,7 +32,8 @@ Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "dist", [Normal, LogNormal, Exponential, Gamma, T, TFixedDf, TFixedDfFixedVar, Cauchy]
+    "dist",
+    [Normal, LogNormal, Exponential, Gamma, T, TFixedDf, TFixedDfFixedVar, Cauchy],
 )
 @pytest.mark.parametrize(
     "learner",

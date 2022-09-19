@@ -98,7 +98,7 @@ TEST_METRIC: List[DistScore] = [
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
     (Poisson, LogScore),
-    (Gamma, LogScore)
+    (Gamma, LogScore),
 ] + [(MultivariateNormal(i), LogScore) for i in range(2, 5)]
 # Fill in the dist, score pair to test the gradient
 # Tests all in TEST_METRIC by default

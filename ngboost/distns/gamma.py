@@ -14,14 +14,16 @@ class GammaLogScore(LogScore):
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
         # d(-log(PDF))/dalpha
-        D[:, 0] = self.alpha * (sp.special.digamma(self.alpha) - np.log(self.eps + self.beta * Y))
+        D[:, 0] = self.alpha * (
+            sp.special.digamma(self.alpha) - np.log(self.eps + self.beta * Y)
+        )
         # d(-log(PDF))/dbeta
         D[:, 1] = (self.beta * Y) - self.alpha
         return D
 
     def metric(self):
         FI = np.zeros((self.alpha.shape[0], 2, 2))
-        FI[:, 0, 0] = self.alpha ** 2 * sp.special.polygamma(1, self.alpha)
+        FI[:, 0, 0] = self.alpha**2 * sp.special.polygamma(1, self.alpha)
         FI[:, 1, 1] = self.alpha
         FI[:, 0, 1] = -self.alpha
         FI[:, 1, 0] = -self.alpha
@@ -36,7 +38,9 @@ class Gamma(RegressionDistn):
         super().__init__(params)
         self.alpha = np.exp(params[0])
         self.beta = np.exp(params[1])
-        self.dist = dist(a=self.alpha, loc=np.zeros_like(self.alpha), scale=1 / self.beta)
+        self.dist = dist(
+            a=self.alpha, loc=np.zeros_like(self.alpha), scale=1 / self.beta
+        )
         self.eps = 1e-10
 
     def fit(Y):
@@ -53,4 +57,4 @@ class Gamma(RegressionDistn):
 
     @property
     def params(self):
-        return {'alpha': self.alpha, 'beta': self.beta}
+        return {"alpha": self.alpha, "beta": self.beta}

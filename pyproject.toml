@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ngboost"
-version = "0.3.13dev"
+version = "0.3.14dev"
 description = "Library for probabilistic predictions via gradient boosting."
 authors = ["Stanford ML Group <avati@cs.stanford.edu>"]
 readme = "README.md"
@@ -23,7 +23,7 @@ lifelines = ">=0.25"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.2"
-black = "^20.8b1"
+black = "^22.8.0"
 pre-commit = "^2.0"
 isort = "^5.6.4"
 pylint = "^2.6.0"

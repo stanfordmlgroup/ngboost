@@ -41,8 +41,8 @@ def fixture_learners_data(breast_cancer_data, boston_data, boston_survival_data)
 
 def test_model_save(learners_data):
     """
-        Tests that the model can be loaded and predict still works
-        It checks that the new predictions are the same as pre-pickling
+    Tests that the model can be loaded and predict still works
+    It checks that the new predictions are the same as pre-pickling
     """
     for learner, data, preds in learners_data:
         serial = pickle.dumps(learner)

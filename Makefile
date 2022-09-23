@@ -1,6 +1,6 @@
 
 install:
-	pip install poetry==1.2.1 && poetry install
+	pip install poetry==1.1.15 && poetry install
 
 package:
 	poetry build

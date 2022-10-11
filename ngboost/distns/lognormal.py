@@ -22,8 +22,8 @@ class LogNormalLogScoreCensored(LogScore):
         Z = (lT - self.loc) / self.scale
 
         D_uncens = np.zeros((self.loc.shape[0], 2))
-        D_uncens[:, 0] = (self.loc - lT) / (self.scale ** 2)
-        D_uncens[:, 1] = 1 - ((self.loc - lT) ** 2) / (self.scale ** 2)
+        D_uncens[:, 0] = (self.loc - lT) / (self.scale**2)
+        D_uncens[:, 1] = 1 - ((self.loc - lT) ** 2) / (self.scale**2)
 
         D_cens = np.zeros((self.loc.shape[0], 2))
         D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / (
@@ -39,7 +39,7 @@ class LogNormalLogScoreCensored(LogScore):
 
     def metric(self):
         FI = np.zeros((self.loc.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / (self.scale ** 2) + self.eps
+        FI[:, 0, 0] = 1 / (self.scale**2) + self.eps
         FI[:, 1, 1] = 2
         return FI
 
@@ -83,7 +83,7 @@ class LogNormalCRPScoreCensored(CRPScore):
     def metric(self):
         I = np.zeros((self.loc.shape[0], 2, 2))
         I[:, 0, 0] = 2
-        I[:, 1, 1] = self.scale ** 2
+        I[:, 1, 1] = self.scale**2
         I /= 2 * np.sqrt(np.pi)
         return I
 

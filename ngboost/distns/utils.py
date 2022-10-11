@@ -26,8 +26,8 @@ def SurvivalDistnClass(Dist: RegressionDistn):
 
         def fit(Y):
             """
-                Parameters:
-                    Y : a object with keys {time, event}, each containing an array
+            Parameters:
+                Y : a object with keys {time, event}, each containing an array
             """
             return Dist.fit(Y["Time"])
 

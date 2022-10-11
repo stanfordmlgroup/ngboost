@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 import pytest
-from sklearn.datasets import load_boston, load_breast_cancer
+from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 
 Tuple4Array = Tuple[np.array, np.array, np.array, np.array]
@@ -23,27 +23,31 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-def boston_data() -> Tuple4Array:
-    X, Y = load_boston(True)
+def california_housing_data() -> Tuple4Array:
+    X, Y = fetch_california_housing(return_X_y=True)
     return train_test_split(X, Y, test_size=0.2, random_state=23)
 
 
 @pytest.fixture(scope="session")
-def boston_survival_data() -> Tuple5Array:
-    X, Y = load_boston(True)
+def california_housing_survival_data() -> Tuple5Array:
+    X, Y = fetch_california_housing(return_X_y=True)
     X_surv_train, X_surv_test, Y_surv_train, Y_surv_test = train_test_split(
         X, Y, test_size=0.2, random_state=14
     )
 
+    # calculate threshold for censoring data
+    censor_threshold = np.quantile(Y_surv_train, 0.75)
     # introduce administrative censoring to simulate survival data
-    T_surv_train = np.minimum(Y_surv_train, 30)  # time of an event or censoring
+    T_surv_train = np.minimum(
+        Y_surv_train, censor_threshold
+    )  # time of an event or censoring
     E_surv_train = (
-        Y_surv_train > 30
+        Y_surv_train > censor_threshold
     )  # 1 if T[i] is the time of an event, 0 if it's a time of censoring
     return X_surv_train, X_surv_test, T_surv_train, E_surv_train, Y_surv_test
 
 
 @pytest.fixture(scope="session")
 def breast_cancer_data() -> Tuple4Array:
-    X, Y = load_breast_cancer(True)
+    X, Y = load_breast_cancer(return_X_y=True)
     return train_test_split(X, Y, test_size=0.2, random_state=12)

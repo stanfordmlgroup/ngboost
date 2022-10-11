@@ -34,12 +34,12 @@ def test_classification(breast_cancer_data):
 
 
 # TODO: This is non-deterministic in the model fitting
-def test_regression(boston_data):
+def test_regression(california_housing_data):
     from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
         mean_squared_error,
     )
 
-    x_train, x_test, y_train, y_test = boston_data
+    x_train, x_test, y_train, y_test = california_housing_data
     ngb = NGBRegressor(verbose=False)
     ngb.fit(x_train, y_train)
     preds = ngb.predict(x_test)

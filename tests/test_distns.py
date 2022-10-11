@@ -42,10 +42,8 @@ Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
     ],
 )
-def test_dists_runs_on_examples_logscore(
-    dist: Distn, learner, boston_data: Tuple4Array
-):
-    X_train, X_test, y_train, y_test = boston_data
+def test_dists_runs_on_examples_logscore(dist: Distn, learner, california_housing_data):
+    X_train, X_test, y_train, y_test = california_housing_data
     # TODO: test early stopping features
     ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
@@ -63,10 +61,8 @@ def test_dists_runs_on_examples_logscore(
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
     ],
 )
-def test_dists_runs_on_examples_crpscore(
-    dist: Distn, learner, boston_data: Tuple4Array
-):
-    X_train, X_test, y_train, y_test = boston_data
+def test_dists_runs_on_examples_crpscore(dist: Distn, learner, california_housing_data):
+    X_train, X_test, y_train, y_test = california_housing_data
     # TODO: test early stopping features
     ngb = NGBRegressor(Dist=dist, Score=CRPScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
@@ -85,9 +81,15 @@ def test_dists_runs_on_examples_crpscore(
     ],
 )
 def test_survival_runs_on_examples(
-    dist: Distn, score: Score, learner, boston_survival_data: Tuple5Array
+    dist: Distn, score: Score, learner, california_housing_survival_data
 ):
-    X_train, X_test, T_surv_train, E_surv_train, Y_surv_test = boston_survival_data
+    (
+        X_train,
+        X_test,
+        T_surv_train,
+        E_surv_train,
+        Y_surv_test,
+    ) = california_housing_survival_data
     # test early stopping features
     ngb = NGBSurvival(Dist=dist, Score=score, Base=learner, verbose=False)
     ngb.fit(X_train, T_surv_train, E_surv_train)

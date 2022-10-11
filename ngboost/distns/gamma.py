@@ -23,7 +23,7 @@ class GammaLogScore(LogScore):
 
     def metric(self):
         FI = np.zeros((self.alpha.shape[0], 2, 2))
-        FI[:, 0, 0] = self.alpha ** 2 * sp.special.polygamma(1, self.alpha)
+        FI[:, 0, 0] = self.alpha**2 * sp.special.polygamma(1, self.alpha)
         FI[:, 1, 1] = self.alpha
         FI[:, 0, 1] = -self.alpha
         FI[:, 1, 0] = -self.alpha

@@ -413,7 +413,7 @@ class NGBoost:
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
         for i, (models, s, col_idx) in enumerate(
-            zip(self.base_models, self.scalings, self.col_idxs)
+            zip(self.base_models, self.scalings, self.col_idxs), start=1
         ):
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s

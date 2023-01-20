@@ -373,7 +373,7 @@ class NGBoost:
 
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
-             setattr(self, parameter, value)
+            setattr(self, parameter, value)
         return self
 
     def get_params(self, deep=True):
@@ -396,7 +396,7 @@ class NGBoost:
             "col_sample": self.col_sample,
             "verbose": self.verbose,
             "random_state": self.random_state,
-    }
+        }
 
         return params
 

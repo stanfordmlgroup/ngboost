@@ -22,12 +22,12 @@ class GammaLogScore(LogScore):
         return D
 
     def metric(self):
-        fisher_information = np.zeros((self.alpha.shape[0], 2, 2))
-        fisher_information[:, 0, 0] = self.alpha**2 * sp.special.polygamma(1, self.alpha)
-        fisher_information[:, 1, 1] = self.alpha
-        fisher_information[:, 0, 1] = -self.alpha
-        fisher_information[:, 1, 0] = -self.alpha
-        return fisher_information
+        FI = np.zeros((self.alpha.shape[0], 2, 2))
+        FI[:, 0, 0] = self.alpha**2 * sp.special.polygamma(1, self.alpha)
+        FI[:, 1, 1] = self.alpha
+        FI[:, 0, 1] = -self.alpha
+        FI[:, 1, 0] = -self.alpha
+        return FI
 
 
 class Gamma(RegressionDistn):

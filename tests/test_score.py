@@ -133,6 +133,6 @@ def test_dists_metric(dist_score_pair: DistScore, seed: int):
     dist, score = dist_score_pair
     params = np.random.rand(dist.n_params, 1)
     manifold_test = manifold(LogScore, dist)
-    fisher_information_err = estimate_metric_err(params, manifold_test)
-    assert fisher_information_err < 1e-1
+    FI_err = estimate_metric_err(params, manifold_test)
+    assert FI_err < 1e-1
     # TODO: TFixedDF, Cauchy currently fail this test

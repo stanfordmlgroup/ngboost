@@ -15,18 +15,18 @@ class CategoricalLogScore(LogScore):
         return (self.probs.T - np.eye(self.K_)[Y])[:, 1 : self.K_]
 
     def metric(self):
-        fisher_information = -np.einsum(
+        FI = -np.einsum(
             "ji,ki->ijk", self.probs[1 : self.K_, :], self.probs[1 : self.K_, :]
         )
-        d = np.einsum("jii->ij", fisher_information)
+        d = np.einsum("jii->ij", FI)
         d[:] += self.probs[1 : self.K_, :]
-        return fisher_information
+        return FI
 
     # a test:
     # if k==j:
-    #     a= fisher_information[i,j,k] == self.probs[k,i] - self.probs[k,i]*self.probs[j,i]
+    #     a= FI[i,j,k] == self.probs[k,i] - self.probs[k,i]*self.probs[j,i]
     # else:
-    #     a= fisher_information[i,j,k] == -self.probs[k,i]*self.probs[j,i]
+    #     a= FI[i,j,k] == -self.probs[k,i]*self.probs[j,i]
     # a
 
 

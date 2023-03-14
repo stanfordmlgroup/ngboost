@@ -23,8 +23,8 @@ class ExponentialLogScore(LogScore):
         return -(cens + uncens).reshape((-1, 1))
 
     def metric(self):
-        fisher_information = np.ones_like(self.scale)
-        return fisher_information[:, np.newaxis, np.newaxis]
+        FI = np.ones_like(self.scale)
+        return FI[:, np.newaxis, np.newaxis]
 
 
 class ExponentialCRPScore(CRPScore):

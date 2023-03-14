@@ -18,10 +18,10 @@ class NormalLogScore(LogScore):
         return D
 
     def metric(self):
-        fisher_information = np.zeros((self.var.shape[0], 2, 2))
-        fisher_information[:, 0, 0] = 1 / self.var
-        fisher_information[:, 1, 1] = 2
-        return fisher_information
+        FI = np.zeros((self.var.shape[0], 2, 2))
+        FI[:, 0, 0] = 1 / self.var
+        FI[:, 1, 1] = 2
+        return FI
 
 
 class NormalCRPScore(CRPScore):
@@ -101,9 +101,9 @@ class NormalFixedVarLogScore(LogScore):
         return D
 
     def metric(self):
-        fisher_information = np.zeros((self.var.shape[0], 1, 1))
-        fisher_information[:, 0, 0] = 1 / self.var + 1e-5
-        return fisher_information
+        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI[:, 0, 0] = 1 / self.var + 1e-5
+        return FI
 
 
 class NormalFixedVarCRPScore(CRPScore):

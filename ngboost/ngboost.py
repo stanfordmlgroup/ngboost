@@ -66,6 +66,7 @@ class NGBoost:
         random_state=None,
         validation_fraction=0.1,
         early_stopping_rounds=None,
+        allow_online_learning=False,
     ):
         self.Dist = Dist
         self.Score = Score
@@ -88,6 +89,7 @@ class NGBoost:
         self.best_val_loss_itr = None
         self.validation_fraction = validation_fraction
         self.early_stopping_rounds = early_stopping_rounds
+        self.allow_online_learning = allow_online_learning
 
         if hasattr(self.Dist, "multi_output"):
             self.multi_output = self.Dist.multi_output
@@ -239,6 +241,11 @@ class NGBoost:
         Output:
             A fit NGBRegressor object
         """
+
+        if not self.allow_online_learning:
+            self.base_models = []
+            self.scalings = []
+            self.col_idxs = []   
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.

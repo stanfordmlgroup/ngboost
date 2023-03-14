@@ -27,28 +27,29 @@ class NGBRegressor(NGBoost, BaseEstimator):
     infinite number of (ordered) values.
 
     Parameters:
-        Dist              : assumed distributional form of Y|X=x.
-                            A distribution from ngboost.distns, e.g. Normal
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
-                            A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
-        n_estimators      : the number of boosting iterations to fit
-        learning_rate     : the learning rate
-        minibatch_frac    : the percent subsample of rows to use in each boosting iteration
-        col_sample        : the percent subsample of columns to use in each boosting iteration
-        verbose           : flag indicating whether output should be printed during fitting
-        verbose_eval      : increment (in boosting iterations) at which output should be printed
-        tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See
-                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
-        validation_fraction: Proportion of training data to set
-                             aside as validation data for early stopping.
-        early_stopping_rounds:      The number of consecutive boosting iterations during which the
-                                    loss has to increase before the algorithm stops early.
-                                    Set to None to disable early stopping and validation.
-                                    None enables running over the full data set.
+        Dist                    : assumed distributional form of Y|X=x.
+                                  A distribution from ngboost.distns, e.g. Normal
+        Score                   : rule to compare probabilistic predictions P̂ to the observed data y.
+                                  A score from ngboost.scores, e.g. LogScore
+        Base                    : base learner to use in the boosting algorithm.
+                                  Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        natural_gradient        : logical flag indicating whether the natural gradient should be used
+        n_estimators            : the number of boosting iterations to fit
+        learning_rate           : the learning rate
+        minibatch_frac          : the percent subsample of rows to use in each boosting iteration
+        col_sample              : the percent subsample of columns to use in each boosting iteration
+        verbose                 : flag indicating whether output should be printed during fitting
+        verbose_eval            : increment (in boosting iterations) at which output should be printed
+        tol                     : numerical tolerance to be used in optimization
+        random_state            : seed for reproducibility. See
+                                  https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        validation_fraction     : Proportion of training data to set
+                                  aside as validation data for early stopping.
+        early_stopping_rounds   : The number of consecutive boosting iterations during which the
+                                  loss has to increase before the algorithm stops early.
+                                  Set to None to disable early stopping and validation.
+                                  None enables running over the full data set.
+        allow_online_learning   : Whether to allow online learning
 
     Output:
         An NGBRegressor object that can be fit.
@@ -70,6 +71,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         random_state=None,
         validation_fraction=0.1,
         early_stopping_rounds=None,
+        allow_online_learning=False,
     ):
         assert issubclass(
             Dist, RegressionDistn
@@ -95,6 +97,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
             random_state,
             validation_fraction,
             early_stopping_rounds,
+            allow_online_learning,
         )
 
     def __getstate__(self):
@@ -120,22 +123,24 @@ class NGBClassifier(NGBoost, BaseEstimator):
     (unordered) values.
 
     Parameters:
-        Dist              : assumed distributional form of Y|X=x.
-                            A distribution from ngboost.distns, e.g. Bernoulli
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
-                            A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
-        n_estimators      : the number of boosting iterations to fit
-        learning_rate     : the learning rate
-        minibatch_frac    : the percent subsample of rows to use in each boosting iteration
-        col_sample        : the percent subsample of columns to use in each boosting iteration
-        verbose           : flag indicating whether output should be printed during fitting
-        verbose_eval      : increment (in boosting iterations) at which output should be printed
-        tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See
-                            https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        Dist                    : assumed distributional form of Y|X=x.
+                                  A distribution from ngboost.distns, e.g. Bernoulli
+        Score                   : rule to compare probabilistic predictions P̂ to the observed data y.
+                                  A score from ngboost.scores, e.g. LogScore
+        Base                    : base learner to use in the boosting algorithm.
+                                  Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        natural_gradient        : logical flag indicating whether the natural gradient should be used
+        n_estimators            : the number of boosting iterations to fit
+        learning_rate           : the learning rate
+        minibatch_frac          : the percent subsample of rows to use in each boosting iteration
+        col_sample              : the percent subsample of columns to use in each boosting iteration
+        verbose                 : flag indicating whether output should be printed during fitting
+        verbose_eval            : increment (in boosting iterations) at which output should be printed
+        tol                     : numerical tolerance to be used in optimization
+        random_state            : seed for reproducibility. See
+                                  https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        allow_online_learning   : Whether to allow online learning    
+    
     Output:
         An NGBClassifier object that can be fit.
     """
@@ -154,6 +159,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
+        allow_online_learning=False
     ):
         assert issubclass(
             Dist, ClassificationDistn
@@ -171,6 +177,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
             verbose_eval,
             tol,
             random_state,
+            allow_online_learning=allow_online_learning,
         )
 
     def predict_proba(self, X, max_iter=None):
@@ -212,22 +219,24 @@ class NGBSurvival(NGBoost, BaseEstimator):
     (ordered) values, but right-censoring is present in the observed data.
 
      Parameters:
-        Dist              : assumed distributional form of Y|X=x.
-                            A distribution from ngboost.distns, e.g. LogNormal
-        Score             : rule to compare probabilistic predictions P̂ to the observed data y.
-                            A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
-        natural_gradient  : logical flag indicating whether the natural gradient should be used
-        n_estimators      : the number of boosting iterations to fit
-        learning_rate     : the learning rate
-        minibatch_frac    : the percent subsample of rows to use in each boosting iteration
-        col_sample        : the percent subsample of columns to use in each boosting iteration
-        verbose           : flag indicating whether output should be printed during fitting
-        verbose_eval      : increment (in boosting iterations) at which output should be printed
-        tol               : numerical tolerance to be used in optimization
-        random_state      : seed for reproducibility. See
+        Dist                    : assumed distributional form of Y|X=x.
+                                  A distribution from ngboost.distns, e.g. LogNormal
+        Score                   : rule to compare probabilistic predictions P̂ to the observed data y.
+                                  A score from ngboost.scores, e.g. LogScore
+        Base                    : base learner to use in the boosting algorithm.
+                                  Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        natural_gradient        : logical flag indicating whether the natural gradient should be used
+        n_estimators            : the number of boosting iterations to fit
+        learning_rate           : the learning rate
+        minibatch_frac          : the percent subsample of rows to use in each boosting iteration
+        col_sample              : the percent subsample of columns to use in each boosting iteration
+        verbose                 : flag indicating whether output should be printed during fitting
+        verbose_eval            : increment (in boosting iterations) at which output should be printed
+        tol                     : numerical tolerance to be used in optimization
+        random_state            : seed for reproducibility. See
                             https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        allow_online_learning   : Whether to allow online learning
+    
     Output:
         An NGBSurvival object that can be fit.
     """
@@ -246,6 +255,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
+        allow_online_learning=False,
     ):
 
         assert issubclass(
@@ -272,6 +282,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
             verbose_eval,
             tol,
             random_state,
+            allow_online_learning=allow_online_learning
         )
 
     def __getstate__(self):

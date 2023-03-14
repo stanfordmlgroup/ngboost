@@ -78,7 +78,7 @@ class MVNLogScore(LogScore):
 
         """
         FisherInfo = np.stack([np.identity(self.n_params)] * self.N)
-        # FI of the location
+        # fisher_information of the location
         FisherInfo[:, : self.p, : self.p] = self.L @ self.L.transpose(0, 2, 1)
 
         # Get VarComp as a reference to the diagonals.

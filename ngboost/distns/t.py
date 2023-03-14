@@ -100,10 +100,10 @@ class TFixedDfLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
-        FI[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var)
-        return FI
+        fisher_information = np.zeros((self.var.shape[0], 2, 2))
+        fisher_information[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+        fisher_information[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var)
+        return fisher_information
 
 
 class TFixedDf(RegressionDistn):
@@ -158,9 +158,9 @@ class TFixedDfFixedVarLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 1, 1))
-        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
-        return FI
+        fisher_information = np.zeros((self.var.shape[0], 1, 1))
+        fisher_information[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+        return fisher_information
 
 
 class TFixedDfFixedVar(RegressionDistn):

@@ -38,10 +38,10 @@ class LogNormalLogScoreCensored(LogScore):
         return (1 - E) * D_cens + E * D_uncens
 
     def metric(self):
-        FI = np.zeros((self.loc.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / (self.scale**2) + self.eps
-        FI[:, 1, 1] = 2
-        return FI
+        fisher_information = np.zeros((self.loc.shape[0], 2, 2))
+        fisher_information[:, 0, 0] = 1 / (self.scale**2) + self.eps
+        fisher_information[:, 1, 1] = 2
+        return fisher_information
 
 
 class LogNormalCRPScoreCensored(CRPScore):

@@ -17,10 +17,10 @@ class LaplaceLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.loc.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / self.scale**2
-        FI[:, 1, 1] = 1
-        return FI
+        fisher_information = np.zeros((self.loc.shape[0], 2, 2))
+        fisher_information[:, 0, 0] = 1 / self.scale**2
+        fisher_information[:, 1, 1] = 1
+        return fisher_information
 
 
 class LaplaceCRPScore(CRPScore):
@@ -42,10 +42,10 @@ class LaplaceCRPScore(CRPScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.loc.shape[0], 2, 2))
-        FI[:, 0, 0] = 0.5 / self.scale
-        FI[:, 1, 1] = 0.25 * self.scale
-        return FI
+        fisher_information = np.zeros((self.loc.shape[0], 2, 2))
+        fisher_information[:, 0, 0] = 0.5 / self.scale
+        fisher_information[:, 1, 1] = 0.25 * self.scale
+        return fisher_information
 
 
 class Laplace(RegressionDistn):

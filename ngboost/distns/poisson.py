@@ -21,9 +21,9 @@ class PoissonLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.mu.shape[0], 1, 1))
-        FI[:, 0, 0] = self.mu
-        return FI
+        fisher_information = np.zeros((self.mu.shape[0], 1, 1))
+        fisher_information[:, 0, 0] = self.mu
+        return fisher_information
 
 
 class Poisson(RegressionDistn):

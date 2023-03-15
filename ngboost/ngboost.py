@@ -302,6 +302,13 @@ class NGBoost:
             A fit NGBRegressor object
         """
 
+        if len(self.base_models) != len(self.scalings) or len(self.base_models) != len(
+            self.col_idxs
+        ):
+            raise RuntimeError(
+                "Base models, scalings, and col_idxs are not the same length"
+            )
+
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
         if self.early_stopping_rounds is not None:
@@ -361,7 +368,7 @@ class NGBoost:
                 Y, sample_weight=val_sample_weight
             )  # NOQA
 
-        for itr in range(self.n_estimators):
+        for itr in range(len(self.col_idxs), self.n_estimators + len(self.col_idxs)):
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
                 X, Y, sample_weight, params
             )

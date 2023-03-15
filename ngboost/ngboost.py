@@ -256,7 +256,6 @@ class NGBoost:
             early_stopping_rounds=early_stopping_rounds,
         )
 
-
     def partial_fit(
         self,
         X,
@@ -270,7 +269,11 @@ class NGBoost:
         early_stopping_rounds=None,
     ):
         """
-        Fits an NGBoost model to the data appending base models to the existing ones
+        Fits an NGBoost model to the data appending base models to the existing ones.
+
+        NOTE: This method is not yet fully tested and may not work as expected, for example,
+        the first call to partial_fit will be the most signifcant and later calls will just
+        retune the model to newer data at the cost of making it more expensive. Use with caution.
 
         Parameters:
             X                     : DataFrame object or List or

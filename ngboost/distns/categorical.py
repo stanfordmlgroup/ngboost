@@ -1,5 +1,5 @@
 """The NGBoost categorial distribution and scores"""
-# pylint: disable=invalid-unary-operand-type, unused-argument, no-self-use
+# pylint: disable=invalid-unary-operand-type, unused-argument
 import numpy as np
 import scipy as sp
 

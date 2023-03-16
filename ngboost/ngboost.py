@@ -2,7 +2,7 @@
 # pylint: disable=line-too-long,too-many-instance-attributes,too-many-arguments
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
-# pylint: disable=redundant-keyword-arg,protected-access
+# pylint: disable=redundant-keyword-arg,protected-access,unnecessary-lambda-assignment
 import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
@@ -290,7 +290,7 @@ class NGBoost:
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D, Y, W: D.total_score(  # NOQA
+            train_loss_monitor = lambda D, Y, W: D.total_score(  # noqa
                 Y, sample_weight=W
             )
 

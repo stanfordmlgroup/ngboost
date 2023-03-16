@@ -22,6 +22,11 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: ")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def set_seed():
+    np.random.seed(0)
+
+
 @pytest.fixture(scope="session")
 def california_housing_data() -> Tuple4Array:
     X, Y = fetch_california_housing(return_X_y=True)

@@ -26,8 +26,8 @@ from ngboost.scores import CRPScore, LogScore, Score
 # check metric lines up with defaults for lognormal where applicable
 
 
-Tuple4Array = Tuple[np.array, np.array, np.array, np.array]
-Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
+Tuple4Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 
 @pytest.mark.slow

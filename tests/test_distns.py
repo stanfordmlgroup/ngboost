@@ -151,7 +151,7 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
 )
 # Ignore the k=1 warning
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_multivariatenormal(k: 2, learner):
+def test_multivariatenormal(k: int, learner):
     dist = MultivariateNormal(k)
 
     # Generate some sample data

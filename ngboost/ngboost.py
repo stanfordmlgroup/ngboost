@@ -514,8 +514,10 @@ class NGBoost:
 
         if not all_params_importances:
             return np.zeros(
-                len(self.base_models[0]),
-                self.base_models[0][0].n_features_,
+                (
+                    len(self.base_models[0]),
+                    self.base_models[0][0].n_features_,
+                ),
                 dtype=np.float64,
             )
 

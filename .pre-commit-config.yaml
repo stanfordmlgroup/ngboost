@@ -33,11 +33,11 @@ repos:
         files: ^ngboost
         entry: flake8
       - id: pylint-ngboost
-        name: pylint on nboost*
+        name: pylint on ngboost*
         types: [file, python]
         language: system
         files: ^ngboost
-        entry: pylint --disable=invalid-name,no-member,missing-docstring,no-self-argument,arguments-differ,R0801
+        entry: pylint --disable=invalid-name,no-member,missing-docstring,no-self-argument,arguments-differ
       - id: pylint-tests
         name: pylint on tests*
         language: system

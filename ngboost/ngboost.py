@@ -290,14 +290,14 @@ class NGBoost:
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D, Y, W: D.total_score(  # noqa
+            train_loss_monitor = lambda D, Y, W: D.total_score(  # noqa: E731
                 Y, sample_weight=W
             )
 
         if not val_loss_monitor:
-            val_loss_monitor = lambda D, Y: D.total_score(  # NOQA
+            val_loss_monitor = lambda D, Y: D.total_score(  # noqa: E731
                 Y, sample_weight=val_sample_weight
-            )  # NOQA
+            )
 
         for itr in range(self.n_estimators):
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(

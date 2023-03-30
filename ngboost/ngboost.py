@@ -240,6 +240,75 @@ class NGBoost:
             A fit NGBRegressor object
         """
 
+        self.base_models = []
+        self.scalings = []
+        self.col_idxs = []
+
+        return self.partial_fit(
+            X,
+            Y,
+            X_val=X_val,
+            Y_val=Y_val,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+
+    def partial_fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        """
+        Fits an NGBoost model to the data appending base models to the existing ones.
+
+        NOTE: This method is not yet fully tested and may not work as expected, for example,
+        the first call to partial_fit will be the most signifcant and later calls will just
+        retune the model to newer data at the cost of making it more expensive. Use with caution.
+
+        Parameters:
+            X                     : DataFrame object or List or
+                                    numpy array of predictors (n x p) in Numeric format
+            Y                     : DataFrame object or List or numpy array of outcomes (n)
+                                    in numeric format. Should be floats for regression and
+                                    integers from 0 to K-1 for K-class classification
+            X_val                 : DataFrame object or List or
+                                    numpy array of validation-set predictors in numeric format
+            Y_val                 : DataFrame object or List or
+                                    numpy array of validation-set outcomes in numeric format
+            sample_weight         : how much to weigh each example in the training set.
+                                    numpy array of size (n) (defaults to 1)
+            val_sample_weight     : how much to weigh each example in the validation set.
+                                    (defaults to 1)
+            train_loss_monitor    : a custom score or set of scores to track on the training set
+                                    during training. Defaults to the score defined in the NGBoost
+                                    constructor
+            val_loss_monitor      : a custom score or set of scores to track on the validation set
+                                    during training. Defaults to the score defined in the NGBoost
+                                    constructor
+            early_stopping_rounds : the number of consecutive boosting iterations during which
+                                    the loss has to increase before the algorithm stops early.
+
+        Output:
+            A fit NGBRegressor object
+        """
+
+        if len(self.base_models) != len(self.scalings) or len(self.base_models) != len(
+            self.col_idxs
+        ):
+            raise RuntimeError(
+                "Base models, scalings, and col_idxs are not the same length"
+            )
+
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
         if self.early_stopping_rounds is not None:
@@ -299,7 +368,7 @@ class NGBoost:
                 Y, sample_weight=val_sample_weight
             )  # NOQA
 
-        for itr in range(self.n_estimators):
+        for itr in range(len(self.col_idxs), self.n_estimators + len(self.col_idxs)):
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
                 X, Y, sample_weight, params
             )

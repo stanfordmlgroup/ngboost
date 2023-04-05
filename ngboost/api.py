@@ -96,7 +96,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
             validation_fraction,
             early_stopping_rounds,
         )
-        
+
         self._estimator_type = "regressor"
 
     def __getstate__(self):

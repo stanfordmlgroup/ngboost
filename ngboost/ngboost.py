@@ -163,9 +163,7 @@ class NGBoost:
 
     def fit_base(self, X, grads, sample_weight=None):
         if sample_weight is None:
-            models = [
-                clone(self.Base).fit(X, g) for g in grads.T
-            ]
+            models = [clone(self.Base).fit(X, g) for g in grads.T]
         else:
             models = [
                 clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T

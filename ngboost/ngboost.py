@@ -162,9 +162,12 @@ class NGBoost:
         )
 
     def fit_base(self, X, grads, sample_weight=None):
-        models = [
-            clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
-        ]
+        if sample_weight is None:
+            models = [clone(self.Base).fit(X, g) for g in grads.T]
+        else:
+            models = [
+                clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
+            ]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
         return fitted
@@ -224,9 +227,9 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to 1)
+                                    numpy array of size (n) (defaults to None)
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to 1)
+                                    (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor
@@ -286,9 +289,9 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to 1)
+                                    numpy array of size (n) (defaults to None)
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to 1)
+                                    (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor

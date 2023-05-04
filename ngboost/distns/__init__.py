@@ -7,6 +7,6 @@ from .gamma import Gamma  # NOQA
 from .laplace import Laplace  # NOQA
 from .lognormal import LogNormal  # NOQA
 from .multivariate_normal import MultivariateNormal  # NOQA
-from .normal import Normal, NormalFixedVar  # NOQA
+from .normal import Normal, NormalFixedMean, NormalFixedVar  # NOQA
 from .poisson import Poisson  # NOQA
 from .t import T, TFixedDf, TFixedDfFixedVar  # NOQA

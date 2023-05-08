@@ -204,8 +204,8 @@ class NormalFixedMean(Normal):
     # pylint: disable=super-init-not-called
     def __init__(self, params):
         self.loc = np.zeros_like(params[0])
-        self.var = params[0] ** 2
-        self.scale = params[0]
+        self.scale = np.exp(params[0])
+        self.var = self.scale**2
         self.shape = self.loc.shape
         self.dist = dist(loc=self.loc, scale=self.scale)
 

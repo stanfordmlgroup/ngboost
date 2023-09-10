@@ -1,4 +1,4 @@
-name: Python package
+name: Python lint and test
 
 on:
   push:

@@ -16,7 +16,7 @@ license = "Apache License 2.0"
 python = ">=3.8, <3.12"
 scikit-learn = ">=1.0.2"
 numpy = ">=1.21.2"
-scipy = ">=1.7.2"
+scipy = "1.8.1"
 tqdm = ">=4.3"
 lifelines = ">=0.25"
 

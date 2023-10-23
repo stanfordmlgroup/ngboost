@@ -13,10 +13,10 @@ classifiers = [
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.12"
+python = ">=3.9, <3.12"
 scikit-learn = ">=1.0.2"
-numpy = ">=1.21.2"
-scipy = "1.11.3"
+numpy = ">=1.21.6"
+scipy = ">=1.11.0"
 tqdm = ">=4.3"
 lifelines = ">=0.25"
 

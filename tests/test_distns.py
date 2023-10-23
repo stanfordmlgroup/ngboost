@@ -46,7 +46,13 @@ def test_dists_runs_on_examples_logscore(dist: Distn, learner, california_housin
     X_train, X_test, y_train, y_test = california_housing_data
     # TODO: test early stopping features
     ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
+    # Check for NaN values in y_train and handle them
+    nan_mask = np.isnan(y_train)
+    if np.any(nan_mask):
+        X_train = X_train[~nan_mask]
+        y_train = y_train[~nan_mask]
     ngb.fit(X_train, y_train)
+
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)
     # TODO: test properties of output

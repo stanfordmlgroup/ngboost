@@ -26,8 +26,8 @@ from ngboost.scores import CRPScore, LogScore, Score
 # check metric lines up with defaults for lognormal where applicable
 
 
-Tuple4Array = Tuple[np.array, np.array, np.array, np.array]
-Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
+Tuple4Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 
 @pytest.mark.slow
@@ -151,7 +151,7 @@ def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
 )
 # Ignore the k=1 warning
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_multivariatenormal(k: 2, learner):
+def test_multivariatenormal(k: int, learner):
     dist = MultivariateNormal(k)
 
     # Generate some sample data

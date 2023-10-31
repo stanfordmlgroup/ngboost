@@ -33,7 +33,7 @@ repos:
         files: ^ngboost
         entry: flake8
       - id: pylint-ngboost
-        name: pylint on nboost*
+        name: pylint on ngboost*
         types: [file, python]
         language: system
         files: ^ngboost

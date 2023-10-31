@@ -24,7 +24,9 @@ base_name_to_learner = {
 def Y_join(T, E):
     col_event = "Event"
     col_time = "Time"
-    y = np.empty(dtype=[(col_event, np.bool), (col_time, np.float64)], shape=T.shape[0])
+    y = np.empty(
+        dtype=[(col_event, np.bool_), (col_time, np.float64)], shape=T.shape[0]
+    )
     y[col_event] = E.values
     y[col_time] = T.values
     return y

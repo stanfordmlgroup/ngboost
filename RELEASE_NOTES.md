@@ -1,7 +1,7 @@
 # RELEASE NOTES
 
 ## Version 0.4.2
-* Fix deprecated numpy type alias. This was causing a warning with NumPy >=1.20 and an error with NumPy >=1.24.
+* Fix deprecated numpy type alias. This was causing a warning with NumPy >=1.20 and an error with NumPy >=1.24
 * Remove pandas as a declared dependency
 
 ## Version 0.4.1

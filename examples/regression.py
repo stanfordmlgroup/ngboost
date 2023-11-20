@@ -1,4 +1,5 @@
-from sklearn.datasets import load_boston
+import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
@@ -6,8 +7,12 @@ from ngboost import NGBRegressor
 from ngboost.distns import Normal
 
 if __name__ == "__main__":
+    # Load Boston housing dataset
+    data_url = "http://lib.stat.cmu.edu/datasets/boston"
+    raw_df = pd.read_csv(data_url, sep="\s+", skiprows=22, header=None)
+    X = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])
+    Y = raw_df.values[1::2, 2]
 
-    X, Y = load_boston(return_X_y=True)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
     ngb = NGBRegressor(Dist=Normal).fit(X_train, Y_train)

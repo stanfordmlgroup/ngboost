@@ -2,6 +2,8 @@ from typing import Tuple
 
 import numpy as np
 import pytest
+from sklearn.datasets import fetch_california_housing, load_breast_cancer
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
@@ -29,6 +31,26 @@ from ngboost.scores import CRPScore, LogScore, Score
 Tuple4Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
+# pylint: disable=redefined-outer-name
+@pytest.fixture(scope="module")
+def regression_data():
+    data = fetch_california_housing()
+    X, y = data["data"][:1000], data["target"][:1000]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return X_train, X_test, y_train, y_test
+
+
+@pytest.fixture(scope="module")
+def classification_data():
+    data = load_breast_cancer()
+    X, y = data["data"][:1000], data["target"][:1000]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return X_train, X_test, y_train, y_test
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
@@ -42,8 +64,8 @@ Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
     ],
 )
-def test_dists_runs_on_examples_logscore(dist: Distn, learner, california_housing_data):
-    X_train, X_test, y_train, y_test = california_housing_data
+def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
+    X_train, X_test, y_train, y_test = regression_data
     # TODO: test early stopping features
     ngb = NGBRegressor(Dist=dist, Score=LogScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
@@ -61,8 +83,8 @@ def test_dists_runs_on_examples_logscore(dist: Distn, learner, california_housin
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
     ],
 )
-def test_dists_runs_on_examples_crpscore(dist: Distn, learner, california_housing_data):
-    X_train, X_test, y_train, y_test = california_housing_data
+def test_dists_runs_on_examples_crpscore(dist: Distn, learner, regression_data):
+    X_train, X_test, y_train, y_test = regression_data
     # TODO: test early stopping features
     ngb = NGBRegressor(Dist=dist, Score=CRPScore, Base=learner, verbose=False)
     ngb.fit(X_train, y_train)
@@ -106,8 +128,8 @@ def test_survival_runs_on_examples(
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
     ],
 )
-def test_bernoulli(learner, breast_cancer_data: Tuple4Array):
-    X_cls_train, X_cls_test, Y_cls_train, Y_cls_test = breast_cancer_data
+def test_bernoulli(learner, classification_data: Tuple4Array):
+    X_cls_train, X_cls_test, Y_cls_train, Y_cls_test = classification_data
     # test early stopping features
     # test other args, n_trees, LR, minibatching- args as fixture
     ngb = NGBClassifier(Dist=Bernoulli, Score=LogScore, Base=learner, verbose=False)
@@ -127,8 +149,8 @@ def test_bernoulli(learner, breast_cancer_data: Tuple4Array):
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
     ],
 )
-def test_categorical(k: int, learner, breast_cancer_data: Tuple4Array):
-    X_train, X_test, y_train, _ = breast_cancer_data
+def test_categorical(k: int, learner, classification_data: Tuple4Array):
+    X_train, X_test, y_train, _ = classification_data
     dist = k_categorical(k)
     y_train = np.random.randint(0, k, (len(y_train)))
     # test early stopping features

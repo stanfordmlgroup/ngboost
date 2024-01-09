@@ -51,8 +51,10 @@ def classification_data():
     )
     return X_train, X_test, y_train, y_test
 
+
 def is_t_distribution(dist, learner, regression_data):
     return dist == T
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
@@ -66,7 +68,9 @@ def is_t_distribution(dist, learner, regression_data):
         DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
     ],
 )
-@pytest.mark.xfail(condition=is_t_distribution, reason="Known to fail with T distribution")
+@pytest.mark.xfail(
+    condition=is_t_distribution, reason="Known to fail with T distribution"
+)
 def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     X_train, X_test, y_train, y_test = regression_data
     # TODO: test early stopping features

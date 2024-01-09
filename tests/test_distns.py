@@ -52,7 +52,9 @@ def classification_data():
     return X_train, X_test, y_train, y_test
 
 
-def is_t_distribution(dist, learner, regression_data):
+def is_t_distribution(
+    dist, learner, regression_data
+):  # pylint: disable=unused-argument
     return dist == T
 
 

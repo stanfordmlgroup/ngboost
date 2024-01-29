@@ -5,8 +5,8 @@ import pytest
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 
-Tuple4Array = Tuple[np.array, np.array, np.array, np.array]
-Tuple5Array = Tuple[np.array, np.array, np.array, np.array, np.array]
+Tuple4Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 
 def pytest_addoption(parser):
@@ -20,6 +20,11 @@ def pytest_runtest_setup(item):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: ")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_seed():
+    np.random.seed(0)
 
 
 @pytest.fixture(scope="session")

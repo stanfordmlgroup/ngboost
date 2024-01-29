@@ -1,3 +1,4 @@
+# pylint: disable=unnecessary-lambda-assignment
 from typing import List, Tuple
 
 import numpy as np

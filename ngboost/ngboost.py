@@ -2,7 +2,7 @@
 # pylint: disable=line-too-long,too-many-instance-attributes,too-many-arguments
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
-# pylint: disable=redundant-keyword-arg,protected-access
+# pylint: disable=redundant-keyword-arg,protected-access,unnecessary-lambda-assignment
 import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
@@ -362,14 +362,14 @@ class NGBoost:
             best_val_loss = np.inf
 
         if not train_loss_monitor:
-            train_loss_monitor = lambda D, Y, W: D.total_score(  # NOQA
+            train_loss_monitor = lambda D, Y, W: D.total_score(  # noqa: E731
                 Y, sample_weight=W
             )
 
         if not val_loss_monitor:
-            val_loss_monitor = lambda D, Y: D.total_score(  # NOQA
+            val_loss_monitor = lambda D, Y: D.total_score(  # noqa: E731
                 Y, sample_weight=val_sample_weight
-            )  # NOQA
+            )
 
         for itr in range(len(self.col_idxs), self.n_estimators + len(self.col_idxs)):
             _, col_idx, X_batch, Y_batch, weight_batch, P_batch = self.sample(
@@ -386,7 +386,6 @@ class NGBoost:
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
 
-            # pdb.set_trace()
             params -= (
                 self.learning_rate
                 * scale
@@ -587,8 +586,10 @@ class NGBoost:
 
         if not all_params_importances:
             return np.zeros(
-                len(self.base_models[0]),
-                self.base_models[0][0].n_features_,
+                (
+                    len(self.base_models[0]),
+                    self.base_models[0][0].n_features_,
+                ),
                 dtype=np.float64,
             )
 

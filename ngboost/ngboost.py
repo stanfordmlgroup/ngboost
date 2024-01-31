@@ -315,7 +315,6 @@ class NGBoost:
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
         if self.early_stopping_rounds is not None:
-
             early_stopping_rounds = self.early_stopping_rounds
 
             if sample_weight is None:
@@ -489,13 +488,9 @@ class NGBoost:
 
         X = check_array(X, accept_sparse=True)
 
-        if (
-            max_iter is not None
-        ):  # get prediction at a particular iteration if asked for
-            dist = self.staged_pred_dist(X, max_iter=max_iter)[-1]
-        else:
-            params = np.asarray(self.pred_param(X, max_iter))
-            dist = self.Dist(params.T)
+        params = np.asarray(self.pred_param(X, max_iter))
+        dist = self.Dist(params.T)
+
         return dist
 
     def staged_pred_dist(self, X, max_iter=None):

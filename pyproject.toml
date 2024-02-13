@@ -13,7 +13,7 @@ classifiers = [
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.12"
+python = ">=3.9, <3.13"
 scikit-learn = ">=1.0.2"
 numpy = ">=1.21.2"
 scipy = ">=1.7.2"
@@ -25,8 +25,8 @@ pytest = "^6.1.2"
 black = "^22.8.0"
 pre-commit = "^2.0"
 isort = "^5.6.4"
-pylint = "^2.6.0"
-flake8 = "^5.0.4"
+pylint = "^3.0.3"
+flake8 = "^7.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

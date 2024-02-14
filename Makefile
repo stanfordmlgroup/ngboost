@@ -6,7 +6,7 @@ package:
 	poetry build
 
 publish: package
-    source .env && poetry config pypi-token.pypi $$PYPI_TOKEN && poetry publish
+	source .env && poetry config pypi-token.pypi $$PYPI_TOKEN && poetry publish
 
 lint:
 	poetry run pre-commit run --hook-stage manual --all-files

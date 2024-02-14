@@ -17,7 +17,7 @@ def Y_from_censored(T, E=None):
     else:
         E = check_array(E, ensure_2d=False)
         E = E.reshape(E.shape[0])
-    Y = np.empty(dtype=[("Event", np.bool), ("Time", np.float64)], shape=T.shape[0])
-    Y["Event"] = E.astype(np.bool)
+    Y = np.empty(dtype=[("Event", np.bool_), ("Time", np.float64)], shape=T.shape[0])
+    Y["Event"] = E.astype(np.bool_)
     Y["Time"] = T.astype(np.float64)
     return Y

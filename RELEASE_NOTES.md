@@ -3,7 +3,7 @@
 ## Version 0.5.0
 
 * Drops support for python 3.7 and 3.8
-* Now support for Python 3.11 and 3.12
+* Now supports Python 3.11 and 3.12
 * Fixed issue with np.bool
 * Optimized memory usage in pred-dist
 * Removed declared pandas dependency

@@ -1,5 +1,10 @@
 # RELEASE NOTES
 
+## Version 0.5.1
+
+* Adds support for NormalFixedMean distribution
+* Updates to makefile for easier publishing
+
 ## Version 0.5.0
 
 * Drops support for python 3.7 and 3.8

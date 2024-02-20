@@ -16,6 +16,8 @@ from ngboost.distns import (
     LogNormal,
     MultivariateNormal,
     Normal,
+    NormalFixedMean,
+    NormalFixedVar,
     T,
     TFixedDf,
     TFixedDfFixedVar,
@@ -61,7 +63,18 @@ def is_t_distribution(
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "dist",
-    [Normal, LogNormal, Exponential, Gamma, T, TFixedDf, TFixedDfFixedVar, Cauchy],
+    [
+        Normal,
+        NormalFixedVar,
+        NormalFixedMean,
+        LogNormal,
+        Exponential,
+        Gamma,
+        T,
+        TFixedDf,
+        TFixedDfFixedVar,
+        Cauchy,
+    ],
 )
 @pytest.mark.parametrize(
     "learner",

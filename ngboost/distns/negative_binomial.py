@@ -3,7 +3,6 @@ import numpy as np
 from scipy.stats import nbinom as dist
 from scipy.special import digamma
 from scipy.optimize import Bounds, minimize
-import warnings
 
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore

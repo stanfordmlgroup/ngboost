@@ -33,6 +33,7 @@ class NegativeBinomial(RegressionDistn):
     n_params = 2
     scores = [NegativeBinomialLogScore]
 
+    # pylint: disable=super-init-not-called
     def __init__(self,params):
         # save the parameters
         self._params = params

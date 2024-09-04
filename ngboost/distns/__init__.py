@@ -7,6 +7,7 @@ from .gamma import Gamma
 from .laplace import Laplace
 from .lognormal import LogNormal
 from .multivariate_normal import MultivariateNormal
+from .negative_binomial import NegativeBinomial
 from .normal import Normal, NormalFixedMean, NormalFixedVar
 from .poisson import Poisson
 from .t import T, TFixedDf, TFixedDfFixedVar
@@ -23,6 +24,7 @@ __all__ = [
     "Laplace",
     "LogNormal",
     "MultivariateNormal",
+    "NegativeBinomial",
     "Normal",
     "NormalFixedMean",
     "NormalFixedVar",

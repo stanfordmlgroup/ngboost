@@ -11,6 +11,7 @@ from ngboost.distns import (
     Gamma,
     Laplace,
     MultivariateNormal,
+    NegativeBinomial,
     Normal,
     Poisson,
     T,
@@ -100,6 +101,7 @@ TEST_METRIC: List[DistScore] = [
     (Laplace, LogScore),
     (Poisson, LogScore),
     (Gamma, LogScore),
+    (NegativeBinomial,LogScore),
 ] + [(MultivariateNormal(i), LogScore) for i in range(2, 5)]
 # Fill in the dist, score pair to test the gradient
 # Tests all in TEST_METRIC by default

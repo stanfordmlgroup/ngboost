@@ -34,6 +34,8 @@ class NegativeBinomial(RegressionDistn):
     scores = [NegativeBinomialLogScore]
 
     def __init__(self,params):
+        # save the parameters
+        self._params = params
 
         self.logn = params[0]
         self.n = np.exp(self.logn)

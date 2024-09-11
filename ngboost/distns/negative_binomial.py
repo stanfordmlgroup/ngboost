@@ -26,7 +26,9 @@ class NegativeBinomialLogScore(LogScore):
     def metric(self):
         FI = np.zeros((self.n.shape[0], 2, 2))
         FI[:, 0, 0] = (self.n * self.p) / (self.p + 1)
-        FI[:, 1, 1] = self.n * self.p
+        FI[:, 1, 0] = (self.p - 1) * self.n
+        FI[:, 0, 1] = (self.p - 1) * self.n
+        FI[:, 1, 1] = self.n * (1 - self.p)
         return FI
 
 

@@ -1,11 +1,12 @@
 """The NGBoost NegativeBinomial distribution and scores"""
 import numpy as np
-from scipy.stats import nbinom as dist
-from scipy.special import digamma
 from scipy.optimize import Bounds, minimize
+from scipy.special import digamma
+from scipy.stats import nbinom as dist
 
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import LogScore
+
 
 # helper function because scipy doesn't provide a fit function natively
 def negative_log_likelihood(params, k):

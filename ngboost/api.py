@@ -97,6 +97,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
             early_stopping_rounds,
         )
 
+        self._estimator_type = "regressor"
+
     def __getstate__(self):
         state = super().__getstate__()
         # Remove the unpicklable entries.
@@ -172,6 +174,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
             tol,
             random_state,
         )
+        self._estimator_type = "classifier"
 
     def predict_proba(self, X, max_iter=None):
         """

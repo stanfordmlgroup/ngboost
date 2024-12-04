@@ -338,7 +338,7 @@ class NGBoost:
             raise ValueError("y cannot be None")
 
         X, Y = check_X_y(
-            X, Y, accept_sparse=True, y_numeric=True, multi_output=self.multi_output
+            X, Y, accept_sparse=True, y_numeric=True, multi_output=self.multi_output, force_all_finite='allow-nan'
         )
 
         self.n_features = X.shape[1]

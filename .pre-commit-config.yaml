@@ -32,14 +32,9 @@ repos:
         language: system
         files: ^ngboost
         entry: flake8
-      - id: pylint-ngboost
-        name: pylint on ngboost*
+      - id: pylint
+        name: pylint (ngboost + tests)
         types: [file, python]
         language: system
-        files: ^ngboost
-        entry: pylint --disable=invalid-name,no-member,missing-docstring,no-self-argument,arguments-differ
-      - id: pylint-tests
-        name: pylint on tests*
-        language: system
-        files: ^tests
-        entry: pylint --disable=invalid-name,missing-docstring,too-many-function-args,unused-variable,fixme
+        files: ^(ngboost|tests)/
+        entry: pylint --rcfile=.pylintrc

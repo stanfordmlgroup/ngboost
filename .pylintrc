@@ -1,0 +1,11 @@
+[MASTER]
+disable=
+    invalid-name,
+    no-member,
+    missing-docstring,
+    no-self-argument,
+    arguments-differ,
+    too-many-function-args,
+    unused-variable,
+    fixme,
+    too-many-positional-arguments

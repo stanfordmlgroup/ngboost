@@ -15,7 +15,7 @@ license = "Apache License 2.0"
 [tool.poetry.dependencies]
 python = ">=3.9, <3.13"
 scikit-learn = ">=1.0.2"
-numpy = ">=1.21.2"
+numpy = ">=1.21.2, <2.0.0"
 scipy = ">=1.7.2"
 tqdm = ">=4.3"
 lifelines = ">=0.25"

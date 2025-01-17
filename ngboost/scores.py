@@ -9,7 +9,7 @@ class Score:
         grad = self.d_score(Y)
         if natural:
             metric = self.metric()
-            grad = np.linalg.solve(metric, grad)
+            grad = np.linalg.solve(metric, grad[..., None])[..., 0]
         return grad
 
 

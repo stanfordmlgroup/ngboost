@@ -54,6 +54,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         An NGBRegressor object that can be fit.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         Dist=Normal,
@@ -142,6 +143,7 @@ class NGBClassifier(NGBoost, BaseEstimator):
         An NGBClassifier object that can be fit.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         Dist=Bernoulli,
@@ -235,6 +237,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         An NGBSurvival object that can be fit.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         Dist=LogNormal,
@@ -293,6 +296,7 @@ class NGBSurvival(NGBoost, BaseEstimator):
         state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
 
+    # pylint: disable=too-many-positional-arguments
     def fit(self, X, T, E, X_val=None, T_val=None, E_val=None, **kwargs):
         """Fits an NGBoost survival model to the data.
         For additional parameters see ngboost.NGboost.fit

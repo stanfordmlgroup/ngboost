@@ -51,6 +51,7 @@ class NGBoost:
         An NGBRegressor object that can be fit.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         Dist=Normal,
@@ -173,6 +174,7 @@ class NGBoost:
         self.base_models.append(models)
         return fitted
 
+    # pylint: disable=too-many-positional-arguments
     def line_search(self, resids, start, Y, sample_weight=None, scale_init=1):
         D_init = self.Manifold(start.T)
         loss_init = D_init.total_score(Y, sample_weight)
@@ -202,6 +204,7 @@ class NGBoost:
         self.scalings.append(scale)
         return scale
 
+    # pylint: disable=too-many-positional-arguments
     def fit(
         self,
         X,
@@ -260,6 +263,7 @@ class NGBoost:
             early_stopping_rounds=early_stopping_rounds,
         )
 
+    # pylint: disable=too-many-positional-arguments
     def partial_fit(
         self,
         X,

@@ -1,5 +1,11 @@
 # RELEASE NOTES
 
+## Version 0.5.2
+
+* Support for Numpy 2.0
+* Value error fix
+* Linting updates
+
 ## Version 0.5.1
 
 * Adds support for NormalFixedMean distribution

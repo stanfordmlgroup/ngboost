@@ -1,4 +1,5 @@
 """The NGBoost library"""
+
 # pylint: disable=line-too-long,too-many-instance-attributes,too-many-arguments
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
@@ -342,7 +343,12 @@ class NGBoost:
             raise ValueError("y cannot be None")
 
         X, Y = check_X_y(
-            X, Y, accept_sparse=True, y_numeric=True, multi_output=self.multi_output
+            X,
+            Y,
+            accept_sparse=True,
+            force_all_finite="allow-nan",
+            multi_output=self.multi_output,
+            y_numeric=True,
         )
 
         self.n_features = X.shape[1]
@@ -357,8 +363,9 @@ class NGBoost:
                 X_val,
                 Y_val,
                 accept_sparse=True,
-                y_numeric=True,
+                force_all_finite="allow-nan",
                 multi_output=self.multi_output,
+                y_numeric=True,
             )
             val_params = self.pred_param(X_val)
             val_loss_list = []
@@ -490,7 +497,7 @@ class NGBoost:
             A NGBoost distribution object
         """
 
-        X = check_array(X, accept_sparse=True)
+        X = check_array(X, accept_sparse=True, force_all_finite="allow-nan")
 
         params = np.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
@@ -537,7 +544,7 @@ class NGBoost:
             Numpy array of the estimates of Y
         """
 
-        X = check_array(X, accept_sparse=True)
+        X = check_array(X, accept_sparse=True, force_all_finite="allow-nan")
 
         return self.pred_dist(X, max_iter=max_iter).predict()
 

@@ -1,5 +1,10 @@
 # RELEASE NOTES
 
+## Version 0.5.3
+
+* Allow NAN as input
+* Poetry update
+
 ## Version 0.5.2
 
 * Support for Numpy 2.0

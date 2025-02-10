@@ -321,24 +321,39 @@ class NGBoost:
         # This will overwrite any X_val and Y_val values passed by the user directly.
         if self.early_stopping_rounds is not None:
             early_stopping_rounds = self.early_stopping_rounds
+            if X_val is None and Y_val is None:
+                print (f"early_stopping_rounds is set to {early_stopping_rounds} but no validation set is provided creating val set with {self.validation_fraction} of the training data")
+                if sample_weight is None:
+                    print ("Creating validation set without sample weight similar to the training data")
+                    X, X_val, Y, Y_val = train_test_split(
+                        X,
+                        Y,
+                        test_size=self.validation_fraction,
+                        random_state=self.random_state,
+                        )
 
-            if sample_weight is None:
-                X, X_val, Y, Y_val = train_test_split(
-                    X,
-                    Y,
-                    test_size=self.validation_fraction,
-                    random_state=self.random_state,
-                )
+                else:
+                    print ("Creating validation set with sample weight similar to the training data")
+                    X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(
+                        X,
+                        Y,
+                        sample_weight,
+                        test_size=self.validation_fraction,
+                        random_state=self.random_state,
+                    )
+            elif (X_val is not None and Y_val is not None):
+                if (sample_weight is not None and val_sample_weight is None):
+                    raise ValueError("Training data is passed with sample weights but the validation data is missing sample weights pass the appropriate val_sample_weights")
+                if (sample_weight is None and val_sample_weight is not None):
+                    raise ValueError("sample weights mismatch between training and validation data check and pass the appropriate val_sample_weights")
 
+                print("Using passed validation data to check for early stopping.")
+            
             else:
-                X, X_val, Y, Y_val, sample_weight, val_sample_weight = train_test_split(
-                    X,
-                    Y,
-                    sample_weight,
-                    test_size=self.validation_fraction,
-                    random_state=self.random_state,
-                )
-
+                if ((X_val is not None and Y_val is None) 
+                  or (X_val is None and Y_val is not None)):
+                      raise ValueError("Inconsistent Validation data either X_val or Y_val is missing, check the data")
+                
         if Y is None:
             raise ValueError("y cannot be None")
 

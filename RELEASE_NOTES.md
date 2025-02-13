@@ -1,5 +1,9 @@
 # RELEASE NOTES
 
+## Version 0.5.4
+
+* Update to partial fit to respect validation data
+
 ## Version 0.5.3
 
 * Allow NAN as input

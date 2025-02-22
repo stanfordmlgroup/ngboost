@@ -2,7 +2,7 @@
 
 <h4 align="center">
 
-![Python package](https://github.com/stanfordmlgroup/ngboost/workflows/Python%20package/badge.svg)
+![Python package](https://img.shields.io/pypi/v/ngboost)
 [![GitHub Repo Size](https://img.shields.io/github/repo-size/stanfordmlgroup/ngboost?label=Repo+Size)](https://github.com/stanfordmlgroup/ngboost/graphs/contributors)
 [![Github License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)

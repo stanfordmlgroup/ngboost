@@ -9,7 +9,7 @@ from ngboost.distns import LogNormal
 if __name__ == "__main__":
     # Load Boston housing dataset
     data_url = "http://lib.stat.cmu.edu/datasets/boston"
-    raw_df = pd.read_csv(data_url, sep="\s+", skiprows=22, header=None)
+    raw_df = pd.read_csv(data_url, sep=r"\s+", skiprows=22, header=None)
     X = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])
     Y = raw_df.values[1::2, 2]
 

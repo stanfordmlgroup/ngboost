@@ -1,5 +1,9 @@
 # RELEASE NOTES
 
+## Version 0.5.5
+
+* Upgrade sklearn > 1.6 
+
 ## Version 0.5.4
 
 * Update to partial fit to respect validation data

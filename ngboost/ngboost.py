@@ -381,7 +381,7 @@ class NGBoost:
             X,
             Y,
             accept_sparse=True,
-            force_all_finite="allow-nan",
+            ensure_all_finite="allow-nan",
             multi_output=self.multi_output,
             y_numeric=True,
         )
@@ -398,7 +398,7 @@ class NGBoost:
                 X_val,
                 Y_val,
                 accept_sparse=True,
-                force_all_finite="allow-nan",
+                ensure_all_finite="allow-nan",
                 multi_output=self.multi_output,
                 y_numeric=True,
             )
@@ -532,7 +532,7 @@ class NGBoost:
             A NGBoost distribution object
         """
 
-        X = check_array(X, accept_sparse=True, force_all_finite="allow-nan")
+        X = check_array(X, accept_sparse=True, ensure_all_finite="allow-nan")
 
         params = np.asarray(self.pred_param(X, max_iter))
         dist = self.Dist(params.T)
@@ -579,7 +579,7 @@ class NGBoost:
             Numpy array of the estimates of Y
         """
 
-        X = check_array(X, accept_sparse=True, force_all_finite="allow-nan")
+        X = check_array(X, accept_sparse=True, ensure_all_finite="allow-nan")
 
         return self.pred_dist(X, max_iter=max_iter).predict()
 

@@ -512,6 +512,8 @@ class NGBoost:
             "col_sample": self.col_sample,
             "verbose": self.verbose,
             "random_state": self.random_state,
+            "validation_fraction": self.validation_fraction,
+            "early_stopping_rounds": self.early_stopping_rounds,
         }
 
         return params

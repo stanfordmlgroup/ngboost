@@ -31,5 +31,5 @@ __all__ = [
     "T",
     "TFixedDf",
     "TFixedDfFixedVar",
-    "Weibull"
+    "Weibull",
 ]

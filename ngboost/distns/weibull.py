@@ -12,7 +12,7 @@ class WeibullLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
-        shared_term = self.shape * ((Y / self.scale)**self.shape - 1)
+        shared_term = self.shape * ((Y / self.scale) ** self.shape - 1)
         D[:, 0] = shared_term * np.log(Y / self.scale) - 1
         D[:, 1] = -shared_term
 
@@ -21,7 +21,7 @@ class WeibullLogScore(LogScore):
     def metric(self):
         gamma = 0.5772156649  # Euler's constant
         FI = np.zeros((self.scale.shape[0], 2, 2))
-        FI[:, 0, 0] = (np.pi**2 / 6) + (1 - gamma)**2
+        FI[:, 0, 0] = (np.pi**2 / 6) + (1 - gamma) ** 2
         FI[:, 1, 0] = -self.shape * (1 - gamma)
         FI[:, 0, 1] = FI[:, 1, 0]
         FI[:, 1, 1] = self.shape**2
@@ -62,4 +62,4 @@ class Weibull(RegressionDistn):
 
     @property
     def params(self):
-        return {'shape': self.shape, 'scale': self.scale}
+        return {"shape": self.shape, "scale": self.scale}

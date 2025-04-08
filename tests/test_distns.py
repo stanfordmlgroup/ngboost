@@ -21,8 +21,8 @@ from ngboost.distns import (
     T,
     TFixedDf,
     TFixedDfFixedVar,
+    Weibull,
     k_categorical,
-    Weibull
 )
 from ngboost.scores import CRPScore, LogScore, Score
 
@@ -75,7 +75,7 @@ def is_t_distribution(
         TFixedDf,
         TFixedDfFixedVar,
         Cauchy,
-        Weibull
+        Weibull,
     ],
 )
 @pytest.mark.parametrize(

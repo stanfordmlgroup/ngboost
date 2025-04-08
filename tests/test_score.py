@@ -16,6 +16,7 @@ from ngboost.distns import (
     T,
     TFixedDf,
     TFixedDfFixedVar,
+    Weibull
 )
 from ngboost.manifold import manifold
 from ngboost.scores import CRPScore, LogScore, Score
@@ -100,6 +101,7 @@ TEST_METRIC: List[DistScore] = [
     (Laplace, LogScore),
     (Poisson, LogScore),
     (Gamma, LogScore),
+    (Weibull, LogScore)
 ] + [(MultivariateNormal(i), LogScore) for i in range(2, 5)]
 # Fill in the dist, score pair to test the gradient
 # Tests all in TEST_METRIC by default

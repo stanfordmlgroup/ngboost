@@ -9,6 +9,7 @@ from ngboost.distns import (
     Cauchy,
     Distn,
     Gamma,
+    HalfNormal,
     Laplace,
     MultivariateNormal,
     Normal,
@@ -96,6 +97,7 @@ def idfn(dist_score: DistScore):
 TEST_METRIC: List[DistScore] = [
     (Normal, LogScore),
     (Normal, CRPScore),
+    (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
     (Poisson, LogScore),

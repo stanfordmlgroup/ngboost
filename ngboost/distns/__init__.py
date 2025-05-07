@@ -10,6 +10,7 @@ from .multivariate_normal import MultivariateNormal
 from .normal import Normal, NormalFixedMean, NormalFixedVar
 from .poisson import Poisson
 from .t import T, TFixedDf, TFixedDfFixedVar
+from .weibull import Weibull
 
 __all__ = [
     "Bernoulli",
@@ -30,4 +31,5 @@ __all__ = [
     "T",
     "TFixedDf",
     "TFixedDfFixedVar",
+    "Weibull",
 ]

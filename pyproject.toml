@@ -13,7 +13,7 @@ classifiers = [
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.13"
+python = ">=3.9, <3.14"
 scikit-learn = "^1.6"
 numpy = ">=1.21.2"
 scipy = ">=1.7.2"

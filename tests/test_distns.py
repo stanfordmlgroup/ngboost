@@ -181,9 +181,9 @@ def test_beta(learner, regression_data: Tuple4Array):
     # Scale the target to (0, 1) range for Beta distribution
     min_value = min(Y_reg_train.min(), Y_reg_test.min())
     max_value = max(Y_reg_train.max(), Y_reg_test.max())
-    Y_reg_train = (Y_reg_train - min_value)/(max_value - min_value)
+    Y_reg_train = (Y_reg_train - min_value) / (max_value - min_value)
     Y_reg_train = np.clip(Y_reg_train, 1e-5, 1 - 1e-5)  # Avoid log(0) issues
-    Y_reg_test = (Y_reg_test - min_value)/(max_value - min_value)
+    Y_reg_test = (Y_reg_test - min_value) / (max_value - min_value)
     Y_reg_test = np.clip(Y_reg_test, 1e-5, 1 - 1e-5)  # Avoid log(0) issues
 
     # test early stopping features

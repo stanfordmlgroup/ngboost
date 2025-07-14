@@ -1,4 +1,5 @@
 """NGBoost distributions"""
+from .beta import Beta
 from .categorical import Bernoulli, k_categorical
 from .cauchy import Cauchy
 from .distn import ClassificationDistn, Distn, RegressionDistn
@@ -15,6 +16,7 @@ from .weibull import Weibull
 
 __all__ = [
     "Bernoulli",
+    "Beta",
     "k_categorical",
     "Cauchy",
     "ClassificationDistn",

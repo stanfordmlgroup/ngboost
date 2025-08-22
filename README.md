@@ -32,14 +32,13 @@ Probabilistic regression example on the Boston housing dataset:
 ```python
 from ngboost import NGBRegressor
 
+from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
-#Load Boston housing dataset
-data_url = "http://lib.stat.cmu.edu/datasets/boston"
-raw_df = pd.read_csv(data_url, sep=r"\s+", skiprows=22, header=None)
-X = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])
-Y = raw_df.values[1::2, 2]
+# Load California housing dataset
+cal = fetch_california_housing()
+X, Y = cal.data, cal.target
 
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 

@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeRegressor
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
 from ngboost.distns import (
     Bernoulli,
+    Beta,
     Cauchy,
     Distn,
     Exponential,
@@ -163,6 +164,34 @@ def test_bernoulli(learner, classification_data: Tuple4Array):
     y_pred = ngb.predict(X_cls_test)
     y_prob = ngb.predict_proba(X_cls_test)
     y_dist = ngb.pred_dist(X_cls_test)
+    # test properties of output
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "learner",
+    [
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+    ],
+)
+def test_beta(learner, regression_data: Tuple4Array):
+    X_reg_train, X_reg_test, Y_reg_train, Y_reg_test = regression_data
+
+    # Scale the target to (0, 1) range for Beta distribution
+    min_value = min(Y_reg_train.min(), Y_reg_test.min())
+    max_value = max(Y_reg_train.max(), Y_reg_test.max())
+    Y_reg_train = (Y_reg_train - min_value) / (max_value - min_value)
+    Y_reg_train = np.clip(Y_reg_train, 1e-5, 1 - 1e-5)  # Avoid log(0) issues
+    Y_reg_test = (Y_reg_test - min_value) / (max_value - min_value)
+    Y_reg_test = np.clip(Y_reg_test, 1e-5, 1 - 1e-5)  # Avoid log(0) issues
+
+    # test early stopping features
+    # test other args, n_trees, LR, minibatching- args as fixture
+    ngb = NGBRegressor(Dist=Beta, Score=LogScore, Base=learner, verbose=False)
+    ngb.fit(X_reg_train, Y_reg_train)
+    y_pred = ngb.predict(X_reg_test)
+    y_dist = ngb.pred_dist(X_reg_test)
     # test properties of output
 
 

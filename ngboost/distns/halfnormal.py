@@ -1,4 +1,5 @@
 """The NGBoost Half-Normal distribution and scores"""
+
 import numpy as np
 from scipy.stats import halfnorm as dist
 

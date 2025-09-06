@@ -1,4 +1,5 @@
 """The NGBoost Student T distribution and scores"""
+
 import numpy as np
 from scipy.special import digamma
 from scipy.stats import t as dist

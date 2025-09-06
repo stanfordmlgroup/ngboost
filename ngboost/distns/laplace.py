@@ -1,4 +1,5 @@
 """The NGBoost Laplace distribution and scores"""
+
 import numpy as np
 from scipy.stats import laplace as dist
 

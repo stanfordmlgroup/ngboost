@@ -40,7 +40,7 @@ if __name__ == "__main__":
     grads_y = np.zeros((20, 20))
     crps = np.zeros((20, 20))
 
-    for (i, j) in tqdm(itertools.product(np.arange(20), np.arange(20)), total=400):
+    for i, j in tqdm(itertools.product(np.arange(20), np.arange(20)), total=400):
         H = np.linalg.inv(metric_fn([loc[i, j], scale[i, j]]))
         g = np.array(grad_fn([loc[i, j], scale[i, j]]))
         gf = (H @ g).squeeze()

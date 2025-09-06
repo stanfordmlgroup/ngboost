@@ -66,7 +66,6 @@ class MVNLogScore(LogScore):
         return gradient
 
     def metric(self):
-
         """
         Formulas for this part are not in the the paper mentioned.
         Obtained by taking the expectation of the Hessian.

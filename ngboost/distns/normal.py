@@ -1,4 +1,5 @@
 """The NGBoost Normal distribution and scores"""
+
 import numpy as np
 import scipy as sp
 from scipy.stats import norm as dist

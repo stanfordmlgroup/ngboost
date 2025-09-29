@@ -51,6 +51,7 @@ class NormalCRPScore(CRPScore):
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
+
 class NormalScoreMatchingScore(ScoreMatchingScore):
     def score(self, Y):
         loc = self.loc

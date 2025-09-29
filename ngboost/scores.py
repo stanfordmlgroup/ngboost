@@ -39,3 +39,9 @@ class CRPScore(Score):
 
 
 CRPS = CRPScore
+
+class ScoreMatchingScore(Score):
+    """
+    Generic class for the Score Matching Score by Aapo Hyv{\"a}rinen
+    Reference http://www.jmlr.org/papers/v6/hyvarinen05a.html
+    """

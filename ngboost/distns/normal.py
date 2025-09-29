@@ -72,6 +72,7 @@ class NormalScoreMatchingScore(ScoreMatchingScore):
         FI[:, 1, 1] = 4/(self.var)
         return FI
 
+
 class Normal(RegressionDistn):
     """
     Implements the normal distribution for NGBoost.

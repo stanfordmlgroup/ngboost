@@ -23,21 +23,54 @@ class Score:
         Returns:
             Natural gradient array of shape (n_samples, n_params)
         """
-        n_samples, n_params = grad.shape
+        grad = np.asarray(grad)
+        metric = np.asarray(metric)
 
-        # Check if dimensions are compatible
-        if metric.shape != (n_samples, n_params, n_params):
+        if grad.ndim != 2:
             raise ValueError(
-                f"Metric shape {metric.shape} is incompatible with gradient shape {grad.shape}. "
-                f"Expected metric shape: ({n_samples}, {n_params}, {n_params})"
+                f"Expected gradient to be 2D, got shape {grad.shape} with ndim={grad.ndim}"
             )
 
-        # Compute natural gradient for each sample
-        result = np.zeros_like(grad)
+        if metric.ndim != 3:
+            raise ValueError(
+                f"Expected metric to be 3D, got shape {metric.shape} with ndim={metric.ndim}"
+            )
 
+        # Ensure the batch dimension aligns between grad and metric
+        if metric.shape[0] != grad.shape[0]:
+            if metric.shape[0] == grad.shape[1] and metric.shape[1:] == (
+                grad.shape[0],
+                grad.shape[0],
+            ):
+                grad = np.swapaxes(grad, 0, 1)
+            else:
+                msg = (
+                    f"Metric shape {metric.shape} is incompatible with gradient "
+                    f"shape {grad.shape}. Expected metric shape to align with grad "
+                    "(n_samples, n_params, n_params)."
+                )
+                raise ValueError(msg)
+
+        n_samples, n_params = grad.shape
+
+        # Final shape check on the metric tensor
+        if metric.shape[1:] != (n_params, n_params):
+            raise ValueError(
+                f"Metric shape {metric.shape} is incompatible with gradient shape {grad.shape}. "
+                f"Expected trailing metric dimensions {(n_params, n_params)}."
+            )
+
+        # Fast vectorized path – falls back to per-sample solve if singular
+        try:
+            solved = np.linalg.solve(metric, grad[..., None])[..., 0]
+            return solved
+        except np.linalg.LinAlgError:
+            pass
+
+        # Fall back to robust per-sample computation
+        result = np.zeros_like(grad)
         for i in range(n_samples):
             try:
-                # For each sample, solve: metric[i] * x = grad[i]
                 result[i] = np.linalg.solve(metric[i], grad[i])
             except np.linalg.LinAlgError:
                 # Handle singular matrix case by using pseudo-inverse

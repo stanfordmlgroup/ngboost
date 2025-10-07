@@ -1,4 +1,5 @@
 """The NGBoost Gamma distribution and scores"""
+
 import numpy as np
 import scipy as sp
 from scipy.stats import gamma as dist

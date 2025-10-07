@@ -31,9 +31,7 @@ if __name__ == "__main__":
 
     X_train, X_test = (
         X[:1000, :],
-        X[
-            1000:,
-        ],
+        X[1000:,],
     )
     Y_train, Y_test = Y[:1000], Y[1000:]
 

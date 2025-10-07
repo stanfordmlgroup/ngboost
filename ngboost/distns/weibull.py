@@ -1,4 +1,5 @@
 """The NGBoost Weibull distribution and scores"""
+
 import numpy as np
 from scipy.stats import weibull_min as dist
 

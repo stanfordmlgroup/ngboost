@@ -1,4 +1,5 @@
 """NGBoost distributions"""
+
 from .categorical import Bernoulli, k_categorical
 from .cauchy import Cauchy
 from .distn import ClassificationDistn, Distn, RegressionDistn

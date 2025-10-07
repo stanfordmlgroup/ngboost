@@ -1,4 +1,5 @@
 """The NGBoost Poisson distribution and scores"""
+
 import numpy as np
 from scipy.optimize import Bounds, minimize
 from scipy.stats import poisson as dist

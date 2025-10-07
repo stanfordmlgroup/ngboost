@@ -1,4 +1,5 @@
 """The NGBoost LogNormal distribution and scores"""
+
 import numpy as np
 import scipy as sp
 from scipy.stats import lognorm as dist
@@ -89,7 +90,6 @@ class LogNormalCRPScoreCensored(CRPScore):
 
 
 class LogNormal(RegressionDistn):
-
     """
     Implements the log-normal distribution for NGBoost.
 

@@ -1,4 +1,5 @@
 """The NGBoost Exponential distribution and scores"""
+
 import numpy as np
 import scipy as sp
 from scipy.stats import expon as dist

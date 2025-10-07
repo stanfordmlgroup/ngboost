@@ -1,4 +1,5 @@
 """The NGBoost base distribution"""
+
 from warnings import warn
 
 import numpy as np

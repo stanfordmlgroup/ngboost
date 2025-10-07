@@ -1,6 +1,7 @@
 """
     Extra functions useful for Distns
 """
+
 from ngboost.distns import RegressionDistn
 
 # pylint: disable=too-few-public-methods

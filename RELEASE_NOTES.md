@@ -1,6 +1,11 @@
 # RELEASE NOTES
 
-## Version 0.5.5
+## Version 0.5.7
+
+* Support for Python 3.13
+* Update to dev dependencies
+
+## Version 0.5.6
 
 * Add support for Weibull and HalfNormal Distributions
 

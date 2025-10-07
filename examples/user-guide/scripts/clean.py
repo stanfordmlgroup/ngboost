@@ -1,4 +1,5 @@
 """A helper script to "clean up" all of your generated markdown and HTML files."""
+
 import shutil as sh
 from pathlib import Path
 

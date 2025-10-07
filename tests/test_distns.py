@@ -35,6 +35,7 @@ from ngboost.scores import CRPScore, LogScore, Score
 Tuple4Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 Tuple5Array = Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
+
 # pylint: disable=redefined-outer-name
 @pytest.fixture(scope="module")
 def regression_data():

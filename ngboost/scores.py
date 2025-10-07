@@ -9,8 +9,41 @@ class Score:
         grad = self.d_score(Y)
         if natural:
             metric = self.metric()
-            grad = np.linalg.solve(metric, grad[..., None])[..., 0]
+            grad = self._natural_gradient(grad, metric)
         return grad
+    
+    def _natural_gradient(self, grad, metric):
+        """
+        Compute natural gradient with robust dimension handling.
+        
+        Args:
+            grad: Gradient array of shape (n_samples, n_params)
+            metric: Metric array of shape (n_samples, n_params, n_params)
+        
+        Returns:
+            Natural gradient array of shape (n_samples, n_params)
+        """
+        n_samples, n_params = grad.shape
+        
+        # Check if dimensions are compatible
+        if metric.shape != (n_samples, n_params, n_params):
+            raise ValueError(
+                f"Metric shape {metric.shape} is incompatible with gradient shape {grad.shape}. "
+                f"Expected metric shape: ({n_samples}, {n_params}, {n_params})"
+            )
+        
+        # Compute natural gradient for each sample
+        result = np.zeros_like(grad)
+        
+        for i in range(n_samples):
+            try:
+                # For each sample, solve: metric[i] * x = grad[i]
+                result[i] = np.linalg.solve(metric[i], grad[i])
+            except np.linalg.LinAlgError:
+                # Handle singular matrix case by using pseudo-inverse
+                result[i] = np.linalg.pinv(metric[i]) @ grad[i]
+        
+        return result
 
 
 class LogScore(Score):

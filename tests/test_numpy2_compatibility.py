@@ -41,8 +41,10 @@ def test_natural_gradient_regression_numpy2_compatibility():
     """Test that natural gradients work with regression on NumPy 2.x"""
     print(f"NumPy version: {np.__version__}")
 
-    # Test regression
-    X, y, _ = make_regression(n_samples=100, n_features=5, noise=0.1, random_state=42)
+    # Test regression (unpack 2 values for broad sklearn compatibility)
+    X, y = make_regression(
+        n_samples=100, n_features=5, noise=0.1, random_state=42
+    )
 
     model = NGBRegressor(
         Dist=Normal, natural_gradient=True, n_estimators=10, verbose=False

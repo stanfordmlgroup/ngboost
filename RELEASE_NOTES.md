@@ -1,5 +1,9 @@
 # RELEASE NOTES
 
+## Version 0.5.8
+
+* Fix numpy2 natural gradient compatibility
+
 ## Version 0.5.7
 
 * Support for Python 3.13

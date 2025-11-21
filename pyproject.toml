@@ -33,6 +33,7 @@ pre-commit = "^4.0.0"
 isort = "^5.13.0"
 pylint = "^3.2.0"
 flake8 = "^7.1.0"
+py-ubjson = "*"
 
 
 [build-system]

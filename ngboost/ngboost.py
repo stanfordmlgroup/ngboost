@@ -4,16 +4,47 @@
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
 # pylint: disable=redundant-keyword-arg,protected-access,unnecessary-lambda-assignment
+# pylint: disable=too-many-public-methods,too-many-lines
+import json
+from pathlib import Path
+from typing import Any, Dict
+
 import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
-from ngboost.distns import MultivariateNormal, Normal, k_categorical
+from ngboost.distns import (
+    Bernoulli,
+    Cauchy,
+    Exponential,
+    Gamma,
+    HalfNormal,
+    Laplace,
+    LogNormal,
+    MultivariateNormal,
+    Normal,
+    NormalFixedMean,
+    NormalFixedVar,
+    Poisson,
+    T,
+    TFixedDf,
+    TFixedDfFixedVar,
+    Weibull,
+    k_categorical,
+)
 from ngboost.learners import default_tree_learner
 from ngboost.manifold import manifold
-from ngboost.scores import LogScore
+from ngboost.scores import CRPScore, LogScore
+from ngboost.serialization import numpy_to_list, tree_from_dict, tree_to_dict
+
+try:
+    import ubjson
+
+    UBJSON_AVAILABLE = True
+except ImportError:
+    UBJSON_AVAILABLE = False
 
 
 class NGBoost:
@@ -653,3 +684,397 @@ class NGBoost:
         total_feature_importance = np.zeros(self.n_features)
         total_feature_importance[self.col_idxs[tree_index]] = tree_feature_importance
         return total_feature_importance
+
+    def to_dict(self, include_non_essential=False) -> Dict[str, Any]:
+        """
+        Convert the NGBoost model to a JSON-serializable dictionary.
+
+        Parameters:
+            include_non_essential: If False, exclude feature_importances_ and evals_result
+                                   to reduce file size (default: False)
+
+        Returns:
+            Dictionary containing all model data needed for reconstruction
+        """
+        if not self.base_models:
+            raise ValueError("Model must be fitted before serialization")
+
+        # Serialize base models (trees)
+        serialized_base_models = []
+        for iteration_models in self.base_models:
+            iteration_trees = []
+            for tree in iteration_models:
+                if isinstance(tree, DecisionTreeRegressor):
+                    iteration_trees.append(tree_to_dict(tree))
+                else:
+                    raise ValueError(
+                        f"Unsupported base learner type: {type(tree)}. "
+                        "Only DecisionTreeRegressor is currently supported for JSON serialization."
+                    )
+            serialized_base_models.append(iteration_trees)
+
+        # Build the model dictionary
+        model_dict = {
+            "version": "1.0",
+            "model_type": self.__class__.__name__,
+            "Dist_name": self.Dist.__name__,
+            "Score_name": self.Score.__name__,
+            "natural_gradient": self.natural_gradient,
+            "n_estimators": self.n_estimators,
+            "learning_rate": self.learning_rate,
+            "minibatch_frac": self.minibatch_frac,
+            "col_sample": self.col_sample,
+            "verbose": self.verbose,
+            "verbose_eval": self.verbose_eval,
+            "tol": self.tol,
+            "random_state": (
+                numpy_to_list(list(self.random_state.get_state()))
+                if self.random_state
+                else None
+            ),
+            "validation_fraction": self.validation_fraction,
+            "early_stopping_rounds": self.early_stopping_rounds,
+            "n_features": self.n_features,
+            "init_params": numpy_to_list(self.init_params),
+            "base_models": serialized_base_models,
+            "scalings": numpy_to_list(self.scalings),
+            "col_idxs": numpy_to_list(self.col_idxs),
+            "best_val_loss_itr": self.best_val_loss_itr,
+        }
+
+        # Handle special distribution cases
+        if self.Dist.__name__ == "Categorical":
+            model_dict["K"] = self.Dist.n_params + 1
+        elif self.Dist.__name__ == "MVN":
+            model_dict["K"] = int((-3 + (9 + 8 * (self.Dist.n_params)) ** 0.5) / 2)
+        elif self.Dist.__name__ == "SurvivalDistn":
+            # SurvivalDistn is a dynamically created class, save the base distribution
+            model_dict["_is_survival"] = True
+            model_dict["_basedist_name"] = self.Dist._basedist.__name__
+
+        # Include non-essential data if requested
+        if include_non_essential:
+            if (
+                hasattr(self, "feature_importances_")
+                and self.feature_importances_ is not None
+            ):
+                model_dict["feature_importances_"] = numpy_to_list(
+                    self.feature_importances_
+                )
+            if hasattr(self, "evals_result") and self.evals_result:
+                model_dict["evals_result"] = {
+                    k: {kk: numpy_to_list(vv) for kk, vv in v.items()}
+                    for k, v in self.evals_result.items()
+                }
+
+        return model_dict
+
+    @classmethod
+    def from_dict(cls, model_dict: Dict[str, Any]):
+        """
+        Reconstruct an NGBoost model from a dictionary.
+
+        Parameters:
+            model_dict: Dictionary containing model data (from to_dict())
+
+        Returns:
+            Reconstructed NGBoost model instance
+
+        Raises:
+            ValueError: If the model dictionary is invalid or missing required keys
+            KeyError: If required keys are missing from the dictionary
+        """
+        # Validate required keys
+        required_keys = [
+            "version",
+            "model_type",
+            "Dist_name",
+            "Score_name",
+            "natural_gradient",
+            "n_estimators",
+            "learning_rate",
+            "n_features",
+            "init_params",
+            "base_models",
+            "scalings",
+            "col_idxs",
+        ]
+        missing_keys = [key for key in required_keys if key not in model_dict]
+        if missing_keys:
+            raise ValueError(
+                f"Invalid model dictionary: missing required keys: {missing_keys}. "
+                "The model file may be corrupted or in an unsupported format."
+            )
+
+        # Check version compatibility (for future format changes)
+        version = model_dict.get("version", "unknown")
+        if version != "1.0":
+            raise ValueError(
+                f"Unsupported model version: {version}. "
+                "This version of NGBoost supports version 1.0. "
+                "Please upgrade NGBoost or use a compatible model file."
+            )
+
+        # Determine the correct class to instantiate
+        model_type = model_dict.get("model_type", "NGBoost")
+
+        # Import API classes if needed (lazy import to avoid circular dependencies)
+        if model_type in ("NGBRegressor", "NGBClassifier", "NGBSurvival"):
+            # pylint: disable=import-outside-toplevel
+            from ngboost.api import NGBClassifier, NGBRegressor, NGBSurvival
+
+            if model_type == "NGBRegressor":
+                instance = NGBRegressor.__new__(NGBRegressor)
+            elif model_type == "NGBClassifier":
+                instance = NGBClassifier.__new__(NGBClassifier)
+            elif model_type == "NGBSurvival":
+                instance = NGBSurvival.__new__(NGBSurvival)
+            else:
+                # This should never happen, but ensures instance is always defined
+                instance = cls.__new__(cls)
+        else:
+            instance = cls.__new__(cls)
+
+        # Restore distribution
+        dist_name = model_dict["Dist_name"]
+        if dist_name == "Categorical":
+            if "K" not in model_dict:
+                raise ValueError(
+                    "Invalid model dictionary: missing 'K' for Categorical distribution."
+                )
+            instance.Dist = k_categorical(model_dict["K"])
+        elif dist_name == "MVN":
+            if "K" not in model_dict:
+                raise ValueError(
+                    "Invalid model dictionary: missing 'K' for MVN distribution."
+                )
+            instance.Dist = MultivariateNormal(model_dict["K"])
+        elif model_dict.get("_is_survival", False):
+            # Handle SurvivalDistn - dynamically created class
+            # pylint: disable=import-outside-toplevel
+            from ngboost.distns.utils import SurvivalDistnClass
+
+            if "_basedist_name" not in model_dict:
+                raise ValueError(
+                    "Invalid model dictionary: missing '_basedist_name' for Survival distribution."
+                )
+            basedist_name = model_dict["_basedist_name"]
+            dist_map = {
+                "Bernoulli": Bernoulli,
+                "Cauchy": Cauchy,
+                "Exponential": Exponential,
+                "Gamma": Gamma,
+                "HalfNormal": HalfNormal,
+                "Laplace": Laplace,
+                "LogNormal": LogNormal,
+                "Normal": Normal,
+                "NormalFixedMean": NormalFixedMean,
+                "NormalFixedVar": NormalFixedVar,
+                "Poisson": Poisson,
+                "T": T,
+                "TFixedDf": TFixedDf,
+                "TFixedDfFixedVar": TFixedDfFixedVar,
+                "Weibull": Weibull,
+            }
+
+            if basedist_name not in dist_map:
+                raise ValueError(
+                    f"Unknown base distribution for Survival: {basedist_name}"
+                )
+            basedist = dist_map[basedist_name]
+            instance.Dist = SurvivalDistnClass(basedist)
+        else:
+            dist_map = {
+                "Bernoulli": Bernoulli,
+                "Cauchy": Cauchy,
+                "Exponential": Exponential,
+                "Gamma": Gamma,
+                "HalfNormal": HalfNormal,
+                "Laplace": Laplace,
+                "LogNormal": LogNormal,
+                "Normal": Normal,
+                "NormalFixedMean": NormalFixedMean,
+                "NormalFixedVar": NormalFixedVar,
+                "Poisson": Poisson,
+                "T": T,
+                "TFixedDf": TFixedDf,
+                "TFixedDfFixedVar": TFixedDfFixedVar,
+                "Weibull": Weibull,
+            }
+
+            if dist_name not in dist_map:
+                raise ValueError(f"Unknown distribution: {dist_name}")
+            instance.Dist = dist_map[dist_name]
+
+        # Restore score
+        score_name = model_dict["Score_name"]
+        score_map = {
+            "LogScore": LogScore,
+            "MLE": LogScore,
+            "CRPScore": CRPScore,
+            "CRPS": CRPScore,
+        }
+        instance.Score = score_map.get(score_name, LogScore)
+
+        # Restore manifold
+        instance.Manifold = manifold(instance.Score, instance.Dist)
+
+        # Restore hyperparameters
+        instance.natural_gradient = model_dict["natural_gradient"]
+        instance.n_estimators = model_dict["n_estimators"]
+        instance.learning_rate = model_dict["learning_rate"]
+        instance.minibatch_frac = model_dict["minibatch_frac"]
+        instance.col_sample = model_dict["col_sample"]
+        instance.verbose = model_dict["verbose"]
+        instance.verbose_eval = model_dict["verbose_eval"]
+        instance.tol = model_dict["tol"]
+        instance.validation_fraction = model_dict.get("validation_fraction", 0.1)
+        instance.early_stopping_rounds = model_dict.get("early_stopping_rounds", None)
+        instance.n_features = model_dict["n_features"]
+        instance.init_params = np.array(model_dict["init_params"])
+        instance.best_val_loss_itr = model_dict.get("best_val_loss_itr", None)
+
+        # Restore random state
+        if model_dict.get("random_state") is not None:
+            # random_state is saved as a list: [version, state_array, has_gauss, cached_gauss]
+            state_list = model_dict["random_state"]
+            state = (
+                state_list[0],
+                np.array(state_list[1], dtype=np.uint32),
+                state_list[2] if len(state_list) > 2 else None,
+            )
+            instance.random_state = check_random_state(None)
+            instance.random_state.set_state(state)
+        else:
+            instance.random_state = check_random_state(None)
+
+        # Restore base models
+        instance.base_models = []
+        if not model_dict["base_models"]:
+            raise ValueError(
+                "Invalid model dictionary: 'base_models' is empty. "
+                "The model must be fitted before serialization."
+            )
+        for iteration_trees in model_dict["base_models"]:
+            iteration_models = []
+            for tree_dict in iteration_trees:
+                iteration_models.append(tree_from_dict(tree_dict))
+            instance.base_models.append(iteration_models)
+
+        # Restore scalings and column indices
+        if len(model_dict["scalings"]) != len(model_dict["base_models"]):
+            raise ValueError(
+                f"Mismatch between number of scalings ({len(model_dict['scalings'])}) "
+                f"and base_models ({len(model_dict['base_models'])}). "
+                "The model file may be corrupted."
+            )
+        if len(model_dict["col_idxs"]) != len(model_dict["base_models"]):
+            raise ValueError(
+                f"Mismatch between number of col_idxs ({len(model_dict['col_idxs'])}) "
+                f"and base_models ({len(model_dict['base_models'])}). "
+                "The model file may be corrupted."
+            )
+        instance.scalings = [float(s) for s in model_dict["scalings"]]
+        instance.col_idxs = [
+            list(idx) if isinstance(idx, list) else idx
+            for idx in model_dict["col_idxs"]
+        ]
+
+        # Restore base learner (default to DecisionTreeRegressor)
+        instance.Base = default_tree_learner
+
+        # Restore multi_output flag
+        if hasattr(instance.Dist, "multi_output"):
+            instance.multi_output = instance.Dist.multi_output
+        else:
+            instance.multi_output = False
+
+        # Restore non-essential data if present
+        if "feature_importances_" in model_dict:
+            instance.feature_importances_ = np.array(model_dict["feature_importances_"])
+        if "evals_result" in model_dict:
+            instance.evals_result = model_dict["evals_result"]
+
+        return instance
+
+    def save_json(self, filepath: str, include_non_essential: bool = False):
+        """
+        Save the model to a JSON file.
+
+        Parameters:
+            filepath: Path to save the JSON file
+            include_non_essential: If False, exclude feature_importances_ and evals_result
+                                   to reduce file size (default: False)
+        """
+        model_dict = self.to_dict(include_non_essential=include_non_essential)
+
+        filepath = Path(filepath)
+        with filepath.open("w", encoding="utf-8") as f:
+            json.dump(model_dict, f, indent=2)
+
+    @classmethod
+    def load_json(cls, filepath: str):
+        """
+        Load a model from a JSON file.
+
+        Parameters:
+            filepath: Path to the JSON file
+
+        Returns:
+            Reconstructed NGBoost model instance
+        """
+        filepath = Path(filepath)
+        with filepath.open("r", encoding="utf-8") as f:
+            model_dict = json.load(f)
+
+        return cls.from_dict(model_dict)
+
+    def save_ubj(self, filepath: str, include_non_essential: bool = False):
+        """
+        Save the model to a Universal Binary JSON (UBJ) file.
+
+        Parameters:
+            filepath: Path to save the UBJ file
+            include_non_essential: If False, exclude feature_importances_ and evals_result
+                                   to reduce file size (default: False)
+
+        Raises:
+            ImportError: If ubjson package is not installed
+        """
+        if not UBJSON_AVAILABLE:
+            raise ImportError(
+                "ubjson package is required for UBJ serialization. "
+                "Install it with: pip install ubjson"
+            )
+
+        model_dict = self.to_dict(include_non_essential=include_non_essential)
+
+        filepath = Path(filepath)
+        with filepath.open("wb") as f:
+            ubjson.dump(model_dict, f)
+
+    @classmethod
+    def load_ubj(cls, filepath: str):
+        """
+        Load a model from a Universal Binary JSON (UBJ) file.
+
+        Parameters:
+            filepath: Path to the UBJ file
+
+        Returns:
+            Reconstructed NGBoost model instance
+
+        Raises:
+            ImportError: If ubjson package is not installed
+        """
+        if not UBJSON_AVAILABLE:
+            raise ImportError(
+                "ubjson package is required for UBJ serialization. "
+                "Install it with: pip install ubjson"
+            )
+
+        filepath = Path(filepath)
+        with filepath.open("rb") as f:
+            model_dict = ubjson.load(f)
+
+        return cls.from_dict(model_dict)

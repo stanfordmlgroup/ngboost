@@ -11,4 +11,4 @@ from .ngboost import NGBoost
 
 __all__ = ["NGBClassifier", "NGBRegressor", "NGBSurvival", "NGBoost"]
 
-__version__ = version(__name__)
+__version__ = 'version(__name__)'

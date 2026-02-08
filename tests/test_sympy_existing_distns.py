@@ -20,7 +20,6 @@ from ngboost.distns.sympy_utils import make_sympy_log_score
 from ngboost.manifold import manifold
 from ngboost.scores import LogScore
 
-
 # ---------------------------------------------------------------------------
 # SymPy-generated score classes — just define the distribution, nothing else
 # ---------------------------------------------------------------------------

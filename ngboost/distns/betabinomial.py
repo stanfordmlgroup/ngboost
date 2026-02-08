@@ -62,10 +62,9 @@ def _betabinom_fit(Y, n=1):
 def _betabinom_sample(self, m):
     alpha = np.squeeze(self.alpha)
     beta = np.squeeze(self.beta)
-    return np.array([
-        np.random.binomial(int(self.n), np.random.beta(alpha, beta))
-        for _ in range(m)
-    ])
+    return np.array(
+        [np.random.binomial(int(self.n), np.random.beta(alpha, beta)) for _ in range(m)]
+    )
 
 
 def _betabinom_mean(self):
@@ -118,10 +117,9 @@ def _betabinom_estn_sample(self, m):
     # Use floor (not round) so sampled y <= floor(n) <= n_continuous,
     # keeping loggamma(n - y + ...) safe during MC metric evaluation.
     n_int = np.maximum(1, np.floor(np.squeeze(self.n)).astype(int))
-    return np.array([
-        np.random.binomial(n_int, np.random.beta(alpha, beta))
-        for _ in range(m)
-    ])
+    return np.array(
+        [np.random.binomial(n_int, np.random.beta(alpha, beta)) for _ in range(m)]
+    )
 
 
 def _betabinom_estn_mean(self):

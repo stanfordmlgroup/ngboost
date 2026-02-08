@@ -12,8 +12,11 @@ Provides two factories:
 import numpy as np
 import sympy as sym
 import sympy.stats as symstats
+from scipy.optimize import minimize
+from scipy.special import logsumexp as _scipy_logsumexp
 from sympy.utilities.lambdify import lambdify
 
+from ngboost.distns.distn import ClassificationDistn, RegressionDistn
 from ngboost.scores import LogScore
 
 # Clip internal (log-space) parameters before exp() to avoid overflow.
@@ -90,7 +93,9 @@ def _extract_neglog_sum_terms(score_expr):
     return None
 
 
-def _try_analytical_fi(score_expr, params, y, grad_exprs, extra_params, sympy_dist):
+def _try_analytical_fi(
+    score_expr, params, y, grad_exprs, sympy_dist
+):  # pylint: disable=R0912,R0914,R1702
     """Attempt to compute analytical Fisher Information.
 
     Strategy
@@ -167,11 +172,11 @@ def _try_analytical_fi(score_expr, params, y, grad_exprs, extra_params, sympy_di
             return fi_exprs
 
         return None
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 
-def make_sympy_log_score(
+def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     params,
     y,
     score_expr=None,
@@ -309,12 +314,8 @@ def make_sympy_log_score(
         # Gradients use the identity:
         #   d/dθ[-log Σ_k f_k] = -Σ_k (f_k/Σ_j f_j) · d(log f_k)/dθ
         #                       = -Σ_k softmax_k · d(log f_k)/dθ
-        from scipy.special import logsumexp as _scipy_logsumexp
-
         _K = len(_lse_terms)
-        _log_term_exprs = [
-            sym.expand_log(sym.log(t), force=True) for t in _lse_terms
-        ]
+        _log_term_exprs = [sym.expand_log(sym.log(t), force=True) for t in _lse_terms]
         _log_term_fns = [
             _build_lambdified(lt, [y], param_symbols + extra_params)
             for lt in _log_term_exprs
@@ -327,9 +328,7 @@ def make_sympy_log_score(
             for psym, is_log in params:
                 raw = sym.diff(lt, psym)
                 g = psym * raw if is_log else raw
-                row.append(
-                    _build_lambdified(g, [y], param_symbols + extra_params)
-                )
+                row.append(_build_lambdified(g, [y], param_symbols + extra_params))
             _d_log_term_fns.append(row)
 
         # Smallest positive float64, used to clamp Y > 0 for log-space
@@ -338,16 +337,12 @@ def make_sympy_log_score(
 
         def _eval_log_terms(all_args):
             """Evaluate log(f_k) for each mixture term, clamping to avoid -inf."""
-            log_vals = np.stack(
-                [fn(*all_args) for fn in _log_term_fns], axis=0
-            )
+            log_vals = np.stack([fn(*all_args) for fn in _log_term_fns], axis=0)
             # Replace non-finite values BEFORE clipping.  np.clip does not
             # fix NaN, and NaN propagates through logsumexp → weights → D.
             # NaN arises when sigma^2 underflows to 0 (giving 0/0) or when
             # exp(logit) overflows (giving inf/inf).
-            log_vals = np.nan_to_num(
-                log_vals, nan=-1e15, posinf=700, neginf=-1e15
-            )
+            log_vals = np.nan_to_num(log_vals, nan=-1e15, posinf=700, neginf=-1e15)
             np.clip(log_vals, -1e15, None, out=log_vals)
             return log_vals
 
@@ -383,9 +378,7 @@ def make_sympy_log_score(
             D = np.zeros((len(Y), n_params))
             for j in range(n_params):
                 for k in range(_K):
-                    grad_k = np.asarray(
-                        _d_log_term_fns[k][j](*all_args), dtype=float
-                    )
+                    grad_k = np.asarray(_d_log_term_fns[k][j](*all_args), dtype=float)
                     grad_k = np.where(np.isfinite(grad_k), grad_k, 0.0)
                     D[:, j] -= weights[k] * grad_k
             # Clamp extreme gradient values that arise when MC samples
@@ -396,13 +389,10 @@ def make_sympy_log_score(
 
     else:
         # ---- Standard path: direct lambdification ----
-        _score_fn = _build_lambdified(
-            score_expr, [y], param_symbols + extra_params
-        )
+        _score_fn = _build_lambdified(score_expr, [y], param_symbols + extra_params)
 
         _grad_fns = [
-            _build_lambdified(g, [y], param_symbols + extra_params)
-            for g in grad_exprs
+            _build_lambdified(g, [y], param_symbols + extra_params) for g in grad_exprs
         ]
 
         def score_method(self, Y):
@@ -422,9 +412,7 @@ def make_sympy_log_score(
 
     # ---- metric (Fisher Information) ----
     fi_fns = None
-    fi_exprs = _try_analytical_fi(
-        score_expr, params, y, grad_exprs, extra_params, sympy_dist
-    )
+    fi_exprs = _try_analytical_fi(score_expr, params, y, grad_exprs, sympy_dist)
     if fi_exprs is not None:
         fi_fns = []
         for i in range(n_params):
@@ -489,11 +477,11 @@ def make_sympy_log_score(
         attrs["metric"] = metric_method
 
     cls = type(class_name, (LogScore,), attrs)
-    cls._score_fn = _score_fn
+    cls._score_fn = _score_fn  # pylint: disable=protected-access
     return cls
 
 
-def make_distribution(
+def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     params,
     y,
     sympy_dist=None,
@@ -596,14 +584,10 @@ def make_distribution(
     >>> from ngboost import NGBClassifier
     >>> ngb = NGBClassifier(Dist=BetaBernoulli)
     """
-    from ngboost.distns.distn import ClassificationDistn, RegressionDistn
-
     is_classification = class_prob_exprs is not None
 
     if is_classification and scipy_dist_cls is not None:
-        raise ValueError(
-            "class_prob_exprs and scipy_dist_cls are mutually exclusive."
-        )
+        raise ValueError("class_prob_exprs and scipy_dist_cls are mutually exclusive.")
     if is_classification and len(class_prob_exprs) < 2:
         raise ValueError(
             "class_prob_exprs must contain at least 2 expressions (one per class)."
@@ -714,18 +698,14 @@ def make_distribution(
     else:
         # Numerical MLE fallback: minimize mean NLL using the
         # already-lambdified score function.
-        _score_fn_for_fit = score_cls._score_fn
+        _score_fn_for_fit = score_cls._score_fn  # pylint: disable=protected-access
 
         def _fit_mle(Y):
-            from scipy.optimize import minimize
-
             def nll(internal):
                 natural = []
                 for v, (_, is_log) in zip(internal, param_info):
                     natural.append(
-                        np.exp(np.clip(v, -_EXP_CLIP, _EXP_CLIP))
-                        if is_log
-                        else v
+                        np.exp(np.clip(v, -_EXP_CLIP, _EXP_CLIP)) if is_log else v
                     )
                 return np.mean(_score_fn_for_fit(Y, *natural))
 
@@ -751,10 +731,12 @@ def make_distribution(
             if p.ndim == 1:
                 return np.random.choice(_n_classes, size=m, p=p).astype(float)
             # Multi-instance: sample one label per instance, m times
-            return np.array([
-                [np.random.choice(_n_classes, p=p[i]) for i in range(len(p))]
-                for _ in range(m)
-            ]).astype(float)
+            return np.array(
+                [
+                    [np.random.choice(_n_classes, p=p[i]) for i in range(len(p))]
+                    for _ in range(m)
+                ]
+            ).astype(float)
 
     else:
 
@@ -772,17 +754,21 @@ def make_distribution(
         return d
 
     # ---- 6b. __getitem__ override to preserve extra params through slicing ----
-    _getitem = None
     if _extra_param_info:
 
         def _getitem(self, key):
-            obj = self.__class__(self._params[:, key])
+            obj = self.__class__(
+                self._params[:, key]  # pylint: disable=protected-access
+            )
             for _, ep_name, _ in _extra_param_info:
                 setattr(obj, ep_name, getattr(self, ep_name))
             if scipy_dist_cls is not None and _scipy_map is not None:
                 sc_kw = {k: getattr(obj, v) for k, v in _scipy_map.items()}
                 obj.dist = scipy_dist_cls(**sc_kw)
             return obj
+
+    else:
+        _getitem = None
 
     # ---- 7. __getattr__ for scipy delegation ----
     def _getattr(self, attr_name):
@@ -791,16 +777,13 @@ def make_distribution(
         return None
 
     # ---- 8. class_probs (classification) or mean() fallback (regression) ----
-    _class_probs = None
-    _mean = None
     _extra_names = [ep_name for _, ep_name, _ in _extra_param_info]
 
     if is_classification:
 
         def _class_probs(self):
             param_arrays = [
-                np.asarray(getattr(self, pname), dtype=float)
-                for pname, _ in param_info
+                np.asarray(getattr(self, pname), dtype=float) for pname, _ in param_info
             ]
             extra_arrays = [getattr(self, n) for n in _extra_names]
             cols = [
@@ -809,12 +792,18 @@ def make_distribution(
             ]
             return np.column_stack(cols)
 
+    else:
+        _class_probs = None
+
     if mean_fn is not None:
         _mean = mean_fn
     elif not is_classification and scipy_dist_cls is None:
 
         def _mean(self):
             return np.mean(self.sample(1000), axis=0)
+
+    else:
+        _mean = None
 
     # ---- 9. Build the class ----
     attrs = {

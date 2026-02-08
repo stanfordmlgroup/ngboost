@@ -25,6 +25,7 @@ scipy = [
 ]
 tqdm = ">=4.3"
 lifelines = ">=0.25"
+sympy = ">=1.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

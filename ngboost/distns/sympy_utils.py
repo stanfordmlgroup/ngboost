@@ -712,9 +712,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
             def nll(internal):
                 natural = []
                 for v, (_, is_log) in zip(internal, param_info):
-                    natural.append(
-                        np.exp(np.clip(v, -150, _EXP_CLIP)) if is_log else v
-                    )
+                    natural.append(np.exp(np.clip(v, -150, _EXP_CLIP)) if is_log else v)
                 return np.mean(_score_fn_for_fit(Y, *natural))
 
             x0 = np.zeros(_n_params)

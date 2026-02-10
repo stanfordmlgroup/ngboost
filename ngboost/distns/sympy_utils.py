@@ -335,6 +335,15 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         # evaluation.  Prevents log(0) = -inf cascading to NaN.
         _TINY = np.finfo(float).tiny
 
+        # Only clamp Y > 0 when the log-terms actually contain log(y).
+        # Mixtures over R (e.g. Normal) have negative Y values that must
+        # not be silently mapped to ~0.
+        _clamp_y = any(
+            y in log_atom.free_symbols
+            for lt in _log_term_exprs
+            for log_atom in lt.atoms(sym.log)
+        )
+
         def _eval_log_terms(all_args):
             """Evaluate log(f_k) for each mixture term, clamping to avoid -inf."""
             log_vals = np.stack([fn(*all_args) for fn in _log_term_fns], axis=0)
@@ -354,8 +363,7 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
             when Y underflows.
             """
             Y = np.asarray(all_args[0], dtype=float)
-            Y_safe = np.clip(Y, _TINY, None)
-            safe = [Y_safe]
+            safe = [np.clip(Y, _TINY, None) if _clamp_y else Y]
             for arg in all_args[1:]:
                 arr = np.asarray(arg, dtype=float)
                 safe.append(np.clip(arr, -_EXP_CLIP, _EXP_CLIP))
@@ -407,7 +415,7 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
             with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
                 for k, gfn in enumerate(_grad_fns):
                     vals = gfn(Y, *param_arrays, *extra_arrays)
-                    D[:, k] = np.where(np.isfinite(vals), vals, 0.0)
+                    D[:, k] = np.nan_to_num(vals, nan=0.0, posinf=1e6, neginf=-1e6)
             return D
 
     # ---- metric (Fisher Information) ----
@@ -705,7 +713,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
                 natural = []
                 for v, (_, is_log) in zip(internal, param_info):
                     natural.append(
-                        np.exp(np.clip(v, -_EXP_CLIP, _EXP_CLIP)) if is_log else v
+                        np.exp(np.clip(v, -150, _EXP_CLIP)) if is_log else v
                     )
                 return np.mean(_score_fn_for_fit(Y, *natural))
 

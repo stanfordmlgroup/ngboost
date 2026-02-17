@@ -727,11 +727,9 @@ class NGBoost:
             "verbose": self.verbose,
             "verbose_eval": self.verbose_eval,
             "tol": self.tol,
-            "random_state": (
-                numpy_to_list(list(self.random_state.get_state()))
-                if self.random_state
-                else None
-            ),
+            "random_state": numpy_to_list(list(self.random_state.get_state()))
+            if self.random_state
+            else None,
             "validation_fraction": self.validation_fraction,
             "early_stopping_rounds": self.early_stopping_rounds,
             "n_features": self.n_features,
@@ -766,6 +764,9 @@ class NGBoost:
                     k: {kk: numpy_to_list(vv) for kk, vv in v.items()}
                     for k, v in self.evals_result.items()
                 }
+
+        if hasattr(self, "classes_") and getattr(self, "classes_") is not None:
+            model_dict["classes_"] = numpy_to_list(self.classes_)
 
         return model_dict
 
@@ -825,8 +826,10 @@ class NGBoost:
 
             if model_type == "NGBRegressor":
                 instance = NGBRegressor.__new__(NGBRegressor)
+                instance._estimator_type = "regressor"  # type: ignore[attr-defined]
             elif model_type == "NGBClassifier":
                 instance = NGBClassifier.__new__(NGBClassifier)
+                instance._estimator_type = "classifier"  # type: ignore[attr-defined]
             elif model_type == "NGBSurvival":
                 instance = NGBSurvival.__new__(NGBSurvival)
             else:
@@ -936,12 +939,19 @@ class NGBoost:
 
         # Restore random state
         if model_dict.get("random_state") is not None:
-            # random_state is saved as a list: [version, state_array, has_gauss, cached_gauss]
+            # random_state is saved as a list of five elements returned by get_state()
             state_list = model_dict["random_state"]
+            if len(state_list) != 5:
+                raise ValueError(
+                    "Invalid random_state format. "
+                    "Expected 5 elements corresponding to numpy.random.RandomState.get_state()."
+                )
             state = (
                 state_list[0],
                 np.array(state_list[1], dtype=np.uint32),
-                state_list[2] if len(state_list) > 2 else None,
+                state_list[2],
+                state_list[3],
+                state_list[4],
             )
             instance.random_state = check_random_state(None)
             instance.random_state.set_state(state)
@@ -994,6 +1004,8 @@ class NGBoost:
             instance.feature_importances_ = np.array(model_dict["feature_importances_"])
         if "evals_result" in model_dict:
             instance.evals_result = model_dict["evals_result"]
+        if "classes_" in model_dict:
+            instance.classes_ = np.array(model_dict["classes_"])
 
         return instance
 
@@ -1005,6 +1017,11 @@ class NGBoost:
             filepath: Path to save the JSON file
             include_non_essential: If False, exclude feature_importances_ and evals_result
                                    to reduce file size (default: False)
+
+        Note:
+            JSON serialization stores the boosting trees via pickle for compatibility.
+            Treat saved files as untrusted input and prefer these artifacts for
+            inference-only scenarios (continuing training from serialized models is not supported).
         """
         model_dict = self.to_dict(include_non_essential=include_non_essential)
 
@@ -1040,6 +1057,10 @@ class NGBoost:
 
         Raises:
             ImportError: If ubjson package is not installed
+
+        Note:
+            UBJ serialization also stores base learners via pickle internally.
+            Do not load UBJ files from untrusted sources and use them strictly for inference.
         """
         if not UBJSON_AVAILABLE:
             raise ImportError(

@@ -33,6 +33,16 @@ def fixture_simple_classifier(breast_cancer_data):
     return ngb, X_train
 
 
+@pytest.fixture(name="string_label_classifier")
+def fixture_string_label_classifier(breast_cancer_data):
+    """Create a fitted classifier that was trained on string labels."""
+    X_train, _, Y_train, _ = breast_cancer_data
+    Y_train_str = np.where(Y_train == 0, "class_zero", "class_one")
+    ngb = NGBClassifier(verbose=False, n_estimators=10)
+    ngb.fit(X_train, Y_train_str)
+    return ngb, X_train
+
+
 @pytest.fixture(name="simple_survival")
 def fixture_simple_survival(california_housing_survival_data):
     """Create a simple fitted survival model for testing."""
@@ -116,6 +126,7 @@ def test_to_dict_classifier(simple_classifier):
 
     assert model_dict["model_type"] == "NGBClassifier"
     assert "base_models" in model_dict
+    assert "classes_" in model_dict
 
 
 def test_from_dict_classifier(simple_classifier):
@@ -133,6 +144,21 @@ def test_from_dict_classifier(simple_classifier):
 
     np.testing.assert_array_equal(original_preds, loaded_preds)
     np.testing.assert_array_almost_equal(original_proba, loaded_proba, decimal=5)
+
+
+def test_classifier_string_labels_round_trip(string_label_classifier):
+    """Ensure classifiers trained on string labels maintain mapping."""
+    ngb, X_train = string_label_classifier
+
+    original_preds = ngb.predict(X_train[:25])
+    assert original_preds.dtype.kind in {"U", "S", "O"}
+
+    model_dict = ngb.to_dict()
+    ngb_loaded = NGBClassifier.from_dict(model_dict)
+
+    loaded_preds = ngb_loaded.predict(X_train[:25])
+    np.testing.assert_array_equal(original_preds, loaded_preds)
+    np.testing.assert_array_equal(ngb.classes_, ngb_loaded.classes_)
 
 
 def test_to_dict_survival(simple_survival):
@@ -210,6 +236,34 @@ def test_ubj_serialization(simple_regressor):
         np.testing.assert_array_almost_equal(original_preds, loaded_preds, decimal=5)
     finally:
         Path(filepath).unlink()
+
+
+def test_random_state_round_trip(simple_regressor):
+    """Random state should be restored exactly after serialization."""
+    ngb, _ = simple_regressor
+    original_state = ngb.random_state.get_state()
+
+    ngb_loaded = NGBRegressor.from_dict(ngb.to_dict())
+    loaded_state = ngb_loaded.random_state.get_state()
+
+    assert original_state[0] == loaded_state[0]
+    np.testing.assert_array_equal(original_state[1], loaded_state[1])
+    assert original_state[2:] == loaded_state[2:]
+
+
+def test_estimator_type_preserved(simple_regressor, simple_classifier):
+    """Loaded estimators should keep sklearn estimator type metadata."""
+    ngb_reg, _ = simple_regressor
+    ngb_clf, _ = simple_classifier
+
+    assert getattr(ngb_reg, "_estimator_type", None) == "regressor"
+    assert getattr(ngb_clf, "_estimator_type", None) == "classifier"
+
+    reg_loaded = NGBRegressor.from_dict(ngb_reg.to_dict())
+    clf_loaded = NGBClassifier.from_dict(ngb_clf.to_dict())
+
+    assert getattr(reg_loaded, "_estimator_type", None) == "regressor"
+    assert getattr(clf_loaded, "_estimator_type", None) == "classifier"
 
 
 def test_ubj_import_error(simple_regressor):

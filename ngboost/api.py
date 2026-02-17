@@ -1,6 +1,8 @@
 "The NGBoost library API"
 # pylint: disable=too-many-arguments
+import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_array
 
 from ngboost.distns import (
@@ -177,6 +179,115 @@ class NGBClassifier(NGBoost, BaseEstimator):
             random_state,
         )
         self._estimator_type = "classifier"
+        self.classes_ = None
+        self._encoded_labels_in_partial_fit = False
+
+    def _fit_label_encoder(self, y):
+        encoder = LabelEncoder()
+        y_encoded = encoder.fit_transform(y)
+        self.classes_ = encoder.classes_
+        return y_encoded, encoder
+
+    def _encoder_from_classes(self):
+        if getattr(self, "classes_", None) is None:
+            raise ValueError("NGBClassifier must be fitted before encoding labels.")
+        encoder = LabelEncoder()
+        encoder.classes_ = np.array(self.classes_)
+        return encoder
+
+    def fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        """
+        Fits an NGBoost classifier while preserving the original label mapping.
+        """
+
+        Y_encoded, label_encoder = self._fit_label_encoder(Y)
+        Y_val_encoded = (
+            label_encoder.transform(Y_val) if Y_val is not None else None
+        )
+
+        self._encoded_labels_in_partial_fit = True
+        try:
+            return super().fit(
+                X,
+                Y_encoded,
+                X_val=X_val,
+                Y_val=Y_val_encoded,
+                sample_weight=sample_weight,
+                val_sample_weight=val_sample_weight,
+                train_loss_monitor=train_loss_monitor,
+                val_loss_monitor=val_loss_monitor,
+                early_stopping_rounds=early_stopping_rounds,
+            )
+        finally:
+            self._encoded_labels_in_partial_fit = False
+
+    def predict(self, X, max_iter=None):
+        encoded = super().predict(X, max_iter=max_iter)
+        if getattr(self, "classes_", None) is None:
+            return encoded
+        return self.classes_[encoded]
+
+    def staged_predict(self, X, max_iter=None):
+        encoded_predictions = super().staged_predict(X, max_iter=max_iter)
+        if getattr(self, "classes_", None) is None:
+            return encoded_predictions
+        return [self.classes_[pred] for pred in encoded_predictions]
+
+    def partial_fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        """
+        Partially fit an NGBoost classifier while respecting label encoding.
+        """
+
+        if getattr(self, "classes_", None) is None:
+            Y_encoded, label_encoder = self._fit_label_encoder(Y)
+        elif getattr(self, "_encoded_labels_in_partial_fit", False):
+            label_encoder = self._encoder_from_classes()
+            Y_encoded = Y
+        else:
+            label_encoder = self._encoder_from_classes()
+            Y_encoded = label_encoder.transform(Y)
+
+        if Y_val is not None:
+            if getattr(self, "_encoded_labels_in_partial_fit", False):
+                Y_val_encoded = Y_val
+            else:
+                Y_val_encoded = label_encoder.transform(Y_val)
+        else:
+            Y_val_encoded = None
+
+        return super().partial_fit(
+            X,
+            Y_encoded,
+            X_val=X_val,
+            Y_val=Y_val_encoded,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
 
     def predict_proba(self, X, max_iter=None):
         """

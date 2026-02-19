@@ -707,13 +707,14 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         # Numerical MLE fallback: minimize mean NLL using the
         # already-lambdified score function.
         _score_fn_for_fit = score_cls._score_fn  # pylint: disable=protected-access
+        _extra_defaults = [ep_default for _, _, ep_default in _extra_param_info]
 
         def _fit_mle(Y):
             def nll(internal):
                 natural = []
                 for v, (_, is_log) in zip(internal, param_info):
                     natural.append(np.exp(np.clip(v, -150, _EXP_CLIP)) if is_log else v)
-                return np.mean(_score_fn_for_fit(Y, *natural))
+                return np.mean(_score_fn_for_fit(Y, *natural, *_extra_defaults))
 
             x0 = np.zeros(_n_params)
             res = minimize(nll, x0, method="Nelder-Mead")
@@ -727,7 +728,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     elif scipy_dist_cls is not None:
 
         def _sample(self, m):
-            return np.array([self.dist.rvs() for _ in range(m)])
+            return self.dist.rvs(size=m)
 
     elif is_classification:
 
@@ -780,7 +781,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     def _getattr(self, attr_name):
         if "dist" in self.__dict__ and attr_name in dir(self.__dict__["dist"]):
             return getattr(self.__dict__["dist"], attr_name)
-        return None
+        raise AttributeError(attr_name)
 
     # ---- 8. class_probs (classification) or mean() fallback (regression) ----
     _extra_names = [ep_name for _, ep_name, _ in _extra_param_info]

@@ -797,7 +797,19 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
                 np.asarray(fn(*param_arrays, *extra_arrays), dtype=float)
                 for fn in _class_prob_fns
             ]
-            return np.column_stack(cols)
+            probs = np.column_stack(cols)
+
+            if not np.all(np.isfinite(probs)):
+                raise ValueError("class_probs contains non-finite values")
+            if np.any(probs < 0):
+                raise ValueError("class_probs contains negative values")
+
+            row_sums = probs.sum(axis=1, keepdims=True)
+            if np.any(row_sums <= 0):
+                raise ValueError("class_probs row sum must be positive")
+
+            probs /= row_sums
+            return probs
 
     else:
         _class_probs = None

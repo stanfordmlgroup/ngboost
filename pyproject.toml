@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ngboost"
-version = "0.5.8dev"
+version = "0.5.9dev"
 description = "Library for probabilistic predictions via gradient boosting."
 authors = ["Stanford ML Group <avati@cs.stanford.edu>"]
 readme = "README.md"
@@ -13,7 +13,7 @@ classifiers = [
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.14"
+python = ">=3.9, <3.15"
 scikit-learn = "^1.6"
 numpy = [
     {version = ">=1.21.2", markers = "python_version < '3.13'"},
@@ -26,6 +26,7 @@ scipy = [
 tqdm = ">=4.3"
 lifelines = ">=0.25"
 sympy = ">=1.12"
+matplotlib = [{version = ">=3.10.0", markers = "python_version >= '3.14'"}]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
@@ -42,7 +43,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = ['py39', 'py310', 'py311']
+target-version = ['py39', 'py310', 'py311', 'py312', 'py313', 'py314']
 include = '\.pyi?$'
 extend-exclude = '''
 /(

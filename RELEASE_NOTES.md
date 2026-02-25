@@ -1,5 +1,12 @@
 # RELEASE NOTES
 
+## Version 0.5.9
+
+* Add SymPy-powered distribution factory support for defining LogScore and NGBoost distributions from symbolic expressions or `sympy.stats` distributions
+* Add new built-in distributions via the factory, including Beta, Beta-Bernoulli, Beta-Binomial, and Logit-Normal
+* Add support for Python 3.14 and update CI matrix to test Python 3.14
+* Bump development version to `0.5.9dev`
+
 ## Version 0.5.8
 
 * Fix numpy2 natural gradient compatibility

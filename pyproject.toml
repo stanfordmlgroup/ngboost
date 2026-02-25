@@ -26,7 +26,10 @@ scipy = [
 tqdm = ">=4.3"
 lifelines = ">=0.25"
 sympy = ">=1.12"
-matplotlib = [{version = ">=3.10.0", markers = "python_version >= '3.14'"}]
+matplotlib = [
+    {version = ">=3.0,<3.10", markers = "python_version < '3.10'"},
+    {version = ">=3.10.0", markers = "python_version >= '3.10'"}
+]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

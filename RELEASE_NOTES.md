@@ -1,5 +1,11 @@
 # RELEASE NOTES
 
+## Version 0.5.10
+
+* Add `load_ngboost_model` compatibility loader for models saved with scikit-learn < 1.3 and loaded under newer scikit-learn versions (issue #389)
+* Backfill `missing_go_to_left` during load and restore trees to standard sklearn `Tree` instances after deserialization
+* Add targeted regression tests for old-style tree-node pickles and helper-level tests for `Y_from_censored` and compatibility loading paths in `tests/test_helpers.py`
+
 ## Version 0.5.9
 
 * Add SymPy-powered distribution factory support for defining LogScore and NGBoost distributions from symbolic expressions or `sympy.stats` distributions

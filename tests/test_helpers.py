@@ -14,7 +14,9 @@ from ngboost.helpers import Y_from_censored, load_ngboost_model
 def _sklearn_has_missing_go_to_left():
     tree = DecisionTreeRegressor(max_depth=1)
     tree.fit([[0], [1]], [0, 1])
-    return "missing_go_to_left" in (tree.tree_.__getstate__()["nodes"].dtype.names or ())
+    return "missing_go_to_left" in (
+        tree.tree_.__getstate__()["nodes"].dtype.names or ()
+    )
 
 
 def _make_old_style_pickle_bytes(model):

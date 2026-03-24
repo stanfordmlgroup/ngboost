@@ -54,3 +54,22 @@ def test_regression(california_housing_data):
 
     score = mean_squared_error(y_test, preds)
     assert score <= 15
+
+
+def test_classifier_validation_fraction_is_supported(breast_cancer_data):
+    x_train, x_test, y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(
+        Dist=Bernoulli,
+        n_estimators=25,
+        verbose=False,
+        random_state=1,
+        validation_fraction=0.2,
+        early_stopping_rounds=2,
+    )
+
+    assert ngb.get_params()["validation_fraction"] == 0.2
+    assert ngb.get_params()["early_stopping_rounds"] == 2
+
+    ngb.fit(x_train, y_train)
+    preds = ngb.predict(x_test)
+    assert preds.shape[0] == x_test.shape[0]

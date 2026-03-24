@@ -1,5 +1,9 @@
 # RELEASE NOTES
 
+## Version 0.5.11
+
+* Fix `NGBClassifier` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for the validation-split path (issue #402)
+
 ## Version 0.5.10
 
 * Add `load_ngboost_model` compatibility loader for models saved with scikit-learn < 1.3 and loaded under newer scikit-learn versions (issue #389)

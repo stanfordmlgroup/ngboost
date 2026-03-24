@@ -139,6 +139,12 @@ class NGBClassifier(NGBoost, BaseEstimator):
         tol               : numerical tolerance to be used in optimization
         random_state      : seed for reproducibility. See
                             https://stackoverflow.com/questions/28064634/random-state-pseudo-random-number-in-scikit-learn
+        validation_fraction: Proportion of training data to set
+                             aside as validation data for early stopping.
+        early_stopping_rounds:      The number of consecutive boosting iterations during which the
+                                    loss has to increase before the algorithm stops early.
+                                    Set to None to disable early stopping and validation.
+                                    None enables running over the full data set.
     Output:
         An NGBClassifier object that can be fit.
     """
@@ -158,6 +164,8 @@ class NGBClassifier(NGBoost, BaseEstimator):
         verbose_eval=100,
         tol=1e-4,
         random_state=None,
+        validation_fraction=0.1,
+        early_stopping_rounds=None,
     ):
         assert issubclass(
             Dist, ClassificationDistn
@@ -175,6 +183,8 @@ class NGBClassifier(NGBoost, BaseEstimator):
             verbose_eval,
             tol,
             random_state,
+            validation_fraction,
+            early_stopping_rounds,
         )
         self._estimator_type = "classifier"
 

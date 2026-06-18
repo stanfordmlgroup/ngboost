@@ -84,8 +84,8 @@ def is_t_distribution(
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
 )
 @pytest.mark.xfail(
@@ -106,8 +106,8 @@ def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
 )
 def test_dists_runs_on_examples_crpscore(dist: Distn, learner, regression_data):
@@ -125,8 +125,8 @@ def test_dists_runs_on_examples_crpscore(dist: Distn, learner, regression_data):
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
 )
 def test_survival_runs_on_examples(
@@ -151,8 +151,8 @@ def test_survival_runs_on_examples(
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
     ],
 )
 def test_bernoulli(learner, classification_data: Tuple4Array):
@@ -172,8 +172,8 @@ def test_bernoulli(learner, classification_data: Tuple4Array):
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
     ],
 )
 def test_categorical(k: int, learner, classification_data: Tuple4Array):
@@ -194,8 +194,8 @@ def test_categorical(k: int, learner, classification_data: Tuple4Array):
 @pytest.mark.parametrize(
     "learner",
     [
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=5),
-        DecisionTreeRegressor(criterion="friedman_mse", max_depth=3),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=5),
+        DecisionTreeRegressor(criterion="squared_error", max_depth=3),
     ],
 )
 # Ignore the k=1 warning

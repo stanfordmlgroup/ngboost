@@ -29,8 +29,10 @@ class NGBoost:
                             A distribution from ngboost.distns, e.g. Normal
         Score             : rule to compare probabilistic predictions P̂ to the observed data y.
                             A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Base              : base learner(s) to use in the boosting algorithm.
+                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor(),
+                            or a list/tuple of instantiated sklearn regressors with length
+                            equal to Dist.n_params.
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -167,12 +169,25 @@ class NGBoost:
             params[idxs, :],
         )
 
+    def _base_learners(self):
+        if not isinstance(self.Base, (list, tuple)):
+            return [self.Base] * self.Manifold.n_params
+
+        if len(self.Base) != self.Manifold.n_params:
+            raise ValueError(
+                "Base must be a single estimator or a sequence of "
+                f"{self.Manifold.n_params} estimators, got {len(self.Base)}."
+            )
+        return self.Base
+
     def fit_base(self, X, grads, sample_weight=None):
+        base_learners = self._base_learners()
         if sample_weight is None:
-            models = [clone(self.Base).fit(X, g) for g in grads.T]
+            models = [clone(base).fit(X, g) for base, g in zip(base_learners, grads.T)]
         else:
             models = [
-                clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
+                clone(base).fit(X, g, sample_weight=sample_weight)
+                for base, g in zip(base_learners, grads.T)
             ]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
@@ -616,8 +631,12 @@ class NGBoost:
         # Check whether the model is fitted
         if not self.base_models:
             return None
-        # Check whether the base model is DecisionTreeRegressor
-        if not isinstance(self.base_models[0][0], DecisionTreeRegressor):
+        # Check whether all base models are DecisionTreeRegressor
+        if any(
+            not isinstance(model, DecisionTreeRegressor)
+            for models in self.base_models
+            for model in models
+        ):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)

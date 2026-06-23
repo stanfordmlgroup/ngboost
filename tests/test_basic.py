@@ -10,6 +10,7 @@ from ngboost.distns import Bernoulli, Normal, k_categorical
 
 
 class RecordingRegressor(BaseEstimator, RegressorMixin):
+    # pylint: disable=attribute-defined-outside-init,unused-argument
     def fit(self, X, y, sample_weight=None):
         self.sample_weight_ = None if sample_weight is None else sample_weight.copy()
         self.prediction_ = np.average(y, weights=sample_weight)
@@ -139,9 +140,9 @@ def test_base_learner_sequence_must_match_distribution_parameter_count():
     with pytest.raises(ValueError, match="one estimator per distribution parameter"):
         ngb.fit(X, Y)
 
-    assert ngb.base_models == []
-    assert ngb.scalings == []
-    assert ngb.col_idxs == []
+    assert not ngb.base_models
+    assert not ngb.scalings
+    assert not ngb.col_idxs
 
 
 def test_base_learner_sequence_accepts_tuple():

@@ -29,8 +29,15 @@ class NGBoost:
                             A distribution from ngboost.distns, e.g. Normal
         Score             : rule to compare probabilistic predictions P̂ to the observed data y.
                             A score from ngboost.scores, e.g. LogScore
-        Base              : base learner to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor()
+        Base              : base learner(s) to use in the boosting algorithm.
+                            Pass a single instantiated sklearn regressor, e.g.
+                            DecisionTreeRegressor(), to use the same learner for
+                            every distribution parameter. To use different learners
+                            per distribution parameter, pass a list/tuple of
+                            instantiated sklearn regressors with length equal to
+                            Dist.n_params. The sequence order matches the distribution
+                            parameter order; for example, Normal uses
+                            [loc_learner, scale_learner].
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -167,12 +174,27 @@ class NGBoost:
             params[idxs, :],
         )
 
+    def _base_learners(self):
+        if not isinstance(self.Base, (list, tuple)):
+            return [self.Base] * self.Manifold.n_params
+
+        if len(self.Base) != self.Manifold.n_params:
+            raise ValueError(
+                "Base must be a single estimator or a sequence with one estimator "
+                "per distribution parameter "
+                f"({self.Manifold.n_params} for {self.Dist.__name__}); "
+                f"got {len(self.Base)}."
+            )
+        return self.Base
+
     def fit_base(self, X, grads, sample_weight=None):
+        base_learners = self._base_learners()
         if sample_weight is None:
-            models = [clone(self.Base).fit(X, g) for g in grads.T]
+            models = [clone(base).fit(X, g) for base, g in zip(base_learners, grads.T)]
         else:
             models = [
-                clone(self.Base).fit(X, g, sample_weight=sample_weight) for g in grads.T
+                clone(base).fit(X, g, sample_weight=sample_weight)
+                for base, g in zip(base_learners, grads.T)
             ]
         fitted = np.array([m.predict(X) for m in models]).T
         self.base_models.append(models)
@@ -320,6 +342,7 @@ class NGBoost:
             raise RuntimeError(
                 "Base models, scalings, and col_idxs are not the same length"
             )
+        self._base_learners()
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
         # This will overwrite any X_val and Y_val values passed by the user directly.
@@ -491,16 +514,65 @@ class NGBoost:
 
         return self
 
+    def _set_base_params(self, parameters):
+        if not isinstance(self.Base, (list, tuple)):
+            self.Base.set_params(**parameters)
+            return
+
+        base_learners = list(self.Base)
+        for key, value in parameters.items():
+            index, delim, sub_key = key.partition("__")
+            try:
+                index = int(index)
+            except ValueError as exc:
+                raise ValueError(
+                    "Base sequence parameters must use integer positions, "
+                    f"for example Base__0__max_depth. Got Base__{key}."
+                ) from exc
+            if index < 0 or index >= len(base_learners):
+                raise ValueError(
+                    f"Base sequence index {index} is out of range for "
+                    f"{len(base_learners)} estimators."
+                )
+            if delim:
+                base_learners[index].set_params(**{sub_key: value})
+            else:
+                base_learners[index] = value
+        self.Base = type(self.Base)(base_learners)
+
     def set_params(self, **parameters):
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
+        if not parameters:
+            return self
+
+        valid_params = self.get_params(deep=True)
+        nested_params = {}
+        for key, value in parameters.items():
+            key, delim, sub_key = key.partition("__")
+            if key not in valid_params:
+                local_valid_params = self.get_params(deep=False).keys()
+                raise ValueError(
+                    f"Invalid parameter {key!r} for estimator {self}. "
+                    f"Valid parameters are: {sorted(local_valid_params)!r}."
+                )
+            if delim:
+                nested_params.setdefault(key, {})[sub_key] = value
+            else:
+                setattr(self, key, value)
+                valid_params[key] = value
+
+        for key, sub_params in nested_params.items():
+            if key == "Base":
+                self._set_base_params(sub_params)
+            else:
+                valid_params[key].set_params(**sub_params)
         return self
 
     def get_params(self, deep=True):
         """
         Parameters
         ----------
-        deep : Ignored. (for compatibility with sklearn)
+        deep : bool, default=True
+            If True, return nested parameters for the base learner or learners.
         Returns
         ----------
         params : returns an dictionary of parameters.
@@ -515,10 +587,25 @@ class NGBoost:
             "minibatch_frac": self.minibatch_frac,
             "col_sample": self.col_sample,
             "verbose": self.verbose,
+            "verbose_eval": self.verbose_eval,
+            "tol": self.tol,
             "random_state": self.random_state,
             "validation_fraction": self.validation_fraction,
             "early_stopping_rounds": self.early_stopping_rounds,
         }
+
+        if not deep:
+            return params
+
+        if isinstance(self.Base, (list, tuple)):
+            for i, base in enumerate(self.Base):
+                params[f"Base__{i}"] = base
+                if hasattr(base, "get_params"):
+                    for key, value in base.get_params(deep=True).items():
+                        params[f"Base__{i}__{key}"] = value
+        elif hasattr(self.Base, "get_params"):
+            for key, value in self.Base.get_params(deep=True).items():
+                params[f"Base__{key}"] = value
 
         return params
 
@@ -616,8 +703,12 @@ class NGBoost:
         # Check whether the model is fitted
         if not self.base_models:
             return None
-        # Check whether the base model is DecisionTreeRegressor
-        if not isinstance(self.base_models[0][0], DecisionTreeRegressor):
+        # Check whether all base models are DecisionTreeRegressor
+        if any(
+            not isinstance(model, DecisionTreeRegressor)
+            for models in self.base_models
+            for model in models
+        ):
             return None
         # Reshape the base_models
         params_trees = zip(*self.base_models)

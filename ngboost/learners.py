@@ -2,7 +2,7 @@ from sklearn.linear_model import Ridge
 from sklearn.tree import DecisionTreeRegressor
 
 default_tree_learner = DecisionTreeRegressor(
-    criterion="friedman_mse",
+    criterion="squared_error",
     min_samples_split=2,
     min_samples_leaf=1,
     min_weight_fraction_leaf=0.0,

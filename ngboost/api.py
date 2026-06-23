@@ -33,9 +33,14 @@ class NGBRegressor(NGBoost, BaseEstimator):
         Score             : rule to compare probabilistic predictions P̂ to the observed data y.
                             A score from ngboost.scores, e.g. LogScore
         Base              : base learner(s) to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor(),
-                            or a list/tuple of instantiated sklearn regressors with length
-                            equal to Dist.n_params.
+                            Pass a single instantiated sklearn regressor, e.g.
+                            DecisionTreeRegressor(), to use the same learner for
+                            every distribution parameter. To use different learners
+                            per distribution parameter, pass a list/tuple of
+                            instantiated sklearn regressors with length equal to
+                            Dist.n_params. The sequence order matches the distribution
+                            parameter order; for example, Normal uses
+                            [loc_learner, scale_learner].
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -131,9 +136,14 @@ class NGBClassifier(NGBoost, BaseEstimator):
         Score             : rule to compare probabilistic predictions P̂ to the observed data y.
                             A score from ngboost.scores, e.g. LogScore
         Base              : base learner(s) to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor(),
-                            or a list/tuple of instantiated sklearn regressors with length
-                            equal to Dist.n_params.
+                            Pass a single instantiated sklearn regressor, e.g.
+                            DecisionTreeRegressor(), to use the same learner for
+                            every distribution parameter. To use different learners
+                            per distribution parameter, pass a list/tuple of
+                            instantiated sklearn regressors with length equal to
+                            Dist.n_params. The sequence order matches the distribution
+                            parameter order; for example, Normal uses
+                            [loc_learner, scale_learner].
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate
@@ -227,9 +237,14 @@ class NGBSurvival(NGBoost, BaseEstimator):
         Score             : rule to compare probabilistic predictions P̂ to the observed data y.
                             A score from ngboost.scores, e.g. LogScore
         Base              : base learner(s) to use in the boosting algorithm.
-                            Any instantiated sklearn regressor, e.g. DecisionTreeRegressor(),
-                            or a list/tuple of instantiated sklearn regressors with length
-                            equal to Dist.n_params.
+                            Pass a single instantiated sklearn regressor, e.g.
+                            DecisionTreeRegressor(), to use the same learner for
+                            every distribution parameter. To use different learners
+                            per distribution parameter, pass a list/tuple of
+                            instantiated sklearn regressors with length equal to
+                            Dist.n_params. The sequence order matches the distribution
+                            parameter order; for example, Normal uses
+                            [loc_learner, scale_learner].
         natural_gradient  : logical flag indicating whether the natural gradient should be used
         n_estimators      : the number of boosting iterations to fit
         learning_rate     : the learning rate

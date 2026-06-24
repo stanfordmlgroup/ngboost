@@ -123,6 +123,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         super().__setstate__(state_dict)
 
 
+# pylint: disable=duplicate-code
 class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     """
     Constructor for NGBoost classification models.

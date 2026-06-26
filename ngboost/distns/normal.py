@@ -5,7 +5,7 @@ import scipy as sp
 from scipy.stats import norm as dist
 
 from ngboost.distns.distn import RegressionDistn
-from ngboost.scores import CRPScore, LogScore
+from ngboost.scores import CRPScore, LogScore, ScoreMatchingScore
 
 
 class NormalLogScore(LogScore):
@@ -53,6 +53,27 @@ class NormalCRPScore(CRPScore):
         return I
 
 
+class NormalScoreMatchingScore(ScoreMatchingScore):
+    def score(self, Y):
+        loc = self.loc
+        var = self.var
+        var = var
+        return ((Y - loc)**2 / (2* var**2)) - 1/var
+
+    def d_score(self, Y):
+        n = len(Y)
+        D = np.zeros((len(Y), 2))
+        D[:, 0] =  (self.loc -Y)/(self.var **2)
+        D[:, 1] = 2/self.var - (2*(Y - self.loc)**2)/(self.var**2)
+        return D
+
+    def metric(self):
+        FI = np.zeros((self.var.shape[0], 2, 2))
+        FI[:, 0, 0] = 1/(self.var**2)
+        FI[:, 1, 1] = 4/(self.var)
+        return FI
+
+
 class Normal(RegressionDistn):
     """
     Implements the normal distribution for NGBoost.
@@ -63,7 +84,7 @@ class Normal(RegressionDistn):
     """
 
     n_params = 2
-    scores = [NormalLogScore, NormalCRPScore]
+    scores = [NormalLogScore, NormalCRPScore, NormalScoreMatchingScore]
 
     def __init__(self, params):
         super().__init__(params)

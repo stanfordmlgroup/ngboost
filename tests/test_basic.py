@@ -20,6 +20,56 @@ class RecordingRegressor(BaseEstimator, RegressorMixin):
         return np.full(X.shape[0], self.prediction_)
 
 
+def test_classifier_sets_sklearn_classes_and_encodes_labels(breast_cancer_data):
+    from sklearn.base import is_classifier  # pylint: disable=import-outside-toplevel
+    from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
+        RocCurveDisplay,
+    )
+    from sklearn.model_selection import (  # pylint: disable=import-outside-toplevel
+        cross_val_score,
+    )
+
+    x_train, x_test, y_train, y_test = breast_cancer_data
+    y_labels = ["malignant" if y == 0 else "benign" for y in y_train]
+    y_test_labels = ["malignant" if y == 0 else "benign" for y in y_test]
+
+    ngb = NGBClassifier(
+        Dist=Bernoulli,
+        n_estimators=2,
+        verbose=False,
+        random_state=0,
+    )
+
+    assert is_classifier(ngb)
+    assert isinstance(clone(ngb), NGBClassifier)
+
+    ngb.fit(x_train, y_labels)
+
+    assert list(ngb.classes_) == ["benign", "malignant"]
+    assert set(ngb.predict(x_test[:10])).issubset(set(ngb.classes_))
+    assert ngb.predict_proba(x_test[:10]).shape == (10, 2)
+    assert len(ngb.staged_predict(x_test[:10])) == len(ngb.base_models)
+    assert cross_val_score(ngb, x_train, y_labels, scoring="roc_auc", cv=3).shape == (
+        3,
+    )
+
+    display = RocCurveDisplay.from_estimator(
+        ngb,
+        x_test,
+        y_test_labels,
+        pos_label="malignant",
+    )
+    assert display.roc_auc >= 0.5
+
+
+def test_classifier_rejects_label_count_mismatch(breast_cancer_data):
+    x_train, _, y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(Dist=k_categorical(3), n_estimators=2, verbose=False)
+
+    with pytest.raises(ValueError, match="expects 3 classes, got 2"):
+        ngb.fit(x_train, y_train)
+
+
 # TODO: This is non-deterministic in the model fitting
 def test_classification(breast_cancer_data):
     from sklearn.metrics import (  # pylint: disable=import-outside-toplevel

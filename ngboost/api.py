@@ -1,7 +1,9 @@
 "The NGBoost library API"
 
 # pylint: disable=too-many-arguments
-from sklearn.base import BaseEstimator
+import numpy as np
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_array
 
 from ngboost.distns import (
@@ -122,7 +124,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         super().__setstate__(state_dict)
 
 
-class NGBClassifier(NGBoost, BaseEstimator):
+# pylint: disable=duplicate-code
+class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     """
     Constructor for NGBoost classification models.
 
@@ -202,6 +205,107 @@ class NGBClassifier(NGBoost, BaseEstimator):
             early_stopping_rounds,
         )
         self._estimator_type = "classifier"
+
+    def _fit_label_encoder(self, Y):
+        le = LabelEncoder().fit(Y)
+        self._le = le  # pylint: disable=attribute-defined-outside-init
+        self.classes_ = le.classes_  # pylint: disable=attribute-defined-outside-init
+        n_classes = self.Dist.n_params + 1
+        if len(self.classes_) != n_classes:
+            raise ValueError(
+                "NGBClassifier Dist expects "
+                f"{n_classes} classes, got {len(self.classes_)}."
+            )
+
+    def _encode_labels(self, Y):
+        return self._le.transform(Y)
+
+    def __setstate__(
+        self, state_dict
+    ):  # pylint: disable=attribute-defined-outside-init
+        super().__setstate__(state_dict)
+        if not hasattr(self, "classes_"):
+            self.classes_ = np.arange(self.Dist.n_params + 1)
+        if not hasattr(self, "_le"):
+            self._le = LabelEncoder()
+            self._le.classes_ = self.classes_
+
+    # pylint: disable=too-many-positional-arguments,attribute-defined-outside-init
+    def fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        self._fit_label_encoder(Y)
+        Y = self._encode_labels(Y)
+        if Y_val is not None:
+            Y_val = self._le.transform(Y_val)
+        self.base_models = []
+        self.scalings = []
+        self.col_idxs = []
+        return NGBoost.partial_fit(
+            self,
+            X,
+            Y,
+            X_val=X_val,
+            Y_val=Y_val,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+
+    # pylint: disable=too-many-positional-arguments,attribute-defined-outside-init
+    def partial_fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        if not hasattr(self, "classes_"):
+            self._fit_label_encoder(Y)
+        Y = self._encode_labels(Y)
+        if Y_val is not None:
+            Y_val = self._le.transform(Y_val)
+        return NGBoost.partial_fit(
+            self,
+            X,
+            Y,
+            X_val=X_val,
+            Y_val=Y_val,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+
+    def predict(self, X, max_iter=None):
+        return self.classes_[super().predict(X, max_iter=max_iter)]
+
+    def staged_predict(self, X, max_iter=None):
+        return [
+            self.classes_[pred] for pred in super().staged_predict(X, max_iter=max_iter)
+        ]
+
+    def score(self, X, Y):  # for sklearn
+        return self.Manifold(self.pred_param(check_array(X)).T).total_score(
+            self._le.transform(Y)
+        )
 
     def predict_proba(self, X, max_iter=None):
         """

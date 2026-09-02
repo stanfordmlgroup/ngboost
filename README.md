@@ -55,6 +55,17 @@ test_NLL = -Y_dists.logpdf(Y_test).mean()
 print('Test NLL', test_NLL)
 ```
 
+Fitted NGBoost models with `DecisionTreeRegressor` base learners can also be
+exported to JSON for portable inference without pickle:
+
+```python
+from ngboost import load_ngboost_model_json, save_ngboost_model_json
+
+save_ngboost_model_json(ngb, "ngboost-model.json")
+restored = load_ngboost_model_json("ngboost-model.json")
+Y_preds = restored.predict(X_test)
+```
+
 Details on available distributions, scoring rules, learners, tuning, and model interpretation are available in our [user guide](https://stanfordmlgroup.github.io/ngboost/intro.html), which also includes numerous usage examples and information on how to add new distributions or scores to NGBoost.
 
 ## License

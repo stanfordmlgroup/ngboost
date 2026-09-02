@@ -7,7 +7,11 @@ except ImportError:
     from importlib_metadata import version
 
 from .api import NGBClassifier, NGBRegressor, NGBSurvival
-from .helpers import load_ngboost_model
+from .helpers import (
+    load_ngboost_model,
+    load_ngboost_model_json,
+    save_ngboost_model_json,
+)
 from .ngboost import NGBoost
 
 __all__ = [
@@ -16,6 +20,8 @@ __all__ = [
     "NGBSurvival",
     "NGBoost",
     "load_ngboost_model",
+    "load_ngboost_model_json",
+    "save_ngboost_model_json",
 ]
 
 __version__ = version(__name__)

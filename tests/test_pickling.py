@@ -9,7 +9,14 @@ import pytest
 import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-member
 from sklearn.tree import DecisionTreeRegressor
 
-from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, load_ngboost_model
+from ngboost import (
+    NGBClassifier,
+    NGBRegressor,
+    NGBSurvival,
+    load_ngboost_model,
+    load_ngboost_model_json,
+    save_ngboost_model_json,
+)
 from ngboost.distns import MultivariateNormal
 
 
@@ -59,6 +66,58 @@ def test_model_save(learners_data):
         assert (new_preds == preds).all()
 
 
+def test_json_inference_roundtrip_preserves_predictions(learners_data):
+    """JSON export stores enough fitted state for inference without pickle."""
+
+    for learner, data, preds in learners_data[:2]:  # regressor and classifier paths
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            tmp_path = f.name
+        try:
+            save_ngboost_model_json(learner, tmp_path)
+            model = load_ngboost_model_json(tmp_path)
+            new_preds = model.predict(data)
+            assert np.allclose(new_preds, preds)
+            if isinstance(learner, NGBClassifier):
+                assert np.allclose(
+                    model.predict_proba(data), learner.predict_proba(data)
+                )
+        finally:
+            os.unlink(tmp_path)
+
+
+def test_json_inference_roundtrip_preserves_classifier_classes(breast_cancer_data):
+    """Classifier metadata is kept when available on the fitted model."""
+
+    X_train, _, Y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(verbose=False, n_estimators=2)
+    ngb.fit(X_train, Y_train)
+    ngb.classes_ = np.array(["benign", "malignant"])
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        tmp_path = f.name
+    try:
+        save_ngboost_model_json(ngb, tmp_path)
+        model = load_ngboost_model_json(tmp_path)
+        assert np.array_equal(model.classes_, ngb.classes_)
+        label_classes = model._le.classes_  # pylint: disable=protected-access
+        assert np.array_equal(label_classes, ngb.classes_)
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_json_inference_rejects_unimportable_dynamic_distributions(learners_data):
+    """Do not write JSON files that the loader cannot reconstruct."""
+
+    for learner, _, _ in learners_data[2:]:  # survival and MultivariateNormal factories
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            tmp_path = f.name
+        try:
+            with pytest.raises(TypeError, match="dynamic distribution classes"):
+                save_ngboost_model_json(learner, tmp_path)
+        finally:
+            os.unlink(tmp_path)
+
+
 # ---------------------------------------------------------------------------
 # Helpers for backward-compatibility test (issue #389)
 # ---------------------------------------------------------------------------
@@ -95,8 +154,8 @@ def _make_old_style_pickle_bytes(model):
 
     buf = io.BytesIO()
     p = pickle.Pickler(buf)
-    p.dispatch_table = {  # pylint: disable=c-extension-no-member
-        _sklearn_tree.Tree: _old_tree_reducer
+    p.dispatch_table = {
+        _sklearn_tree.Tree: _old_tree_reducer  # pylint: disable=c-extension-no-member
     }
     p.dump(model)
     return buf.getvalue()
@@ -152,8 +211,9 @@ def test_backward_compat_load(learners_data):
             assert (new_preds == preds).all()
             for iter_models in model.base_models:
                 for estimator in iter_models:
-                    assert isinstance(  # pylint: disable=c-extension-no-member
-                        estimator.tree_, _sklearn_tree.Tree
-                    )
+                    tree_type = (
+                        _sklearn_tree.Tree
+                    )  # pylint: disable=c-extension-no-member
+                    assert isinstance(estimator.tree_, tree_type)
         finally:
             os.unlink(tmp_path)

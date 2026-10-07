@@ -109,7 +109,7 @@ class NGBoost:
         self.scalings = []
         self.col_idxs = []
         self.tol = tol
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
         self.best_val_loss_itr = None
         self.validation_fraction = validation_fraction
         self.early_stopping_rounds = early_stopping_rounds
@@ -166,18 +166,14 @@ class NGBoost:
 
         if self.minibatch_frac != 1.0:
             sample_size = int(self.minibatch_frac * len(Y))
-            idxs = self.random_state.choice(
-                np.arange(len(Y)), sample_size, replace=False
-            )
+            idxs = self._rng.choice(np.arange(len(Y)), sample_size, replace=False)
 
         if self.col_sample != 1.0:
             if self.col_sample > 0.0:
                 col_size = max(1, int(self.col_sample * X.shape[1]))
             else:
                 col_size = 0
-            col_idx = self.random_state.choice(
-                np.arange(X.shape[1]), col_size, replace=False
-            )
+            col_idx = self._rng.choice(np.arange(X.shape[1]), col_size, replace=False)
 
         weight_batch = None if sample_weight is None else sample_weight[idxs]
 
@@ -206,13 +202,13 @@ class NGBoost:
     def fit_base(self, X, grads, sample_weight=None):
         base_learners = self._base_learners()
         # Seed only the base learners that have no random_state of their own,
-        # drawing from self.random_state in this single thread so serial and
+        # drawing from self._rng in this single thread so serial and
         # parallel fits agree. Learners that already fix their own randomness are
         # left untouched, so their RNG stream is not perturbed (this mirrors how
         # scikit learn's forests seed their sub estimators).
         seeds = [
             (
-                int(self.random_state.randint(np.iinfo(np.int32).max))
+                int(self._rng.randint(np.iinfo(np.int32).max))
                 if base.get_params().get("random_state", "set") is None
                 else None
             )
@@ -322,6 +318,9 @@ class NGBoost:
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
+        # Start a fresh random stream on every fit so that refitting with an
+        # integer random_state gives the same model
+        self._rng = check_random_state(self.random_state)
 
         return self.partial_fit(
             X,
@@ -388,6 +387,8 @@ class NGBoost:
             raise RuntimeError(
                 "Base models, scalings, and col_idxs are not the same length"
             )
+        if getattr(self, "_rng", None) is None:
+            self._rng = check_random_state(self.random_state)
         self._base_learners()
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
@@ -406,7 +407,7 @@ class NGBoost:
                         X,
                         Y,
                         test_size=self.validation_fraction,
-                        random_state=self.random_state,
+                        random_state=self._rng,
                     )
 
                 else:
@@ -425,7 +426,7 @@ class NGBoost:
                         Y,
                         sample_weight,
                         test_size=self.validation_fraction,
-                        random_state=self.random_state,
+                        random_state=self._rng,
                     )
             elif X_val is not None and Y_val is not None:
                 if sample_weight is not None and val_sample_weight is None:

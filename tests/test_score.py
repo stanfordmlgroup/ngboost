@@ -115,6 +115,7 @@ TEST_METRIC: List[DistScore] = [
 # Fill in the dist, score pair to test the gradient
 # Tests all in TEST_METRIC by default
 TEST_GRAD: List[DistScore] = TEST_METRIC + [
+    (Laplace, CRPScore),
     (Cauchy, LogScore),
     (T, LogScore),
     (TFixedDf, LogScore),
@@ -134,7 +135,6 @@ def test_dists_grad(dist_score_pair: DistScore):
     manifold_test = manifold(score, dist)
     grad_err = estimate_grad_err(params, manifold_test)
     assert grad_err < 1e-3
-    # TODO: Laplace CRPScore currently fails this test
 
 
 @pytest.mark.slow

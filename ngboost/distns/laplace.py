@@ -37,8 +37,10 @@ class LaplaceCRPScore(CRPScore):
         D[:, 0] = np.sign(self.loc - Y) * (
             1 - np.exp(-np.abs(Y - self.loc) / self.scale)
         )
-        D[:, 1] = np.exp(-np.abs(Y - self.loc) / self.scale) * (
-            self.scale + np.abs(Y - self.loc)
+        D[:, 1] = (
+            np.exp(-np.abs(Y - self.loc) / self.scale)
+            * (self.scale + np.abs(Y - self.loc))
+            - 0.75 * self.scale
         )
         return D
 

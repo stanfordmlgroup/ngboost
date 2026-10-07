@@ -30,11 +30,7 @@ class LogNormalLogScoreCensored(LogScore):
         D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale) / (
             1 - self.dist.cdf(T) + self.eps
         )
-        D_cens[:, 1] = (
-            -Z
-            * sp.stats.norm.pdf(lT, loc=self.loc, scale=self.scale)
-            / (1 - self.dist.cdf(T) + self.eps)
-        )
+        D_cens[:, 1] = -Z * sp.stats.norm.pdf(Z) / (1 - self.dist.cdf(T) + self.eps)
 
         return (1 - E) * D_cens + E * D_uncens
 
@@ -71,12 +67,9 @@ class LogNormalCRPScoreCensored(CRPScore):
         Z = (lT - self.loc) / self.scale
 
         D = np.zeros((self.loc.shape[0], 2))
+        # the censored CRPS is scale * integral of Phi(z)**2 up to Z
         D[:, 0] = E * -(2 * sp.stats.norm.cdf(Z) - 1) + (1 - E) * -(
             sp.stats.norm.cdf(Z) ** 2
-            + 2 * Z * sp.stats.norm.cdf(Z) * sp.stats.norm.pdf(Z)
-            + 2 * sp.stats.norm.pdf(Z) ** 2
-            - 2 * sp.stats.norm.cdf(Z) * sp.stats.norm.pdf(Z) ** 2
-            - np.sqrt(2 / np.pi) * sp.stats.norm.pdf(np.sqrt(2) * Z)
         )
         D[:, 1] = self.score(Y) + (lT - self.loc) * D[:, 0]
         return D

@@ -32,16 +32,17 @@ class ExponentialCRPScore(CRPScore):
     def score(self, Y):
         E, T = Y["Event"], Y["Time"]
         score = T + self.scale * (2 * np.exp(-T / self.scale) - 1.5)
-        score[E == 1] -= (
-            0.5 * self.scale[E == 1] * np.exp(-2 * T[E == 1] / self.scale[E == 1])
+        # a censored observation only scores the CDF up to the censoring time
+        score[E == 0] -= (
+            0.5 * self.scale[E == 0] * np.exp(-2 * T[E == 0] / self.scale[E == 0])
         )
         return score
 
     def d_score(self, Y):
         E, T = Y["Event"], Y["Time"]
         deriv = 2 * np.exp(-T / self.scale) * (self.scale + T) - 1.5 * self.scale
-        deriv[E == 1] -= np.exp(-2 * T[E == 1] / self.scale[E == 1]) * (
-            0.5 * self.scale[E == 1] - T[E == 1]
+        deriv[E == 0] -= np.exp(-2 * T[E == 0] / self.scale[E == 0]) * (
+            0.5 * self.scale[E == 0] + T[E == 0]
         )
         return deriv.reshape((-1, 1))
 

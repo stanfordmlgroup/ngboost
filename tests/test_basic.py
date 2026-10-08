@@ -4,6 +4,7 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
 from sklearn.tree import DecisionTreeRegressor
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
@@ -42,7 +43,7 @@ def test_classification(breast_cancer_data):
     assert score <= 0.30
 
     score = ngb.score(x_test, y_test)
-    assert score <= 0.30
+    assert score >= -0.30
 
     dist = ngb.pred_dist(x_test)
     assert isinstance(dist, Bernoulli)
@@ -66,13 +67,35 @@ def test_regression(california_housing_data):
     assert score <= 15
 
     score = ngb.score(x_test, y_test)
-    assert score <= 15
+    assert score >= -15
 
     dist = ngb.pred_dist(x_test)
     assert isinstance(dist, Normal)
 
     score = mean_squared_error(y_test, preds)
     assert score <= 15
+
+
+def test_score_is_mean_log_likelihood():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(200, 4))
+    Y = X @ rng.normal(size=4) + rng.normal(size=200)
+    ngb = NGBRegressor(n_estimators=20, verbose=False, random_state=0).fit(X, Y)
+    assert ngb.score(X, Y) == pytest.approx(ngb.pred_dist(X).logpdf(Y).mean())
+
+
+def test_grid_search_prefers_better_model():
+    # scikit-learn model selection picks the highest score, so with the default
+    # scoring it should prefer more boosting iterations here (issue #418)
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(300, 4))
+    Y = X @ rng.normal(size=4) + rng.normal(size=300)
+    search = GridSearchCV(
+        NGBRegressor(verbose=False, random_state=0),
+        {"n_estimators": [2, 100]},
+        cv=3,
+    ).fit(X, Y)
+    assert search.best_params_ == {"n_estimators": 100}
 
 
 def test_classifier_validation_fraction_is_supported(breast_cancer_data):

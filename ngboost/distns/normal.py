@@ -49,7 +49,8 @@ class NormalCRPScore(CRPScore):
             self.var,
         ]
         I = I.reshape((self.var.shape[0], 2, 2))
-        I = 1 / (2 * np.sqrt(np.pi)) * I
+        # 2 * integral of grad F grad F^T, which scales like 1 / scale
+        I = 1 / (2 * np.sqrt(np.pi) * self.scale[:, np.newaxis, np.newaxis]) * I
         return I
 
 
@@ -185,7 +186,7 @@ class NormalFixedMeanCRPScore(CRPScore):
         return D
 
     def metric(self):
-        I = np.c_[self.var]
+        I = np.c_[self.scale]
         I = I.reshape((self.var.shape[0], 1, 1))
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I

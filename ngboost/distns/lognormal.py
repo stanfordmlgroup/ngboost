@@ -85,7 +85,7 @@ class LogNormalCRPScoreCensored(CRPScore):
         I = np.zeros((self.loc.shape[0], 2, 2))
         I[:, 0, 0] = 2
         I[:, 1, 1] = self.scale**2
-        I /= 2 * np.sqrt(np.pi)
+        I /= 2 * np.sqrt(np.pi) * self.scale[:, np.newaxis, np.newaxis]
         return I
 
 

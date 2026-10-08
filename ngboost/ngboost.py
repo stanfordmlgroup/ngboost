@@ -657,7 +657,21 @@ class NGBoost:
         return params
 
     def score(self, X, Y):  # for sklearn
-        return self.Manifold(self.pred_dist(X)._params).total_score(Y)
+        """
+        Score the predicted distributions at the points X=x against the outcomes Y.
+        Higher is better, as scikit-learn expects, so this is the negative of the
+        average scoring rule: the mean log-likelihood for LogScore and the negative
+        mean CRPS for CRPScore.
+
+        Parameters:
+            X         : DataFrame object or List or
+                        numpy array of predictors (n x p) in numeric format.
+            Y         : numpy array of outcomes (n)
+
+        Output:
+            A float, the negative of the average score
+        """
+        return -self.Manifold(self.pred_dist(X)._params).total_score(Y)
 
     def pred_dist(self, X, max_iter=None):
         """

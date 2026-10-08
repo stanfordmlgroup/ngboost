@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 import pytest
+from scipy.integrate import quad
 from scipy.optimize import approx_fprime
 
 from ngboost.distns import (
@@ -12,12 +13,16 @@ from ngboost.distns import (
     BetaBinomialEstN,
     Cauchy,
     Distn,
+    Exponential,
     Gamma,
     HalfNormal,
     Laplace,
     LogitNormal,
+    LogNormal,
     MultivariateNormal,
     Normal,
+    NormalFixedMean,
+    NormalFixedVar,
     Poisson,
     T,
     TFixedDf,
@@ -95,14 +100,47 @@ def estimate_metric_err(params: np.ndarray, manifold_test):
     return metric_err
 
 
+def estimate_crps_metric(params: np.ndarray, dist, lower=-np.inf, to_y=None):
+    """
+    Args:
+        params: Parameters to compute the metric at
+        dist (Distn): The distribution, which must have a cdf method
+        lower: Lower limit of the variable that the CRPS integrates over
+        to_y: Maps that variable to the outcome, if the two differ
+
+    Returns:
+        The CRPS metric 2 * integral of grad F grad F^T (Dawid, 2007), with
+        grad F from finite differences of the cdf
+    """
+    h = 1e-6
+    steps = h * np.eye(len(params))[:, :, np.newaxis]
+
+    def integrand(z, i, j):
+        # to_y can overflow to inf in the far tail, where the cdf is 1
+        with np.errstate(over="ignore"):
+            y = z if to_y is None else to_y(z)
+        grad = [
+            (dist(params + step).cdf(y) - dist(params - step).cdf(y)).item() / (2 * h)
+            for step in steps
+        ]
+        return grad[i] * grad[j]
+
+    metric = np.zeros((len(params), len(params)))
+    for i in range(len(params)):
+        for j in range(len(params)):
+            metric[i, j] = 2 * quad(integrand, lower, np.inf, args=(i, j))[0]
+    return metric
+
+
 def idfn(dist_score: DistScore):
     dist, score = dist_score
     return dist.__name__ + "_" + score.__name__
 
 
+# test_dists_metric checks the LogScore metric (the Fisher information), and
+# test_crps_metric checks the CRPScore metrics
 TEST_METRIC: List[DistScore] = [
     (Normal, LogScore),
-    (Normal, CRPScore),
     (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
@@ -121,7 +159,37 @@ TEST_GRAD: List[DistScore] = TEST_METRIC + [
     (LogitNormal, LogScore),
     (BetaBinomial, LogScore),
     (BetaBinomialEstN, LogScore),
+    (Normal, CRPScore),
 ]
+
+# Each case gives a distribution with a CRPScore and the range and change of
+# variable for its CRPS integral. The LogNormal CRPS is computed on log(T).
+TEST_CRPS_METRIC = [
+    (Normal, -np.inf, None),
+    (NormalFixedMean, -np.inf, None),
+    (NormalFixedVar, -np.inf, None),
+    (Laplace, -np.inf, None),
+    (Exponential, 0, None),
+    (LogNormal, -np.inf, np.exp),
+]
+
+
+@pytest.mark.parametrize(
+    "dist,lower,to_y",
+    TEST_CRPS_METRIC,
+    ids=[case[0].__name__ for case in TEST_CRPS_METRIC],
+)
+def test_crps_metric(dist, lower, to_y):
+    # the scale is away from 1, so a metric off by a factor of scale fails
+    params = np.array([[0.3], [0.7]])[-dist.n_params :]
+    # survival distributions only implement censored scores
+    if hasattr(dist, "censored_scores"):
+        score_dist = dist.uncensor(CRPScore)
+    else:
+        score_dist = dist
+    metric = manifold(CRPScore, score_dist)(params).metric()[0]
+    expected = estimate_crps_metric(params, dist, lower, to_y)
+    np.testing.assert_allclose(metric, expected, rtol=1e-4, atol=1e-8)
 
 
 @pytest.mark.parametrize("dist_score_pair", TEST_GRAD, ids=idfn)

@@ -60,6 +60,70 @@ def test_array_like_sample_weights(weight_kind, minibatch_frac, auto_validation)
         np.testing.assert_array_equal(sample_weight, original_weights)
 
 
+@pytest.mark.parametrize("learner", ["regressor", "classifier", "survival"])
+def test_pandas_sample_weights_match_arrays(learner):
+    rng = np.random.default_rng(23)
+    X = rng.normal(size=(60, 3))
+    Y = X[:, 0] + rng.normal(scale=0.3, size=60)
+    weights = np.linspace(0.2, 3.0, 60)
+    if learner == "regressor":
+        model_class, targets = NGBRegressor, [Y]
+    elif learner == "classifier":
+        model_class, targets = NGBClassifier, [(Y > 0).astype(int)]
+    else:
+        model_class, targets = NGBSurvival, [np.exp(Y), rng.integers(0, 2, size=60)]
+    train_targets = [target[:40] for target in targets]
+    val_targets = [target[40:] for target in targets]
+
+    def fit(X_train, w_train, X_val, w_val):
+        model = model_class(n_estimators=3, verbose=False, random_state=7)
+        return model.fit(
+            X_train,
+            *train_targets,
+            X_val,
+            *val_targets,
+            sample_weight=w_train,
+            val_sample_weight=w_val,
+        )
+
+    reference = fit(X[:40], weights[:40], X[40:], weights[40:])
+    # Shuffled, offset indexes shared by X and the weights, as when both are
+    # columns of one DataFrame.
+    train_index = rng.permutation(40) + 100
+    val_index = rng.permutation(20) + 500
+    model = fit(
+        pd.DataFrame(X[:40], index=train_index),
+        pd.Series(weights[:40], index=train_index),
+        pd.DataFrame(X[40:], index=val_index),
+        pd.Series(weights[40:], index=val_index),
+    )
+
+    np.testing.assert_array_equal(
+        model.pred_param(X[40:]), reference.pred_param(X[40:])
+    )
+    assert model.evals_result == reference.evals_result
+
+
+@pytest.mark.parametrize("argument", ["sample_weight", "val_sample_weight"])
+@pytest.mark.parametrize(
+    "bad_weight, message",
+    [
+        (np.ones(21), "must have one entry per row"),
+        (np.ones(19), "must have one entry per row"),
+        (np.ones((20, 1)), "must be 1-D"),
+        (np.r_[np.nan, np.ones(19)], "contains NaN"),
+    ],
+)
+def test_invalid_sample_weights_raise(argument, bad_weight, message):
+    rng = np.random.default_rng(29)
+    X = rng.normal(size=(20, 2))
+    Y = X[:, 0]
+    with pytest.raises(ValueError, match=rf"\b{argument} {message}"):
+        NGBRegressor(n_estimators=1, verbose=False).fit(
+            X, Y, X_val=X, Y_val=Y, **{argument: bad_weight}
+        )
+
+
 # TODO: This is non-deterministic in the model fitting
 def test_classification(breast_cancer_data):
     from sklearn.metrics import (  # pylint: disable=import-outside-toplevel

@@ -458,6 +458,8 @@ class NGBoost:
             multi_output=self.multi_output,
             y_numeric=True,
         )
+        if sample_weight is not None:
+            sample_weight = np.asarray(sample_weight)
 
         self.n_features = X.shape[1]
 

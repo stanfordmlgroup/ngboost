@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pytest
 from scipy import sparse
 from sklearn.base import BaseEstimator, RegressorMixin, clone
@@ -19,6 +20,44 @@ class RecordingRegressor(BaseEstimator, RegressorMixin):
 
     def predict(self, X):
         return np.full(X.shape[0], self.prediction_)
+
+
+@pytest.mark.parametrize(
+    "weight_kind", ["array", "list", "series", "offset_series", "reversed_series"]
+)
+@pytest.mark.parametrize("minibatch_frac", [1.0, 0.7])
+@pytest.mark.parametrize("auto_validation", [False, True])
+def test_array_like_sample_weights(weight_kind, minibatch_frac, auto_validation):
+    rng = np.random.default_rng(19)
+    X = rng.normal(size=(40, 3))
+    Y = 3 * X[:, 0] - X[:, 1] + rng.normal(scale=0.3, size=40)
+    weights = np.linspace(0.2, 3.0, len(Y))
+    sample_weight = {
+        "array": weights.copy(),
+        "list": weights.tolist(),
+        "series": pd.Series(weights),
+        "offset_series": pd.Series(weights, index=np.arange(len(Y)) + 100),
+        "reversed_series": pd.Series(weights, index=np.arange(len(Y))[::-1]),
+    }[weight_kind]
+    original_weights = sample_weight.copy()
+    options = {
+        "n_estimators": 3,
+        "verbose": False,
+        "random_state": 7,
+        "natural_gradient": False,
+        "minibatch_frac": minibatch_frac,
+        "validation_fraction": 0.25,
+        "early_stopping_rounds": 2 if auto_validation else None,
+    }
+    reference = NGBRegressor(**options).fit(X, Y, sample_weight=weights)
+    model = NGBRegressor(**options).fit(X, Y, sample_weight=sample_weight)
+
+    for parameter, expected in reference.pred_dist(X).params.items():
+        np.testing.assert_array_equal(model.pred_dist(X).params[parameter], expected)
+    if isinstance(sample_weight, pd.Series):
+        pd.testing.assert_series_equal(sample_weight, original_weights)
+    else:
+        np.testing.assert_array_equal(sample_weight, original_weights)
 
 
 # TODO: This is non-deterministic in the model fitting

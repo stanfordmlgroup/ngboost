@@ -393,6 +393,29 @@ def test_parallel_matches_serial_default_random_state():
     np.testing.assert_allclose(serial.pred_param(X), parallel.pred_param(X))
 
 
+def test_refit_and_clone_are_reproducible():
+    # random_state is kept as given, so refitting the same model or a clone of
+    # it starts from the same random stream as a fresh model.
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(200, 5))
+    Y = X @ rng.normal(size=5) + 0.1 * rng.normal(size=200)
+
+    kw = {
+        "n_estimators": 20,
+        "minibatch_frac": 0.5,
+        "col_sample": 0.6,
+        "random_state": 0,
+        "verbose": False,
+    }
+    fresh = NGBRegressor(**kw).fit(X, Y).predict(X)
+
+    model = NGBRegressor(**kw)
+    assert model.get_params()["random_state"] == 0
+    model.fit(X, Y)
+    np.testing.assert_allclose(model.fit(X, Y).predict(X), fresh)
+    np.testing.assert_allclose(clone(model).fit(X, Y).predict(X), fresh)
+
+
 def test_parallel_matches_serial_sparse_float32_csc():
     # A float32 CSC matrix with unsorted indices is the exact input where a
     # threaded in place sort_indices could race across the per parameter fits.

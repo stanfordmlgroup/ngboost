@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeRegressor
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
 from ngboost.distns import Bernoulli, MultivariateNormal, Normal, k_categorical
+from ngboost.distns.normal import NormalFixedVar
 
 
 class RecordingRegressor(BaseEstimator, RegressorMixin):
@@ -20,6 +21,31 @@ class RecordingRegressor(BaseEstimator, RegressorMixin):
 
     def predict(self, X):
         return np.full(X.shape[0], self.prediction_)
+
+
+@pytest.mark.parametrize("n_estimators", [0, 2])
+def test_refit_resets_best_validation_iteration(n_estimators):
+    rng = np.random.default_rng(12)
+    X = rng.normal(size=(40, 3))
+    Y = X[:, 0] - 0.5 * X[:, 1] + rng.normal(scale=0.1, size=40)
+    options = {
+        "Base": Ridge(alpha=0.0),
+        "Dist": NormalFixedVar,
+        "natural_gradient": False,
+        "verbose": False,
+        "random_state": 7,
+    }
+    model = NGBRegressor(n_estimators=4, **options)
+    model.fit(X[:30], Y[:30], X_val=X[30:], Y_val=Y[30:])
+    assert model.best_val_loss_itr is not None
+
+    model.set_params(n_estimators=n_estimators).fit(X, Y)
+    fresh = NGBRegressor(n_estimators=n_estimators, **options).fit(X, Y)
+
+    assert "val" not in model.evals_result
+    np.testing.assert_allclose(model.predict(X), fresh.predict(X))
+    assert fresh.best_val_loss_itr is None
+    assert model.best_val_loss_itr is None
 
 
 @pytest.mark.parametrize(

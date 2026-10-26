@@ -347,6 +347,8 @@ class NGBoost:
         # integer random_state gives the same model
         self._rng = check_random_state(self.random_state)
 
+        self.best_val_loss_itr = None
+
         return self.partial_fit(
             X,
             Y,

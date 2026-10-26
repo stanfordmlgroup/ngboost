@@ -37,6 +37,7 @@ matplotlib = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
+pandas = ">=1.0"
 black = "^24.0.0"
 pre-commit = "^4.0.0"
 isort = "^5.13.0"

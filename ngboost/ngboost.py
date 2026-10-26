@@ -18,6 +18,28 @@ from ngboost.manifold import manifold
 from ngboost.scores import LogScore
 
 
+def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
+    """Return sample_weight as a 1-D float array with one entry per row of X.
+
+    Weights are matched to rows by position, so a pandas index is ignored.
+    """
+    if sample_weight is None:
+        return None
+    sample_weight = check_array(
+        sample_weight, ensure_2d=False, dtype=np.float64, input_name=input_name
+    )
+    if sample_weight.ndim != 1:
+        raise ValueError(
+            f"{input_name} must be 1-D, got an array of shape {sample_weight.shape}"
+        )
+    if sample_weight.shape[0] != X.shape[0]:
+        raise ValueError(
+            f"{input_name} must have one entry per row: got {sample_weight.shape[0]} "
+            f"entries for {X.shape[0]} rows"
+        )
+    return sample_weight
+
+
 class NGBoost:
     """
     Constructor for all NGBoost models.
@@ -299,9 +321,12 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to None)
+                                    List, pandas Series or numpy array of size (n)
+                                    (defaults to None). Weights are matched to rows by
+                                    position, so the index of a Series is ignored.
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to None)
+                                    List, pandas Series or numpy array of size (n_val),
+                                    matched to rows by position (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor
@@ -365,9 +390,12 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to None)
+                                    List, pandas Series or numpy array of size (n)
+                                    (defaults to None). Weights are matched to rows by
+                                    position, so the index of a Series is ignored.
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to None)
+                                    List, pandas Series or numpy array of size (n_val),
+                                    matched to rows by position (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor
@@ -459,6 +487,7 @@ class NGBoost:
             multi_output=self.multi_output,
             y_numeric=True,
         )
+        sample_weight = _validate_sample_weight(sample_weight, X)
 
         self.n_features = X.shape[1]
 
@@ -475,6 +504,9 @@ class NGBoost:
                 ensure_all_finite="allow-nan",
                 multi_output=self.multi_output,
                 y_numeric=True,
+            )
+            val_sample_weight = _validate_sample_weight(
+                val_sample_weight, X_val, input_name="val_sample_weight"
             )
             val_params = self.pred_param(X_val)
             val_loss_list = []

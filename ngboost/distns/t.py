@@ -103,7 +103,7 @@ class TFixedDfLogScore(LogScore):
     def metric(self):
         FI = np.zeros((self.var.shape[0], 2, 2))
         FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
-        FI[:, 1, 1] = (self.df) / (2 * (self.df + 3) * self.var)
+        FI[:, 1, 1] = 2 * self.df / (self.df + 3)
         return FI
 
 

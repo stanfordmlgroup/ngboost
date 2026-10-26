@@ -111,6 +111,8 @@ TEST_METRIC: List[DistScore] = [
     (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
+    (TFixedDf, LogScore),
+    (Cauchy, LogScore),
     (Poisson, LogScore),
     (Gamma, LogScore),
     (Weibull, LogScore),
@@ -121,9 +123,7 @@ TEST_METRIC: List[DistScore] = [
 # Tests all in TEST_METRIC by default
 TEST_GRAD: List[DistScore] = TEST_METRIC + [
     (Laplace, CRPScore),
-    (Cauchy, LogScore),
     (T, LogScore),
-    (TFixedDf, LogScore),
     (LogitNormal, LogScore),
     (BetaBinomial, LogScore),
     (BetaBinomialEstN, LogScore),
@@ -192,4 +192,3 @@ def test_dists_metric(dist_score_pair: DistScore, seed: int):
     manifold_test = manifold(LogScore, dist)
     FI_err = estimate_metric_err(params, manifold_test)
     assert FI_err < 1e-1
-    # TODO: TFixedDF, Cauchy currently fail this test

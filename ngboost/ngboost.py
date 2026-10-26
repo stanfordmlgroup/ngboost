@@ -323,6 +323,8 @@ class NGBoost:
         self.scalings = []
         self.col_idxs = []
 
+        self.best_val_loss_itr = None
+
         return self.partial_fit(
             X,
             Y,

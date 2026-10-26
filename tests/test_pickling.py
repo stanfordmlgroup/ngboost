@@ -116,8 +116,8 @@ def _make_old_style_pickle_bytes(model):
 
     buf = io.BytesIO()
     p = pickle.Pickler(buf)
-    p.dispatch_table = {
-        _sklearn_tree.Tree: _old_tree_reducer  # pylint: disable=c-extension-no-member
+    p.dispatch_table = {  # pylint: disable=c-extension-no-member
+        _sklearn_tree.Tree: _old_tree_reducer
     }
     p.dump(model)
     return buf.getvalue()
@@ -173,9 +173,8 @@ def test_backward_compat_load(learners_data):
             assert (new_preds == preds).all()
             for iter_models in model.base_models:
                 for estimator in iter_models:
-                    tree_type = (
-                        _sklearn_tree.Tree
-                    )  # pylint: disable=c-extension-no-member
-                    assert isinstance(estimator.tree_, tree_type)
+                    assert isinstance(  # pylint: disable=c-extension-no-member
+                        estimator.tree_, _sklearn_tree.Tree
+                    )
         finally:
             os.unlink(tmp_path)

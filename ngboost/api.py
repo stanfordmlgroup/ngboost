@@ -127,7 +127,6 @@ class NGBRegressor(NGBoost, BaseEstimator):
         super().__setstate__(state_dict)
 
 
-# pylint: disable=duplicate-code
 class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     """
     Constructor for NGBoost classification models.
@@ -223,9 +222,6 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
                 f"{n_classes} classes, got {len(self.classes_)}."
             )
 
-    def _encode_labels(self, Y):
-        return self._le.transform(Y)
-
     def __setstate__(
         self, state_dict
     ):  # pylint: disable=attribute-defined-outside-init
@@ -236,7 +232,9 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
             self._le = LabelEncoder()
             self._le.classes_ = self.classes_
 
-    # pylint: disable=too-many-positional-arguments,attribute-defined-outside-init
+    # fit and partial_fit pass their arguments on to NGBoost unchanged, so
+    # pylint reads the calls as copies of the one in NGBoost.fit.
+    # pylint: disable=too-many-positional-arguments,duplicate-code
     def fit(
         self,
         X,
@@ -249,15 +247,10 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
         val_loss_monitor=None,
         early_stopping_rounds=None,
     ):
+        # Learn the classes on every fit. NGBoost.fit then calls partial_fit,
+        # which encodes Y and Y_val with them.
         self._fit_label_encoder(Y)
-        Y = self._encode_labels(Y)
-        if Y_val is not None:
-            Y_val = self._le.transform(Y_val)
-        self.base_models = []
-        self.scalings = []
-        self.col_idxs = []
-        return NGBoost.partial_fit(
-            self,
+        super().fit(
             X,
             Y,
             X_val=X_val,
@@ -268,8 +261,9 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
             val_loss_monitor=val_loss_monitor,
             early_stopping_rounds=early_stopping_rounds,
         )
+        return self
 
-    # pylint: disable=too-many-positional-arguments,attribute-defined-outside-init
+    # pylint: disable=too-many-positional-arguments
     def partial_fit(
         self,
         X,
@@ -284,11 +278,10 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     ):
         if not hasattr(self, "classes_"):
             self._fit_label_encoder(Y)
-        Y = self._encode_labels(Y)
+        Y = self._le.transform(Y)
         if Y_val is not None:
             Y_val = self._le.transform(Y_val)
-        return NGBoost.partial_fit(
-            self,
+        super().partial_fit(
             X,
             Y,
             X_val=X_val,
@@ -299,6 +292,7 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
             val_loss_monitor=val_loss_monitor,
             early_stopping_rounds=early_stopping_rounds,
         )
+        return self
 
     def predict(self, X, max_iter=None):
         return self.classes_[super().predict(X, max_iter=max_iter)]
@@ -309,9 +303,9 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
         ]
 
     def score(self, X, Y):  # for sklearn
-        return self.Manifold(self.pred_param(check_array(X)).T).total_score(
-            self._le.transform(Y)
-        )
+        # Call NGBoost.score directly: super() would reach ClassifierMixin.score,
+        # which returns accuracy.
+        return NGBoost.score(self, X, self._le.transform(Y))
 
     def predict_proba(self, X, max_iter=None):
         """

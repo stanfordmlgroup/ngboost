@@ -34,9 +34,7 @@ def _make_old_style_pickle_bytes(model):
 
     buf = io.BytesIO()
     pickler = pickle.Pickler(buf)
-    pickler.dispatch_table = {
-        _sklearn_tree.Tree: _old_tree_reducer  # pylint: disable=c-extension-no-member
-    }
+    pickler.dispatch_table = {_sklearn_tree.Tree: _old_tree_reducer}
     pickler.dump(model)
     return buf.getvalue()
 

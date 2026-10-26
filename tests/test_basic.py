@@ -200,6 +200,32 @@ def test_classifier_rejects_label_count_mismatch(breast_cancer_data):
         ngb.fit(x_train, y_train)
 
 
+def test_classifier_refit_matches_fresh_fit():
+    # NGBClassifier.fit encodes the labels and must still go through
+    # NGBoost.fit, which resets the random stream and the validation metadata.
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(200, 4))
+    Y = np.where(X[:, 0] + rng.normal(size=200) > 0, "yes", "no")
+    kw = {
+        "n_estimators": 5,
+        "minibatch_frac": 0.5,
+        "col_sample": 0.5,
+        "random_state": 3,
+        "verbose": False,
+    }
+    fresh = NGBClassifier(**kw).fit(X, Y)
+
+    model = NGBClassifier(**kw).fit(X[:150], Y[:150], X_val=X[150:], Y_val=Y[150:])
+    assert model.best_val_loss_itr is not None
+    model.fit(X, Y)
+
+    assert model.best_val_loss_itr is None
+    np.testing.assert_allclose(model.predict_proba(X), fresh.predict_proba(X))
+
+    model.fit(X, np.where(Y == "yes", 1, 0))
+    assert list(model.classes_) == [0, 1]
+
+
 # TODO: This is non-deterministic in the model fitting
 def test_classification(breast_cancer_data):
     from sklearn.metrics import (  # pylint: disable=import-outside-toplevel

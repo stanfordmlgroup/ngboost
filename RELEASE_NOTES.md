@@ -6,7 +6,7 @@
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
-* Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was too large by a factor of the scale. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
+* Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
 
 ## Version 0.5.10
 

@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 import pytest
+from scipy.integrate import quad
 from scipy.optimize import approx_fprime
 
 from ngboost.distns import (
@@ -12,10 +13,12 @@ from ngboost.distns import (
     BetaBinomialEstN,
     Cauchy,
     Distn,
+    Exponential,
     Gamma,
     HalfNormal,
     Laplace,
     LogitNormal,
+    LogNormal,
     MultivariateNormal,
     Normal,
     Poisson,
@@ -24,6 +27,8 @@ from ngboost.distns import (
     TFixedDfFixedVar,
     Weibull,
 )
+from ngboost.distns.utils import SurvivalDistnClass
+from ngboost.helpers import Y_from_censored
 from ngboost.manifold import manifold
 from ngboost.scores import CRPScore, LogScore, Score
 
@@ -106,6 +111,8 @@ TEST_METRIC: List[DistScore] = [
     (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
+    (TFixedDf, LogScore),
+    (Cauchy, LogScore),
     (Poisson, LogScore),
     (Gamma, LogScore),
     (Weibull, LogScore),
@@ -115,9 +122,8 @@ TEST_METRIC: List[DistScore] = [
 # Fill in the dist, score pair to test the gradient
 # Tests all in TEST_METRIC by default
 TEST_GRAD: List[DistScore] = TEST_METRIC + [
-    (Cauchy, LogScore),
+    (Laplace, CRPScore),
     (T, LogScore),
-    (TFixedDf, LogScore),
     (LogitNormal, LogScore),
     (BetaBinomial, LogScore),
     (BetaBinomialEstN, LogScore),
@@ -134,7 +140,43 @@ def test_dists_grad(dist_score_pair: DistScore):
     manifold_test = manifold(score, dist)
     grad_err = estimate_grad_err(params, manifold_test)
     assert grad_err < 1e-3
-    # TODO: Laplace CRPScore currently fails this test
+
+
+TEST_CENSORED_GRAD: List[DistScore] = [
+    (Exponential, LogScore),
+    (Exponential, CRPScore),
+    (LogNormal, LogScore),
+    (LogNormal, CRPScore),
+]
+
+
+@pytest.mark.parametrize("event", [True, False])
+@pytest.mark.parametrize("dist_score_pair", TEST_CENSORED_GRAD, ids=idfn)
+def test_censored_dists_grad(dist_score_pair: DistScore, event: bool):
+    np.random.seed(9)
+    dist, score = dist_score_pair
+    params = np.random.rand(dist.n_params, 1)
+    manifold_test = manifold(score, SurvivalDistnClass(dist))
+    y = Y_from_censored(np.array([1.3]), np.array([event]))
+
+    grad = lambda x: manifold_test(x.reshape(-1, 1)).score(y)
+    grad_approx = approx_fprime(params.flatten(), grad, 1e-6)
+    grad_true = manifold_test(params).d_score(y)
+    assert np.linalg.norm(grad_approx - grad_true) / dist.n_params < 1e-3
+
+
+@pytest.mark.parametrize("event", [True, False])
+def test_exponential_crps_censoring(event: bool):
+    scale, time = 1.7, 0.8
+    manifold_test = manifold(CRPScore, SurvivalDistnClass(Exponential))
+    y = Y_from_censored(np.array([time]), np.array([event]))
+
+    cdf = lambda z: 1 - np.exp(-z / scale)
+    # a censored observation only scores the CDF up to the censoring time
+    expected = quad(lambda z: cdf(z) ** 2, 0, time)[0]
+    if event:
+        expected += quad(lambda z: (1 - cdf(z)) ** 2, time, np.inf)[0]
+    assert np.allclose(manifold_test(np.log([[scale]])).score(y), expected)
 
 
 @pytest.mark.slow
@@ -150,4 +192,3 @@ def test_dists_metric(dist_score_pair: DistScore, seed: int):
     manifold_test = manifold(LogScore, dist)
     FI_err = estimate_metric_err(params, manifold_test)
     assert FI_err < 1e-1
-    # TODO: TFixedDF, Cauchy currently fail this test

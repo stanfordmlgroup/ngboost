@@ -18,6 +18,28 @@ from ngboost.manifold import manifold
 from ngboost.scores import LogScore
 
 
+def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
+    """Return sample_weight as a 1-D float array with one entry per row of X.
+
+    Weights are matched to rows by position, so a pandas index is ignored.
+    """
+    if sample_weight is None:
+        return None
+    sample_weight = check_array(
+        sample_weight, ensure_2d=False, dtype=np.float64, input_name=input_name
+    )
+    if sample_weight.ndim != 1:
+        raise ValueError(
+            f"{input_name} must be 1-D, got an array of shape {sample_weight.shape}"
+        )
+    if sample_weight.shape[0] != X.shape[0]:
+        raise ValueError(
+            f"{input_name} must have one entry per row: got {sample_weight.shape[0]} "
+            f"entries for {X.shape[0]} rows"
+        )
+    return sample_weight
+
+
 class NGBoost:
     """
     Constructor for all NGBoost models.
@@ -109,7 +131,7 @@ class NGBoost:
         self.scalings = []
         self.col_idxs = []
         self.tol = tol
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
         self.best_val_loss_itr = None
         self.validation_fraction = validation_fraction
         self.early_stopping_rounds = early_stopping_rounds
@@ -166,18 +188,14 @@ class NGBoost:
 
         if self.minibatch_frac != 1.0:
             sample_size = int(self.minibatch_frac * len(Y))
-            idxs = self.random_state.choice(
-                np.arange(len(Y)), sample_size, replace=False
-            )
+            idxs = self._rng.choice(np.arange(len(Y)), sample_size, replace=False)
 
         if self.col_sample != 1.0:
             if self.col_sample > 0.0:
                 col_size = max(1, int(self.col_sample * X.shape[1]))
             else:
                 col_size = 0
-            col_idx = self.random_state.choice(
-                np.arange(X.shape[1]), col_size, replace=False
-            )
+            col_idx = self._rng.choice(np.arange(X.shape[1]), col_size, replace=False)
 
         weight_batch = None if sample_weight is None else sample_weight[idxs]
 
@@ -206,13 +224,13 @@ class NGBoost:
     def fit_base(self, X, grads, sample_weight=None):
         base_learners = self._base_learners()
         # Seed only the base learners that have no random_state of their own,
-        # drawing from self.random_state in this single thread so serial and
+        # drawing from self._rng in this single thread so serial and
         # parallel fits agree. Learners that already fix their own randomness are
         # left untouched, so their RNG stream is not perturbed (this mirrors how
         # scikit learn's forests seed their sub estimators).
         seeds = [
             (
-                int(self.random_state.randint(np.iinfo(np.int32).max))
+                int(self._rng.randint(np.iinfo(np.int32).max))
                 if base.get_params().get("random_state", "set") is None
                 else None
             )
@@ -303,9 +321,12 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to None)
+                                    List, pandas Series or numpy array of size (n)
+                                    (defaults to None). Weights are matched to rows by
+                                    position, so the index of a Series is ignored.
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to None)
+                                    List, pandas Series or numpy array of size (n_val),
+                                    matched to rows by position (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor
@@ -322,6 +343,9 @@ class NGBoost:
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
+        # Start a fresh random stream on every fit so that refitting with an
+        # integer random_state gives the same model
+        self._rng = check_random_state(self.random_state)
 
         self.best_val_loss_itr = None
 
@@ -368,9 +392,12 @@ class NGBoost:
             Y_val                 : DataFrame object or List or
                                     numpy array of validation-set outcomes in numeric format
             sample_weight         : how much to weigh each example in the training set.
-                                    numpy array of size (n) (defaults to None)
+                                    List, pandas Series or numpy array of size (n)
+                                    (defaults to None). Weights are matched to rows by
+                                    position, so the index of a Series is ignored.
             val_sample_weight     : how much to weigh each example in the validation set.
-                                    (defaults to None)
+                                    List, pandas Series or numpy array of size (n_val),
+                                    matched to rows by position (defaults to None)
             train_loss_monitor    : a custom score or set of scores to track on the training set
                                     during training. Defaults to the score defined in the NGBoost
                                     constructor
@@ -390,6 +417,8 @@ class NGBoost:
             raise RuntimeError(
                 "Base models, scalings, and col_idxs are not the same length"
             )
+        if getattr(self, "_rng", None) is None:
+            self._rng = check_random_state(self.random_state)
         self._base_learners()
 
         # if early stopping is specified, split X,Y and sample weights (if given) into training and validation sets
@@ -408,7 +437,7 @@ class NGBoost:
                         X,
                         Y,
                         test_size=self.validation_fraction,
-                        random_state=self.random_state,
+                        random_state=self._rng,
                     )
 
                 else:
@@ -427,7 +456,7 @@ class NGBoost:
                         Y,
                         sample_weight,
                         test_size=self.validation_fraction,
-                        random_state=self.random_state,
+                        random_state=self._rng,
                     )
             elif X_val is not None and Y_val is not None:
                 if sample_weight is not None and val_sample_weight is None:
@@ -460,6 +489,7 @@ class NGBoost:
             multi_output=self.multi_output,
             y_numeric=True,
         )
+        sample_weight = _validate_sample_weight(sample_weight, X)
 
         self.n_features = X.shape[1]
 
@@ -476,6 +506,9 @@ class NGBoost:
                 ensure_all_finite="allow-nan",
                 multi_output=self.multi_output,
                 y_numeric=True,
+            )
+            val_sample_weight = _validate_sample_weight(
+                val_sample_weight, X_val, input_name="val_sample_weight"
             )
             val_params = self.pred_param(X_val)
             val_loss_list = []

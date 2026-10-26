@@ -59,6 +59,27 @@ def test_model_save(learners_data):
         assert (new_preds == preds).all()
 
 
+def test_classifier_setstate_restores_missing_label_metadata(breast_cancer_data):
+    """Older classifier pickles do not include the sklearn label metadata."""
+
+    X_train, _, Y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(verbose=False, n_estimators=2)
+    ngb.fit(X_train, Y_train)
+
+    state = ngb.__getstate__()
+    state.pop("classes_", None)
+    state.pop("_le", None)
+
+    model = NGBClassifier()
+    model.__setstate__(state)
+
+    assert np.array_equal(model.classes_, np.array([0, 1]))
+    label_classes = model._le.classes_  # pylint: disable=protected-access
+    assert np.array_equal(label_classes, model.classes_)
+    assert np.array_equal(model.predict(X_train[:5]), ngb.predict(X_train[:5]))
+    assert np.allclose(model.predict_proba(X_train[:5]), ngb.predict_proba(X_train[:5]))
+
+
 # ---------------------------------------------------------------------------
 # Helpers for backward-compatibility test (issue #389)
 # ---------------------------------------------------------------------------
@@ -95,8 +116,8 @@ def _make_old_style_pickle_bytes(model):
 
     buf = io.BytesIO()
     p = pickle.Pickler(buf)
-    p.dispatch_table = {  # pylint: disable=c-extension-no-member
-        _sklearn_tree.Tree: _old_tree_reducer
+    p.dispatch_table = {
+        _sklearn_tree.Tree: _old_tree_reducer  # pylint: disable=c-extension-no-member
     }
     p.dump(model)
     return buf.getvalue()
@@ -152,8 +173,9 @@ def test_backward_compat_load(learners_data):
             assert (new_preds == preds).all()
             for iter_models in model.base_models:
                 for estimator in iter_models:
-                    assert isinstance(  # pylint: disable=c-extension-no-member
-                        estimator.tree_, _sklearn_tree.Tree
-                    )
+                    tree_type = (
+                        _sklearn_tree.Tree
+                    )  # pylint: disable=c-extension-no-member
+                    assert isinstance(estimator.tree_, tree_type)
         finally:
             os.unlink(tmp_path)

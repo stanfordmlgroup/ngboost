@@ -14,6 +14,7 @@ from sklearn.utils import check_array
 _TREE_MODULE_SWAP_LOCK = threading.RLock()
 
 
+# pylint: disable-next=c-extension-no-member
 class _CompatTree(_sklearn_tree.Tree):  # pylint: disable=too-few-public-methods
     """Transient subclass of sklearn's Tree used only during loading.
 

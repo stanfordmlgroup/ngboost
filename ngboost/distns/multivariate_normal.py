@@ -128,15 +128,17 @@ def get_chol_factor(lower_tri_vals):
 
     Args:
         lower_tri_vals: numpy array, shaped as the number of lower triangular
-                        elements, number of observations.
+                        elements, number of observations. The second axis
+                        is absent for one observation.
                         The values ordered according to np.tril_indices(p)
                         where p is the dimension of the multivariate normal distn
 
     Returns:
         Nxpxp numpy array, with the lower triangle filled in. The diagonal is exponentiated.
+        It is pxp for one observation.
 
     """
-    lower_size, N = lower_tri_vals.shape
+    lower_size = lower_tri_vals.shape[0]
 
     # solve p(p+3)/2 = lower_size to get the
     # number of dimensions.
@@ -147,13 +149,13 @@ def get_chol_factor(lower_tri_vals):
     if not isinstance(lower_tri_vals, np.ndarray):
         lower_tri_vals = np.array(lower_tri_vals)
 
-    L = np.zeros((N, p, p))
+    L = np.zeros(lower_tri_vals.shape[1:] + (p, p))
     for par_ind, (k, l) in enumerate(zip(*np.tril_indices(p))):
         if k == l:
             # Add a small number to avoid singular matrices.
-            L[:, k, l] = np.exp(lower_tri_vals[par_ind, :]) + 1e-6
+            L[..., k, l] = np.exp(lower_tri_vals[par_ind]) + 1e-6
         else:
-            L[:, k, l] = lower_tri_vals[par_ind, :]
+            L[..., k, l] = lower_tri_vals[par_ind]
     return L
 
 
@@ -192,7 +194,8 @@ def MultivariateNormal(k):
         # pylint: disable=super-init-not-called
         def __init__(self, params):
             super().__init__(params)
-            self.N = params.shape[1]
+            # params has only the first axis for one row, as in dist[0]
+            self.N = params.shape[1] if params.ndim > 1 else 1
 
             # Number of MVN dimensions, =k originally
             self.p = (-3 + (9 + 8 * self.n_params) ** 0.5) / 2
@@ -204,14 +207,14 @@ def MultivariateNormal(k):
             # rest are the lower triangle of L.
             # Where Sigma_inverse = L@L.transpose()
             # Diagonals modelled on the log scale.
-            self.loc = np.transpose(np.array(params[: self.p, :]))
-            self.tril_L = np.array(params[self.p :, :])
+            self.loc = np.transpose(np.array(params[: self.p]))
+            self.tril_L = np.array(params[self.p :])
 
             # Returns 3d array, shape (p, p, N)
             self.L = get_chol_factor(self.tril_L)
 
             # The remainder is just for utility.
-            self.cov_inv = self.L @ self.L.transpose(0, 2, 1)
+            self.cov_inv = self.L @ np.swapaxes(self.L, -1, -2)
 
             # _cov_mat and _Lcov are place holders, relatively expensive to compute
             # The inverse of self.cov_inv. Access through self.cov
@@ -230,20 +233,20 @@ def MultivariateNormal(k):
                 diff: N x p x1 the residual between the mean and the data
                 eta: N x p which is L@diff
             """
-            diff = np.expand_dims(self.loc - Y, 2)
+            diff = (self.loc - Y)[..., None]
 
             # N x 2 x 2 @ N x p x 1
             # -> N x p x 1 we remove the last index
-            eta = np.squeeze(np.matmul(self.L.transpose(0, 2, 1), diff), axis=2)
+            eta = np.squeeze(np.matmul(np.swapaxes(self.L, -1, -2), diff), axis=-1)
             return diff, eta
 
         def logpdf(self, Y):
             _, eta = self.summaries(Y)
             # the exponentiated part of the pdf:
-            p1 = -0.5 * np.sum(np.square(eta), axis=1)
+            p1 = -0.5 * np.sum(np.square(eta), axis=-1)
             p1 = p1.squeeze()
             # this is the sqrt(determinant(Sigma)) component of the pdf
-            p2 = np.sum(np.log(np.diagonal(self.L, axis1=1, axis2=2)), axis=1)
+            p2 = np.sum(np.log(np.diagonal(self.L, axis1=-2, axis2=-1)), axis=-1)
 
             ret = p1 + p2 + self.pdf_constant
             return ret
@@ -263,8 +266,8 @@ def MultivariateNormal(k):
             if self._Lcov is None:
                 self._Lcov = np.linalg.cholesky(np.linalg.inv(self.cov_inv))
 
-            u = np.random.normal(loc=0, scale=1, size=(self.N, self.p, 1))
-            sample = np.expand_dims(self.loc, 2) + self._Lcov @ u
+            u = np.random.normal(loc=0, scale=1, size=self.loc.shape + (1,))
+            sample = self.loc[..., None] + self._Lcov @ u
             return np.squeeze(sample)
 
         def rvs(self, n):
@@ -290,8 +293,11 @@ def MultivariateNormal(k):
             """
             Returns:
                 List of scipy.stats.multivariate_normal distributions.
+                One distribution, not a list, for one row such as dist[0].
             """
             cov_mat = self.cov
+            if self.loc.ndim == 1:
+                return sp.stats.multivariate_normal(mean=self.loc, cov=cov_mat)
             return [
                 sp.stats.multivariate_normal(mean=self.loc[i, :], cov=cov_mat[i, :, :])
                 for i in range(self.N)

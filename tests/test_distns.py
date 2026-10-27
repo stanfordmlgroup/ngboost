@@ -232,14 +232,9 @@ def test_multivariatenormal(k: int, learner):
 # every distribution has to store the params it was built from.
 
 _N_ROWS = 6
-# Distn.__getitem__ passes a one-dimensional params array to the constructor
-# when the key is an integer. Categorical and MultivariateNormal expect a
-# two-dimensional array, so dist[0] fails for them. This is separate from
-# the missing _params that the NormalFixed classes had.
-_NO_INT_INDEX = {"Bernoulli", "k_categorical", "MultivariateNormal"}
 
 
-def _concrete_distns(int_index=False):
+def _concrete_distns():
     """The concrete distributions in ngboost.distns.__all__.
 
     k_categorical and MultivariateNormal are factories, so they are called
@@ -258,10 +253,7 @@ def _concrete_distns(int_index=False):
             obj = factories[name]()
         if obj in bases:
             continue
-        marks = []
-        if int_index and name in _NO_INT_INDEX:
-            marks.append(pytest.mark.xfail(reason="integer key needs 2D params"))
-        cases.append(pytest.param(obj, id=name, marks=marks))
+        cases.append(pytest.param(obj, id=name))
     return cases
 
 
@@ -297,7 +289,7 @@ def test_slice_keeps_class_and_params(Dist):
         np.testing.assert_allclose(sliced.params[name], _rows(value, slice(1, 4)))
 
 
-@pytest.mark.parametrize("Dist", _concrete_distns(int_index=True))
+@pytest.mark.parametrize("Dist", _concrete_distns())
 def test_integer_index_keeps_class_and_params(Dist):
     dist = _build(Dist)
     single = dist[2]
@@ -346,3 +338,58 @@ def test_normal_fixed_fitted_prediction_supports_len_and_slice(Dist):
     np.testing.assert_allclose(sliced.loc, pred.loc[0:2])
     np.testing.assert_allclose(sliced.scale, pred.scale[0:2])
     np.testing.assert_allclose(pred[0].loc, pred.loc[0])
+
+
+# Distn.__getitem__ passes one-dimensional params to the constructor for an
+# integer key, so dist[i] has no row axis, as with numpy. Categorical and
+# MultivariateNormal used to need two-dimensional params.
+
+
+@pytest.mark.parametrize(
+    "Dist", [Bernoulli, k_categorical(3)], ids=["Bernoulli", "k_categorical"]
+)
+def test_categorical_integer_index_gives_one_row(Dist):
+    dist = _build(Dist)
+    for i in [2, -1]:
+        single = dist[i]
+        np.testing.assert_allclose(single.class_probs(), dist.class_probs()[i])
+        assert single.predict() == dist.predict()[i]
+        samples = single.sample(50)
+        assert samples.shape == (50,)
+        assert set(samples) <= set(range(Dist.K_))
+    np.testing.assert_allclose([d.class_probs() for d in dist], dist.class_probs())
+
+
+@pytest.mark.parametrize("k", [2, 3])
+def test_multivariatenormal_integer_index_gives_one_row(k):
+    dist = _build(MultivariateNormal(k))
+    Y = np.random.default_rng(3).normal(size=(_N_ROWS, k))
+    for i in [2, -1]:
+        single = dist[i]
+        np.testing.assert_allclose(single.predict(), dist.predict()[i])
+        np.testing.assert_allclose(single.cov, dist.cov[i])
+        np.testing.assert_allclose(single.logpdf(Y[i]), dist.logpdf(Y)[i])
+        np.testing.assert_allclose(
+            single.scipy_distribution().logpdf(Y[i]), dist.logpdf(Y)[i]
+        )
+        assert np.shape(single.sample(20)) == (20, k)
+    # one distribution evaluated at several points
+    np.testing.assert_allclose(single.logpdf(Y), [single.logpdf(y) for y in Y])
+
+
+def test_integer_index_of_fitted_classifier_and_mvn():
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(60, 3))
+    y = (X[:, 0] > 0).astype(int) + (X[:, 1] > 0).astype(int)
+    clf = NGBClassifier(Dist=k_categorical(3), n_estimators=5, verbose=False)
+    clf.fit(X, y)
+    pred = clf.pred_dist(X)
+    np.testing.assert_allclose(pred[0].class_probs(), clf.predict_proba(X)[0])
+    assert pred[0].predict() == clf.predict(X)[0]
+
+    Y = np.column_stack([X[:, 0], X[:, 1]]) + rng.normal(size=(60, 2))
+    reg = NGBRegressor(Dist=MultivariateNormal(2), n_estimators=5, verbose=False)
+    reg.fit(X, Y)
+    pred = reg.pred_dist(X)
+    np.testing.assert_allclose(pred[0].predict(), reg.predict(X)[0])
+    np.testing.assert_allclose(pred[0].logpdf(Y[0]), pred.logpdf(Y)[0])

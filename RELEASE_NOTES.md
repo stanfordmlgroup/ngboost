@@ -3,6 +3,8 @@
 ## Version 0.5.11
 
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
+* `T.params` now also returns `df`, the fitted degrees of freedom, so `scipy.stats.t(**dist.params)` gives the predicted distribution. Code that expects only `loc` and `scale` in `T.params` gets one more key
+* Fix the starting (marginal) fit of `Cauchy` and `CauchyFixedVar`, which used 3 degrees of freedom instead of 1. `TFixedDf.fit` and `TFixedDfFixedVar.fit` now use the `fixed_df` of the class they are called on, so subclasses with their own `fixed_df` also start from the right fit. The starting fit of `TFixedDfFixedVar` and `CauchyFixedVar` now also holds the scale at 1, as the model does
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)

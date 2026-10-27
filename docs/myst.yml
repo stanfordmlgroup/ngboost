@@ -1,0 +1,39 @@
+# Jupyter Book 2 (MyST) configuration for the NGBoost user guide.
+# Build locally from this folder with `make html`. See https://jupyterbook.org
+# The build renders the outputs stored in the notebooks. It does not run them.
+version: 1
+project:
+  id: dd2759ea-e2a6-4bd3-9b9d-11056c23d974
+  title: NGBoost User Guide
+  description: NGBoost usage and development
+  github: https://github.com/stanfordmlgroup/ngboost
+  license: CC-BY-SA-4.0
+  toc:
+    - file: content/intro.md
+    - file: content/0-install.ipynb
+    - file: content/1-useage.ipynb
+    - file: content/2-tuning.ipynb
+    - file: content/3-interpretation.ipynb
+    - file: content/4-saving.ipynb
+    - file: content/5-dev.ipynb
+    - file: sympy_distributions.md
+  settings:
+    # Hide text such as "Text(0.5, 1.0, 'scale param')" above the plots.
+    output_matplotlib_strings: remove
+  # Redirect pages that keep the URLs of the old Jekyll site working.
+  static_files:
+    - redirects/intro.html
+    - redirects/0-install.html
+    - redirects/1-useage.html
+    - redirects/2-tuning.html
+    - redirects/3-interpretation.html
+    - redirects/4-saving.html
+    - redirects/5-dev.html
+    - redirects/sympy_distributions.html
+site:
+  template: book-theme
+  options:
+    logo: content/images/logo/logo.png
+    logo_text: NGBoost User Guide
+    logo_alt: NGBoost logo
+    favicon: content/images/logo/favicon.ico

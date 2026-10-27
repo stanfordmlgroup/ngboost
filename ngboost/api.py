@@ -2,7 +2,8 @@
 
 # pylint: disable=too-many-arguments
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_array
 
 from ngboost.distns import (
@@ -125,7 +126,7 @@ class NGBRegressor(NGBoost, BaseEstimator):
         super().__setstate__(state_dict)
 
 
-class NGBClassifier(NGBoost, BaseEstimator):
+class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     """
     Constructor for NGBoost classification models.
 
@@ -208,6 +209,102 @@ class NGBClassifier(NGBoost, BaseEstimator):
             n_jobs,
         )
         self._estimator_type = "classifier"
+
+    def _fit_label_encoder(self, Y):
+        le = LabelEncoder().fit(Y)
+        self._le = le  # pylint: disable=attribute-defined-outside-init
+        self.classes_ = le.classes_  # pylint: disable=attribute-defined-outside-init
+        n_classes = self.Dist.n_params + 1
+        if len(self.classes_) != n_classes:
+            raise ValueError(
+                "NGBClassifier Dist expects "
+                f"{n_classes} classes, got {len(self.classes_)}."
+            )
+
+    def __setstate__(
+        self, state_dict
+    ):  # pylint: disable=attribute-defined-outside-init
+        super().__setstate__(state_dict)
+        if not hasattr(self, "classes_"):
+            self.classes_ = np.arange(self.Dist.n_params + 1)
+        if not hasattr(self, "_le"):
+            self._le = LabelEncoder()
+            self._le.classes_ = self.classes_
+
+    # fit and partial_fit pass their arguments on to NGBoost unchanged, so
+    # pylint reads the calls as copies of the one in NGBoost.fit.
+    # pylint: disable=too-many-positional-arguments,duplicate-code
+    def fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        # Learn the classes on every fit. NGBoost.fit then calls partial_fit,
+        # which encodes Y and Y_val with them.
+        self._fit_label_encoder(Y)
+        super().fit(
+            X,
+            Y,
+            X_val=X_val,
+            Y_val=Y_val,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+        return self
+
+    # pylint: disable=too-many-positional-arguments
+    def partial_fit(
+        self,
+        X,
+        Y,
+        X_val=None,
+        Y_val=None,
+        sample_weight=None,
+        val_sample_weight=None,
+        train_loss_monitor=None,
+        val_loss_monitor=None,
+        early_stopping_rounds=None,
+    ):
+        if not hasattr(self, "classes_"):
+            self._fit_label_encoder(Y)
+        Y = self._le.transform(Y)
+        if Y_val is not None:
+            Y_val = self._le.transform(Y_val)
+        super().partial_fit(
+            X,
+            Y,
+            X_val=X_val,
+            Y_val=Y_val,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            train_loss_monitor=train_loss_monitor,
+            val_loss_monitor=val_loss_monitor,
+            early_stopping_rounds=early_stopping_rounds,
+        )
+        return self
+
+    def predict(self, X, max_iter=None):
+        return self.classes_[super().predict(X, max_iter=max_iter)]
+
+    def staged_predict(self, X, max_iter=None):
+        return [
+            self.classes_[pred] for pred in super().staged_predict(X, max_iter=max_iter)
+        ]
+
+    def score(self, X, Y):  # for sklearn
+        # Call NGBoost.score directly: super() would reach ClassifierMixin.score,
+        # which returns accuracy.
+        return NGBoost.score(self, X, self._le.transform(Y))
 
     def predict_proba(self, X, max_iter=None):
         """

@@ -1,34 +1,21 @@
-.PHONY: help book clean serve
+.PHONY: help install html serve clean
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of:"
-	@echo "  install     to install the necessary dependencies for jupyter-book to build"
-	@echo "  book        to convert the content/ folder into Jekyll markdown in _build/"
-	@echo "  clean       to clean out site build files"
-	@echo "  runall      to run all notebooks in-place, capturing outputs with the notebook"
-	@echo "  serve       to serve the repository locally with Jekyll"
-	@echo "  build       to build the site HTML and store in _build/"
-	@echo "  site 		 to build the site HTML, store in _site/, and serve with Jekyll"
-
+	@echo "  install     to install Jupyter Book (it also needs Node.js 18, 20 or 22+)"
+	@echo "  html        to build the static site into _build/html/"
+	@echo "              (set BASE_URL=/ngboost to match GitHub Pages)"
+	@echo "  serve       to preview the site locally with live reload"
+	@echo "  clean       to remove the build files"
 
 install:
-	jupyter-book install ./
+	pip install -r requirements.txt
 
-book:
-	jupyter-book build ./
-
-runall:
-	jupyter-book run ./content
-
-clean:
-	python scripts/clean.py
+html:
+	jupyter-book build --html --strict
 
 serve:
-	bundle exec guard
+	jupyter-book start
 
-build:
-	jupyter-book build ./ --overwrite
-
-site: build
-	bundle exec jekyll build
-	touch _site/.nojekyll
+clean:
+	jupyter-book clean --all --yes

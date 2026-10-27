@@ -1,3 +1,6 @@
+import pickle
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -5,9 +8,13 @@ from scipy import sparse
 from sklearn import config_context
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.utils.validation import check_is_fitted
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
 from ngboost.distns import (
@@ -158,6 +165,82 @@ def test_invalid_sample_weights_raise(argument, bad_weight, message):
         NGBRegressor(n_estimators=1, verbose=False).fit(
             X, Y, X_val=X, Y_val=Y, **{argument: bad_weight}
         )
+
+
+def test_classifier_sets_sklearn_classes_and_encodes_labels(breast_cancer_data):
+    from sklearn.base import is_classifier  # pylint: disable=import-outside-toplevel
+    from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
+        RocCurveDisplay,
+    )
+    from sklearn.model_selection import (  # pylint: disable=import-outside-toplevel
+        cross_val_score,
+    )
+
+    x_train, x_test, y_train, y_test = breast_cancer_data
+    y_labels = ["malignant" if y == 0 else "benign" for y in y_train]
+    y_test_labels = ["malignant" if y == 0 else "benign" for y in y_test]
+
+    ngb = NGBClassifier(
+        Dist=Bernoulli,
+        n_estimators=2,
+        verbose=False,
+        random_state=0,
+    )
+
+    assert is_classifier(ngb)
+    assert isinstance(clone(ngb), NGBClassifier)
+
+    ngb.fit(x_train, y_labels)
+
+    assert list(ngb.classes_) == ["benign", "malignant"]
+    assert set(ngb.predict(x_test[:10])).issubset(set(ngb.classes_))
+    assert ngb.predict_proba(x_test[:10]).shape == (10, 2)
+    assert len(ngb.staged_predict(x_test[:10])) == len(ngb.base_models)
+    assert cross_val_score(ngb, x_train, y_labels, scoring="roc_auc", cv=3).shape == (
+        3,
+    )
+
+    display = RocCurveDisplay.from_estimator(
+        ngb,
+        x_test,
+        y_test_labels,
+        pos_label="malignant",
+    )
+    assert display.roc_auc >= 0.5
+
+
+def test_classifier_rejects_label_count_mismatch(breast_cancer_data):
+    x_train, _, y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(Dist=k_categorical(3), n_estimators=2, verbose=False)
+
+    with pytest.raises(ValueError, match="expects 3 classes, got 2"):
+        ngb.fit(x_train, y_train)
+
+
+def test_classifier_refit_matches_fresh_fit():
+    # NGBClassifier.fit encodes the labels and must still go through
+    # NGBoost.fit, which resets the random stream and the validation metadata.
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(200, 4))
+    Y = np.where(X[:, 0] + rng.normal(size=200) > 0, "yes", "no")
+    kw = {
+        "n_estimators": 5,
+        "minibatch_frac": 0.5,
+        "col_sample": 0.5,
+        "random_state": 3,
+        "verbose": False,
+    }
+    fresh = NGBClassifier(**kw).fit(X, Y)
+
+    model = NGBClassifier(**kw).fit(X[:150], Y[:150], X_val=X[150:], Y_val=Y[150:])
+    assert model.best_val_loss_itr is not None
+    model.fit(X, Y)
+
+    assert model.best_val_loss_itr is None
+    np.testing.assert_allclose(model.predict_proba(X), fresh.predict_proba(X))
+
+    model.fit(X, np.where(Y == "yes", 1, 0))
+    assert list(model.classes_) == [0, 1]
 
 
 # TODO: This is non-deterministic in the model fitting
@@ -714,3 +797,42 @@ def test_parallel_matches_serial_with_missing_values():
     parallel = NGBRegressor(n_jobs=-1, **kw).fit(X, Y)
 
     np.testing.assert_allclose(serial.pred_param(X), parallel.pred_param(X))
+
+
+@pytest.mark.parametrize("learner", [NGBRegressor, NGBClassifier, NGBSurvival])
+def test_check_is_fitted(learner):
+    rng = np.random.default_rng(3)
+    X = rng.normal(size=(60, 3))
+    targets = {
+        NGBRegressor: (X[:, 0] + rng.normal(scale=0.1, size=60),),
+        NGBClassifier: ((X[:, 0] > 0).astype(int),),
+        NGBSurvival: (np.exp(X[:, 0]), rng.random(60) < 0.7),
+    }[learner]
+    ngb = learner(n_estimators=3, verbose=False)
+
+    with pytest.raises(NotFittedError):
+        check_is_fitted(ngb)
+    with pytest.raises(NotFittedError):
+        check_is_fitted(pickle.loads(pickle.dumps(ngb)))
+
+    ngb.fit(X, *targets)
+    check_is_fitted(ngb)
+    # A pickle saved before __sklearn_is_fitted__ existed has the same state,
+    # so it must load as fitted too
+    check_is_fitted(pickle.loads(pickle.dumps(ngb)))
+
+
+def test_pipeline_predict_sees_fitted_regressor():
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(60, 3))
+    Y = X[:, 0] + rng.normal(scale=0.1, size=60)
+    ngb = NGBRegressor(n_estimators=3, verbose=False, random_state=0)
+
+    with warnings.catch_warnings():
+        # scikit-learn < 1.8 warns that the pipeline is not fitted; later
+        # versions raise NotFittedError instead
+        warnings.filterwarnings("error", message=".*not fitted")
+        preds = make_pipeline(StandardScaler(), clone(ngb)).fit(X, Y).predict(X)
+
+    X_scaled = StandardScaler().fit_transform(X)
+    np.testing.assert_allclose(preds, ngb.fit(X_scaled, Y).predict(X_scaled))

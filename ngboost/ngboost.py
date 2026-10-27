@@ -165,6 +165,11 @@ class NGBoost:
         state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
 
+    def __sklearn_is_fitted__(self):
+        # check_is_fitted (used by Pipeline.predict) otherwise looks for
+        # attributes that end in "_", and a fitted model has none of those
+        return bool(getattr(self, "base_models", None))
+
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
         self.init_params = self.Manifold.fit(
             Y

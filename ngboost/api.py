@@ -215,7 +215,7 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
         le = LabelEncoder().fit(Y)
         self._le = le  # pylint: disable=attribute-defined-outside-init
         self.classes_ = le.classes_  # pylint: disable=attribute-defined-outside-init
-        n_classes = self.Dist.n_params + 1
+        n_classes = self.Dist.n_classes
         if len(self.classes_) != n_classes:
             raise ValueError(
                 "NGBClassifier Dist expects "
@@ -227,7 +227,7 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     ):  # pylint: disable=attribute-defined-outside-init
         super().__setstate__(state_dict)
         if not hasattr(self, "classes_"):
-            self.classes_ = np.arange(self.Dist.n_params + 1)
+            self.classes_ = np.arange(self.Dist.n_classes)
         if not hasattr(self, "_le"):
             self._le = LabelEncoder()
             self._le.classes_ = self.classes_

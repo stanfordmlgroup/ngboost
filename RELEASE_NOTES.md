@@ -2,6 +2,7 @@
 
 ## Version 0.5.11
 
+* Fix `NGBClassifier(Dist=BetaBernoulli)`, which raised `ValueError: NGBClassifier Dist expects 3 classes, got 2` on binary labels since PR #413. Classification distributions now have an `n_classes` attribute, and `NGBClassifier` counts the classes with it. `k_categorical` and the SymPy factory set it; for other `ClassificationDistn` subclasses it defaults to `n_params + 1`
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)

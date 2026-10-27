@@ -57,12 +57,6 @@ def classification_data():
     return X_train, X_test, y_train, y_test
 
 
-def is_t_distribution(
-    dist, learner, regression_data
-):  # pylint: disable=unused-argument
-    return dist == T
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "dist",
@@ -74,7 +68,21 @@ def is_t_distribution(
         LogNormal,
         Exponential,
         Gamma,
-        T,
+        # This case fails for both learners, so the marker is strict: if T starts
+        # to pass, the run fails and the marker has to go. Only a ValueError
+        # counts as the expected failure.
+        pytest.param(
+            T,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "NGBRegressor(Dist=T) crashes with 'ValueError: Input y "
+                    "contains NaN': the natural gradient for log df runs away "
+                    "as df grows (#275)"
+                ),
+                raises=ValueError,
+                strict=True,
+            ),
+        ),
         TFixedDf,
         TFixedDfFixedVar,
         Cauchy,
@@ -87,9 +95,6 @@ def is_t_distribution(
         DecisionTreeRegressor(criterion="squared_error", max_depth=3),
         DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
-)
-@pytest.mark.xfail(
-    condition=is_t_distribution, reason="Known to fail with T distribution"
 )
 def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     X_train, X_test, y_train, y_test = regression_data

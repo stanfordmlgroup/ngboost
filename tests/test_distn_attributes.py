@@ -20,6 +20,7 @@ from ngboost.distns import (
     TFixedDfFixedVar,
     Weibull,
 )
+from ngboost.scores import CRPScore, LogScore
 
 SCIPY_DISTS = [
     Normal,
@@ -60,20 +61,18 @@ def test_lognormal_loc_and_scale_are_deprecated():
         np.testing.assert_array_equal(d.scale, d.sigma)
 
 
-@pytest.mark.parametrize("score", ["LogScore", "CRPScore"])
+@pytest.mark.parametrize("score", [LogScore, CRPScore])
 def test_lognormal_fit_does_not_use_deprecated_attributes(score):
-    from ngboost import scores  # pylint: disable=import-outside-toplevel
-
     rng = np.random.default_rng(0)
     X = rng.normal(size=(200, 3))
     T_ = np.exp(X[:, 0] + rng.normal(size=200))
     E = rng.random(200) > 0.3
     with warnings.catch_warnings():
         warnings.simplefilter("error", FutureWarning)
-        ngb = NGBRegressor(Dist=LogNormal, Score=getattr(scores, score), n_estimators=5)
-        ngb.fit(X, T_).pred_dist(X).params
-        ngb = NGBSurvival(Dist=LogNormal, Score=getattr(scores, score), n_estimators=5)
-        ngb.fit(X, T_, E).pred_dist(X).params
+        ngb = NGBRegressor(Dist=LogNormal, Score=score, n_estimators=5)
+        assert set(ngb.fit(X, T_).pred_dist(X).params) == {"s", "scale"}
+        ngb = NGBSurvival(Dist=LogNormal, Score=score, n_estimators=5)
+        assert set(ngb.fit(X, T_, E).pred_dist(X).params) == {"s", "scale"}
 
 
 @pytest.mark.parametrize("Dist", SCIPY_DISTS)

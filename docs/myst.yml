@@ -17,8 +17,6 @@ project:
     - file: content/4-saving.ipynb
     - file: content/5-dev.ipynb
     - file: sympy_distributions.md
-  exclude:
-    - content/features/**
   settings:
     # Hide text such as "Text(0.5, 1.0, 'scale param')" above the plots.
     output_matplotlib_strings: remove

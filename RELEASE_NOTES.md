@@ -8,6 +8,7 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
+* Fix `T`, whose fits failed with `ValueError: Input y contains NaN` after a few dozen iterations. The natural gradient for log df grows in proportion to df, so df ran away until `exp` overflowed. df is now capped at `T.max_df` (1000), and `TLogScore` uses the exact Fisher information instead of a 100-draw Monte Carlo estimate, which also makes `T` fits about three times as fast and reproducible with `random_state`. The docstrings of the T classes no longer call loc and scale the mean and standard deviation (issue #275)
 
 ## Version 0.5.10
 

@@ -59,6 +59,30 @@ def test_model_save(learners_data):
         assert (new_preds == preds).all()
 
 
+def test_mvn_params_after_pickle():
+    """
+    A pickled MultivariateNormal model gives the same params, with the cov key,
+    and the params dict itself keeps the deprecated scale alias through pickle
+    """
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(100, 3))
+    Y = X[:, :2] + rng.normal(size=(100, 2))
+    ngb = NGBRegressor(Dist=MultivariateNormal(2), n_estimators=10, verbose=False)
+    ngb.fit(X, Y)
+    params = ngb.pred_dist(X).params
+
+    model = pickle.loads(pickle.dumps(ngb))
+    new_params = model.pred_dist(X).params
+    assert list(new_params) == ["loc", "cov"]
+    np.testing.assert_array_equal(new_params["loc"], params["loc"])
+    np.testing.assert_array_equal(new_params["cov"], params["cov"])
+
+    params_copy = pickle.loads(pickle.dumps(params))
+    assert list(params_copy) == ["loc", "cov"]
+    with pytest.warns(FutureWarning):
+        np.testing.assert_array_equal(params_copy["scale"], params["cov"])
+
+
 def test_classifier_setstate_restores_missing_label_metadata(breast_cancer_data):
     """Older classifier pickles do not include the sklearn label metadata."""
 

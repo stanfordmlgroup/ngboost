@@ -8,6 +8,9 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
+* Stop the overflow warnings from trial steps that the line search rejects, such as `overflow encountered in exp` in `Normal`. They came most often from `natural_gradient=False` on a target with large units. Fitted models do not change (issue #352)
+* `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error
+* Add a section on overflow warnings and diverging fits to the tuning page of the user guide
 
 ## Version 0.5.10
 

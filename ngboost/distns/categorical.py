@@ -54,6 +54,7 @@ def k_categorical(K):
         scores = [CategoricalLogScore]
         problem_type = "classification"
         n_params = K - 1
+        n_classes = K
         K_ = K
 
         def __init__(self, params):

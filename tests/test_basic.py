@@ -16,7 +16,14 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils.validation import check_is_fitted
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
-from ngboost.distns import Bernoulli, MultivariateNormal, Normal, k_categorical
+from ngboost.distns import (
+    Bernoulli,
+    BetaBernoulli,
+    ClassificationDistn,
+    MultivariateNormal,
+    Normal,
+    k_categorical,
+)
 from ngboost.distns.normal import NormalFixedVar
 
 
@@ -206,6 +213,30 @@ def test_classifier_rejects_label_count_mismatch(breast_cancer_data):
 
     with pytest.raises(ValueError, match="expects 3 classes, got 2"):
         ngb.fit(x_train, y_train)
+
+
+def test_classification_distns_set_n_classes():
+    class TwoParams(ClassificationDistn):
+        n_params = 2
+
+    assert Bernoulli.n_classes == 2
+    assert k_categorical(4).n_classes == 4
+    assert BetaBernoulli.n_classes == 2
+    assert TwoParams.n_classes == 3
+
+
+def test_classifier_beta_bernoulli_binary_labels():
+    # BetaBernoulli has 2 parameters for 2 classes, so NGBClassifier must not
+    # count the classes as n_params + 1.
+    rng = np.random.default_rng(7)
+    X = rng.normal(size=(100, 3))
+    Y = np.where(X[:, 0] + rng.normal(size=100) > 0, "yes", "no")
+    ngb = NGBClassifier(Dist=BetaBernoulli, n_estimators=5, verbose=False)
+    ngb.fit(X, Y)
+
+    assert list(ngb.classes_) == ["no", "yes"]
+    assert set(ngb.predict(X)) <= {"no", "yes"}
+    assert ngb.predict_proba(X).shape == (100, 2)
 
 
 def test_classifier_refit_matches_fresh_fit():

@@ -73,5 +73,16 @@ class RegressionDistn(Distn):
 
 
 class ClassificationDistn(Distn):
+    """
+    Subclasses can set n_classes, the number of classes. If a subclass does not
+    set it, n_classes is n_params + 1, as in a categorical distribution that
+    fixes the logit of class 0.
+    """
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "n_classes") and hasattr(cls, "n_params"):
+            cls.n_classes = cls.n_params + 1
+
     def predict(self):  # returns class assignments
         return np.argmax(self.class_probs(), 1)

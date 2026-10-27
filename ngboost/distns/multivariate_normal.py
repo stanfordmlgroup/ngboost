@@ -23,6 +23,35 @@ def get_tril_idxs(p):
     return tril_indices, diags, off_diags
 
 
+_SCALE_WARNING = (
+    "params['scale'] of MultivariateNormal is deprecated and will be removed in a "
+    "future release. It is the covariance matrix, not a standard deviation. "
+    "Use params['cov'] instead."
+)
+
+
+class MVNParams(dict):
+    """
+    The dict that MultivariateNormal.params returns, with the keys loc and cov.
+
+    params['scale'] and params.get('scale') still return the covariance, with a
+    FutureWarning. scale is not a key of the dict, so it is not in keys(),
+    items() or the repr, and "scale" in params is False.
+    """
+
+    def __missing__(self, key):
+        if key == "scale":
+            warnings.warn(_SCALE_WARNING, FutureWarning, stacklevel=2)
+            return self["cov"]
+        raise KeyError(key)
+
+    def get(self, key, default=None):
+        if key == "scale" and key not in self:
+            warnings.warn(_SCALE_WARNING, FutureWarning, stacklevel=2)
+            return self["cov"]
+        return super().get(key, default)
+
+
 class MVNLogScore(LogScore):
     def score(self, Y):
         return -self.logpdf(Y)
@@ -284,7 +313,18 @@ def MultivariateNormal(k):
 
         @property
         def params(self):
-            return {"loc": self.loc, "scale": self.cov}
+            """
+            Returns:
+                A dict with two keys:
+                loc: N x p array, the means
+                cov: N x p x p array, the covariance matrices
+                Row i gives scipy.stats.multivariate_normal(mean=loc[i], cov=cov[i]).
+                scipy_distribution() returns these N scipy objects.
+
+                params['scale'] is a deprecated alias of params['cov'] and gives
+                a FutureWarning. It is the covariance, not a standard deviation.
+            """
+            return MVNParams(loc=self.loc, cov=self.cov)
 
         def scipy_distribution(self):
             """

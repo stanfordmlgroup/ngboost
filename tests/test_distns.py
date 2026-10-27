@@ -1,7 +1,9 @@
+import warnings
 from typing import Tuple
 
 import numpy as np
 import pytest
+from scipy.stats import multivariate_normal
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -224,3 +226,61 @@ def test_multivariatenormal(k: int, learner):
     mean = y_dist.mean
     sample = y_dist.rv()
     scipy_list = y_dist.scipy_distribution()
+
+
+def _mvn_with_cov(cov, N=4):
+    """N MultivariateNormal rows with means 0, ..., p - 1 and covariance cov"""
+    p = cov.shape[0]
+    # the internal parameters are the means and the lower triangle of L, where
+    # inv(cov) = L @ L.T and the diagonal of L is on the log scale
+    L = np.linalg.cholesky(np.linalg.inv(cov))
+    L[np.diag_indices(p)] = np.log(L[np.diag_indices(p)])
+    theta = np.concatenate([np.arange(p, dtype=float), L[np.tril_indices(p)]])
+    return MultivariateNormal(p)(np.tile(theta[:, None], (1, N)))
+
+
+def test_multivariatenormal_params_cov():
+    cov = np.array([[2.0, 0.6, 0.0], [0.6, 1.0, -0.3], [0.0, -0.3, 0.5]])
+    dist = _mvn_with_cov(cov)
+    params = dist.params
+
+    assert list(params) == ["loc", "cov"]
+    np.testing.assert_allclose(params["loc"], np.tile([0.0, 1.0, 2.0], (4, 1)))
+    # get_chol_factor adds 1e-6 to the diagonal of L, so the match is not exact
+    np.testing.assert_allclose(
+        params["cov"], np.broadcast_to(cov, (4, 3, 3)), rtol=1e-4, atol=1e-5
+    )
+    np.testing.assert_array_equal(params["cov"], dist.cov)
+
+    # the names fit scipy.stats.multivariate_normal row by row
+    Y = np.random.default_rng(0).normal(size=(4, 3))
+    scipy_logpdf = [
+        multivariate_normal(mean=params["loc"][i], cov=params["cov"][i]).logpdf(Y[i])
+        for i in range(4)
+    ]
+    np.testing.assert_allclose(scipy_logpdf, dist.logpdf(Y))
+
+
+def test_multivariatenormal_params_scale_is_deprecated():
+    dist = _mvn_with_cov(np.array([[1.0, 0.3], [0.3, 2.0]]))
+    params = dist.params
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params["scale"]
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params.get("scale")
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    # the other keys work as in a plain dict and give no warning
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert dict(params.items()).keys() == {"loc", "cov"}
+        np.testing.assert_array_equal(params["loc"], dist.loc)
+        np.testing.assert_array_equal(params.get("cov"), dist.cov)
+        assert params.get("df") is None
+        with pytest.raises(KeyError):
+            params["df"]  # pylint: disable=pointless-statement

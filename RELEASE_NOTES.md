@@ -8,6 +8,7 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
+* `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()`. Found while assessing issue #168
 
 ## Version 0.5.10
 

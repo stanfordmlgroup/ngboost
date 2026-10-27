@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 import pytest
+import scipy.stats
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -25,6 +26,7 @@ from ngboost.distns import (
     Weibull,
     k_categorical,
 )
+from ngboost.distns.cauchy import CauchyFixedVar
 from ngboost.scores import CRPScore, LogScore, Score
 
 # test all the dist methods and score implementation methods,#
@@ -224,3 +226,34 @@ def test_multivariatenormal(k: int, learner):
     mean = y_dist.mean
     sample = y_dist.rv()
     scipy_list = y_dist.scipy_distribution()
+
+
+@pytest.mark.parametrize(
+    "dist_class, expected_df",
+    [
+        (T, None),
+        (TFixedDf, 3.0),
+        (TFixedDfFixedVar, 3.0),
+        (Cauchy, 1.0),
+        (CauchyFixedVar, 1.0),
+    ],
+)
+def test_t_family_params_match_scipy(dist_class, expected_df):
+    rng = np.random.default_rng(0)
+    n = 20
+    raw_params = rng.normal(size=(dist_class.n_params, n))
+    dist = dist_class(raw_params)
+    params = dist.params
+
+    # df is reported next to loc and scale, and loc is the first raw parameter
+    assert set(params) == {"loc", "scale", "df"}
+    np.testing.assert_allclose(params["loc"], raw_params[0])
+    np.testing.assert_allclose(params["df"], dist.df)
+    if expected_df is not None:
+        np.testing.assert_allclose(params["df"], expected_df)
+
+    # the params are enough to rebuild the same distribution in scipy
+    y = rng.normal(size=n)
+    frozen = scipy.stats.t(**params)
+    np.testing.assert_allclose(frozen.logpdf(y), dist.logpdf(y))
+    np.testing.assert_allclose(frozen.ppf(0.9), dist.ppf(0.9))

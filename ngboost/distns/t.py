@@ -77,7 +77,7 @@ class T(RegressionDistn):
 
     @property
     def params(self):
-        return {"loc": self.loc, "scale": self.scale}
+        return {"loc": self.loc, "scale": self.scale, "df": self.df}
 
 
 class TFixedDfLogScore(LogScore):
@@ -141,7 +141,7 @@ class TFixedDf(RegressionDistn):
 
     @property
     def params(self):
-        return {"loc": self.loc, "scale": self.scale}
+        return {"loc": self.loc, "scale": self.scale, "df": self.df}
 
 
 class TFixedDfFixedVarLogScore(LogScore):
@@ -199,4 +199,4 @@ class TFixedDfFixedVar(RegressionDistn):
 
     @property
     def params(self):
-        return {"loc": self.loc, "scale": self.scale}
+        return {"loc": self.loc, "scale": self.scale, "df": self.df}

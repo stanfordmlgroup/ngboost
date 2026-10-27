@@ -25,6 +25,7 @@ from ngboost.distns import (
     Weibull,
     k_categorical,
 )
+from ngboost.manifold import manifold
 from ngboost.scores import CRPScore, LogScore, Score
 
 # test all the dist methods and score implementation methods,#
@@ -57,12 +58,6 @@ def classification_data():
     return X_train, X_test, y_train, y_test
 
 
-def is_t_distribution(
-    dist, learner, regression_data
-):  # pylint: disable=unused-argument
-    return dist == T
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "dist",
@@ -88,9 +83,6 @@ def is_t_distribution(
         DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
 )
-@pytest.mark.xfail(
-    condition=is_t_distribution, reason="Known to fail with T distribution"
-)
 def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     X_train, X_test, y_train, y_test = regression_data
     # TODO: test early stopping features
@@ -99,6 +91,38 @@ def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)
     # TODO: test properties of output
+
+
+# Before df was capped, df ran away to infinity on these data within 60
+# iterations, exp(log df) overflowed and the fit failed with NaN gradients
+@pytest.mark.parametrize("units", [1.0, 1e4])
+def test_t_df_stays_finite(units):
+    rng = np.random.default_rng(0)
+    X = rng.uniform(-1, 1, size=(500, 3))
+    y = np.sin(np.pi * X[:, 0]) + X[:, 1] + 0.5 * rng.standard_t(5, size=500)
+    ngb = NGBRegressor(Dist=T, n_estimators=100, verbose=False, random_state=0)
+    ngb.fit(X, units * y)
+    df = ngb.pred_dist(X).df
+    assert np.all(np.isfinite(df))
+    assert np.all(df <= T.max_df)
+
+
+def test_t_df_is_capped():
+    # a log df far above the cap, as boosting steps can give
+    D = manifold(LogScore, T)(np.array([[0.0, 0.0], [0.0, 0.0], [1.0, 800.0]]))
+    np.testing.assert_allclose(D.df, [np.e, T.max_df])
+    y = np.array([0.5, -2.0])
+    assert np.all(np.isfinite(D.score(y)))
+    assert np.all(np.isfinite(D.grad(y, natural=True)))
+
+
+def test_t_no_push_above_cap():
+    # Both rows are at the cap. Y near loc favors a larger df, an outlier a
+    # smaller one. Boosting subtracts the gradient.
+    D = manifold(LogScore, T)(np.array([[0.0, 0.0], [0.0, 0.0], [800.0, 800.0]]))
+    grad = D.grad(np.array([0.1, 10.0]), natural=True)
+    assert grad[0, 2] == 0
+    assert grad[1, 2] > 0
 
 
 @pytest.mark.slow

@@ -143,6 +143,8 @@ def idfn(dist_score: DistScore):
 # test_crps_metric checks the CRPScore metrics
 TEST_METRIC: List[DistScore] = [
     (Normal, LogScore),
+    (NormalFixedVar, LogScore),
+    (NormalFixedMean, LogScore),
     (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),

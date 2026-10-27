@@ -14,12 +14,12 @@ class TLogScore(LogScore):
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
         num = (self.df + 1) * (Y - self.loc)
-        den = (self.df * self.var) + (Y - self.loc) ** 2
+        den = (self.df * self._var) + (Y - self.loc) ** 2
         return -(num / den)
 
     def _handle_scale_derivative(self, Y: np.ndarray) -> np.ndarray:
         num = (self.df + 1) * (Y - self.loc) ** 2
-        den = (self.df * self.var) + (Y - self.loc) ** 2
+        den = (self.df * self._var) + (Y - self.loc) ** 2
         return 1 - (num / den)
 
     def _handle_df_derivative(self, Y: np.ndarray) -> np.ndarray:
@@ -27,13 +27,13 @@ class TLogScore(LogScore):
         term_2 = (-self.df / 2) * digamma((self.df) / 2)
         term_3 = -1 / 2
         term_4_1 = (-self.df / 2) * np.log(
-            1 + ((Y - self.loc) ** 2) / (self.df * self.var)
+            1 + ((Y - self.loc) ** 2) / (self.df * self._var)
         )
         term_4_2_num = (self.df + 1) * (Y - self.loc) ** 2
         term_4_2_den = (
             2
-            * (self.df * self.var)
-            * (1 + ((Y - self.loc) ** 2) / (self.df * self.var))
+            * (self.df * self._var)
+            * (1 + ((Y - self.loc) ** 2) / (self.df * self._var))
         )
         return -(term_1 + term_2 + term_3 + term_4_1 + term_4_2_num / term_4_2_den)
 
@@ -61,7 +61,9 @@ class T(RegressionDistn):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        self.var = self.scale**2
+        # the squared scale, not the variance of the t distribution. It is
+        # private, so that dist.var() reaches the var() method of scipy.stats
+        self._var = self.scale**2
         self.df = np.exp(params[2])
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
 
@@ -86,12 +88,12 @@ class TFixedDfLogScore(LogScore):
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
         num = (self.df + 1) * (Y - self.loc)
-        den = (self.df * self.var) + (Y - self.loc) ** 2
+        den = (self.df * self._var) + (Y - self.loc) ** 2
         return -(num / den)
 
     def _handle_scale_derivative(self, Y: np.ndarray) -> np.ndarray:
         num = (self.df + 1) * (Y - self.loc) ** 2
-        den = (self.df * self.var) + (Y - self.loc) ** 2
+        den = (self.df * self._var) + (Y - self.loc) ** 2
         return 1 - (num / den)
 
     def d_score(self, Y):
@@ -101,8 +103,8 @@ class TFixedDfLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+        FI = np.zeros((self._var.shape[0], 2, 2))
+        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self._var)
         FI[:, 1, 1] = 2 * self.df / (self.df + 3)
         return FI
 
@@ -124,7 +126,7 @@ class TFixedDf(RegressionDistn):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        self.var = self.scale**2
+        self._var = self.scale**2
         # fixed df
         self.df = np.ones_like(self.loc) * self.fixed_df
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
@@ -149,8 +151,8 @@ class TFixedDfFixedVarLogScore(LogScore):
         return -self.dist.logpdf(Y)
 
     def _handle_loc_derivative(self, Y: np.ndarray) -> np.ndarray:
-        num = (self.df + 1) * (2 / (self.df * self.var)) * (Y - self.loc)
-        den = (2) * (1 + (1 / (self.df * self.var)) * (Y - self.loc) ** 2)
+        num = (self.df + 1) * (2 / (self.df * self._var)) * (Y - self.loc)
+        den = (2) * (1 + (1 / (self.df * self._var)) * (Y - self.loc) ** 2)
         return -num / den
 
     def d_score(self, Y):
@@ -159,8 +161,8 @@ class TFixedDfFixedVarLogScore(LogScore):
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 1, 1))
-        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self.var)
+        FI = np.zeros((self._var.shape[0], 1, 1))
+        FI[:, 0, 0] = (self.df + 1) / ((self.df + 3) * self._var)
         return FI
 
 
@@ -182,7 +184,7 @@ class TFixedDfFixedVar(RegressionDistn):
         self.loc = params[0]
         # fixed var
         self.scale = np.ones_like(self.loc)
-        self.var = np.ones_like(self.loc)
+        self._var = np.ones_like(self.loc)
         # fixed df
         self.df = np.ones_like(self.loc) * self.fixed_df
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)

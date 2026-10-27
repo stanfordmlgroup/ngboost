@@ -2,6 +2,7 @@
 
 ## Version 0.5.11
 
+* **Breaking:** `dist.var()` now returns the variance from `scipy.stats` for `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar`, as it does for the other distributions. Before, it raised `TypeError`, because these classes had an array attribute `var` that hid the scipy method. Code that reads `dist.var` as an array must change to `dist.var()`, or to `dist.scale ** 2`, which gives the old values on every version. The two agree for the Normal classes. For the T and Cauchy classes the old attribute was the squared scale, not the variance (found while assessing issue #168)
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)

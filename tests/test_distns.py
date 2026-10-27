@@ -6,10 +6,11 @@ from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
-from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
+from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, distns
 from ngboost.distns import (
     Bernoulli,
     Cauchy,
+    ClassificationDistn,
     Distn,
     Exponential,
     Gamma,
@@ -19,6 +20,7 @@ from ngboost.distns import (
     Normal,
     NormalFixedMean,
     NormalFixedVar,
+    RegressionDistn,
     T,
     TFixedDf,
     TFixedDfFixedVar,
@@ -224,3 +226,123 @@ def test_multivariatenormal(k: int, learner):
     mean = y_dist.mean
     sample = y_dist.rv()
     scipy_list = y_dist.scipy_distribution()
+
+
+# Slicing and len. Distn.__getitem__ and Distn.__len__ read self._params, so
+# every distribution has to store the params it was built from.
+
+_N_ROWS = 6
+# Distn.__getitem__ passes a one-dimensional params array to the constructor
+# when the key is an integer. Categorical and MultivariateNormal expect a
+# two-dimensional array, so dist[0] fails for them. This is separate from
+# the missing _params that the NormalFixed classes had.
+_NO_INT_INDEX = {"Bernoulli", "k_categorical", "MultivariateNormal"}
+
+
+def _concrete_distns(int_index=False):
+    """The concrete distributions in ngboost.distns.__all__.
+
+    k_categorical and MultivariateNormal are factories, so they are called
+    with a small size. Distn, RegressionDistn and ClassificationDistn are
+    abstract bases and are left out.
+    """
+    bases = (Distn, RegressionDistn, ClassificationDistn)
+    factories = {
+        "k_categorical": lambda: k_categorical(3),
+        "MultivariateNormal": lambda: MultivariateNormal(2),
+    }
+    cases = []
+    for name in distns.__all__:
+        obj = getattr(distns, name)
+        if name in factories:
+            obj = factories[name]()
+        if obj in bases:
+            continue
+        marks = []
+        if int_index and name in _NO_INT_INDEX:
+            marks.append(pytest.mark.xfail(reason="integer key needs 2D params"))
+        cases.append(pytest.param(obj, id=name, marks=marks))
+    return cases
+
+
+def _build(Dist):
+    rng = np.random.default_rng(0)
+    return Dist(rng.normal(scale=0.3, size=(Dist.n_params, _N_ROWS)))
+
+
+def _rows(value, key):
+    # a few distributions keep a scalar in params, such as the n of BetaBinomial
+    return value if np.ndim(value) == 0 else value[key]
+
+
+def test_concrete_distns_cover_all_exports():
+    names = [case.id for case in _concrete_distns()]
+    assert len(names) == len(set(names))
+    assert {"Normal", "NormalFixedVar", "NormalFixedMean", "Bernoulli"} <= set(names)
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns())
+def test_len(Dist):
+    assert len(_build(Dist)) == _N_ROWS
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns())
+def test_slice_keeps_class_and_params(Dist):
+    dist = _build(Dist)
+    sliced = dist[1:4]
+    assert sliced.__class__ is Dist
+    assert len(sliced) == 3
+    assert sliced.params.keys() == dist.params.keys()
+    for name, value in dist.params.items():
+        np.testing.assert_allclose(sliced.params[name], _rows(value, slice(1, 4)))
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns(int_index=True))
+def test_integer_index_keeps_class_and_params(Dist):
+    dist = _build(Dist)
+    single = dist[2]
+    assert single.__class__ is Dist
+    for name, value in dist.params.items():
+        np.testing.assert_allclose(single.params[name], _rows(value, 2))
+
+
+@pytest.mark.parametrize(
+    "Dist, expected_loc, expected_scale",
+    [
+        (NormalFixedVar, lambda p: p[0], lambda p: np.ones(len(p[0]))),
+        (NormalFixedMean, lambda p: np.zeros(len(p[0])), lambda p: np.exp(p[0])),
+    ],
+    ids=["NormalFixedVar", "NormalFixedMean"],
+)
+def test_normal_fixed_slice_matches_rows(Dist, expected_loc, expected_scale):
+    params = np.random.default_rng(1).normal(size=(1, 8))
+    dist = Dist(params)
+    rows = slice(2, 7)
+    sliced = dist[rows]
+    assert sliced.__class__ is Dist
+    assert len(dist) == 8
+    assert len(sliced) == 5
+    np.testing.assert_allclose(sliced.loc, expected_loc(params)[rows])
+    np.testing.assert_allclose(sliced.scale, expected_scale(params)[rows])
+    np.testing.assert_allclose(sliced.params["loc"], sliced.loc)
+    np.testing.assert_allclose(sliced.params["scale"], sliced.scale)
+    y = np.linspace(-1, 1, 8)
+    np.testing.assert_allclose(
+        sliced.dist.logpdf(y[rows]), dist.dist.logpdf(y)[rows], rtol=1e-12
+    )
+
+
+@pytest.mark.parametrize("Dist", [NormalFixedVar, NormalFixedMean])
+def test_normal_fixed_fitted_prediction_supports_len_and_slice(Dist):
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(60, 3))
+    Y = X[:, 0] + rng.normal(size=60)
+    ngb = NGBRegressor(Dist=Dist, n_estimators=5, verbose=False).fit(X, Y)
+    pred = ngb.pred_dist(X)
+    assert len(pred) == 60
+    sliced = pred[0:2]
+    assert sliced.__class__ is Dist
+    assert len(sliced) == 2
+    np.testing.assert_allclose(sliced.loc, pred.loc[0:2])
+    np.testing.assert_allclose(sliced.scale, pred.scale[0:2])
+    np.testing.assert_allclose(pred[0].loc, pred.loc[0])

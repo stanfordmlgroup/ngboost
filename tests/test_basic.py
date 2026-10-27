@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy import sparse
+from sklearn import config_context
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.exceptions import NotFittedError
@@ -16,8 +17,17 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils.validation import check_is_fitted
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
-from ngboost.distns import Bernoulli, MultivariateNormal, Normal, k_categorical
+from ngboost.distns import (
+    Bernoulli,
+    Exponential,
+    LogNormal,
+    MultivariateNormal,
+    Normal,
+    k_categorical,
+)
 from ngboost.distns.normal import NormalFixedVar
+from ngboost.helpers import Y_from_censored
+from ngboost.scores import CRPScore, LogScore
 
 
 class RecordingRegressor(BaseEstimator, RegressorMixin):
@@ -347,6 +357,128 @@ def test_survival_validation_fraction_is_supported(
     ngb.fit(x_train, t_train, e_train)
     preds = ngb.predict(x_test)
     assert preds.shape[0] == x_test.shape[0]
+
+
+def _survival_data(n=150):
+    # Log-normal event times with independent censoring, about 60% events
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(n, 3))
+    event_time = np.exp(X[:, 0] + 0.3 * rng.normal(size=n))
+    censoring_time = np.exp(rng.normal(loc=0.5, size=n))
+    T = np.minimum(event_time, censoring_time)
+    E = (event_time <= censoring_time).astype(int)
+    return X, T, E
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+def test_survival_clone_keeps_dist(Dist):
+    # NGBSurvival used to store a wrapped copy of Dist, so clone failed (issue #270)
+    ngb = NGBSurvival(Dist=Dist, n_estimators=10)
+    assert ngb.get_params()["Dist"] is Dist
+
+    cloned = clone(ngb)
+    assert cloned.get_params()["Dist"] is Dist
+    assert cloned.get_params()["n_estimators"] == 10
+
+
+def test_survival_set_params_dist_takes_effect():
+    X, T, E = _survival_data()
+    options = {"n_estimators": 10, "verbose": False, "random_state": 0}
+    model = NGBSurvival(**options).set_params(Dist=Exponential).fit(X, T, E)
+    fresh = NGBSurvival(Dist=Exponential, **options).fit(X, T, E)
+
+    assert model.get_params()["Dist"] is Exponential
+    assert isinstance(model.pred_dist(X), Exponential)
+    np.testing.assert_allclose(model.predict(X), fresh.predict(X))
+
+    with pytest.raises(ValueError, match="does not have any censored scores"):
+        NGBSurvival(**options).set_params(Dist=Normal).fit(X, T, E)
+
+
+def test_survival_score_is_mean_censored_log_likelihood():
+    X, T, E = _survival_data()
+    ngb = NGBSurvival(n_estimators=20, verbose=False, random_state=0).fit(X, T, E)
+    dist = ngb.pred_dist(X)
+    loglik = np.where(E == 1, dist.logpdf(T), dist.logsf(T))
+
+    assert ngb.score(X, T, E) == pytest.approx(loglik.mean(), abs=1e-3)
+    assert ngb.score(X, Y_from_censored(T, E)) == ngb.score(X, T, E)
+    with pytest.raises(ValueError, match="needs the event indicators E"):
+        ngb.score(X, T)
+
+
+def test_survival_grid_search_with_metadata_routing():
+    # GridSearchCV clones the estimator and calls set_params on each clone
+    # (issue #270). With metadata routing on, E reaches both fit and score.
+    X, T, E = _survival_data()
+    with config_context(enable_metadata_routing=True):
+        ngb = (
+            NGBSurvival(verbose=False, random_state=0)
+            .set_fit_request(E=True)
+            .set_score_request(E=True)
+        )
+        search = GridSearchCV(
+            ngb,
+            {"Dist": [LogNormal, Exponential], "n_estimators": [2, 100]},
+            cv=3,
+        ).fit(X, T, E=E)
+
+    assert np.isfinite(search.cv_results_["mean_test_score"]).all()
+    assert search.best_params_ == {"Dist": LogNormal, "n_estimators": 100}
+
+
+def _positive_regression_data(n=150):
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(n, 3))
+    Y = np.exp(X[:, 0] + 0.3 * rng.normal(size=n))
+    return X, Y
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+def test_regressor_keeps_dist_with_only_censored_scores(Dist):
+    # NGBRegressor used to store Dist.uncensor(Score) in place of Dist
+    ngb = NGBRegressor(Dist=Dist, n_estimators=10)
+    assert ngb.get_params()["Dist"] is Dist
+    assert clone(ngb).get_params()["Dist"] is Dist
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+def test_regressor_set_params_score_with_only_censored_scores(Dist):
+    X, Y = _positive_regression_data()
+    options = {"Dist": Dist, "n_estimators": 10, "verbose": False, "random_state": 0}
+    model = NGBRegressor(**options).set_params(Score=CRPScore).fit(X, Y)
+    fresh = NGBRegressor(Score=CRPScore, **options).fit(X, Y)
+
+    assert issubclass(model.Manifold, CRPScore)
+    assert not issubclass(model.Manifold, LogScore)
+    np.testing.assert_allclose(model.predict(X), fresh.predict(X))
+
+
+def test_regressor_grid_search_over_score_with_only_censored_scores():
+    from sklearn.model_selection import (  # pylint: disable=import-outside-toplevel
+        cross_val_score,
+    )
+
+    # Each candidate's default score is its own scoring rule, so compare the
+    # candidates with one metric
+    X, Y = _positive_regression_data()
+    options = {"Dist": LogNormal, "n_estimators": 20, "verbose": False}
+    search = GridSearchCV(
+        NGBRegressor(random_state=0, **options),
+        {"Score": [LogScore, CRPScore]},
+        scoring="neg_mean_squared_error",
+        cv=3,
+    ).fit(X, Y)
+    direct = cross_val_score(
+        NGBRegressor(Score=CRPScore, random_state=0, **options),
+        X,
+        Y,
+        scoring="neg_mean_squared_error",
+        cv=3,
+    )
+
+    assert np.isfinite(search.cv_results_["mean_test_score"]).all()
+    assert search.cv_results_["mean_test_score"][1] == pytest.approx(direct.mean())
 
 
 def test_regression_accepts_base_learner_per_distribution_parameter():

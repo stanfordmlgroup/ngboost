@@ -117,7 +117,6 @@ class NGBoost:
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
-        self.Manifold = manifold(Score, Dist)
         self.natural_gradient = natural_gradient
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
@@ -136,16 +135,27 @@ class NGBoost:
         self.validation_fraction = validation_fraction
         self.early_stopping_rounds = early_stopping_rounds
         self.n_jobs = n_jobs
+        self._build_manifold()
 
-        if hasattr(self.Dist, "multi_output"):
-            self.multi_output = self.Dist.multi_output
-        else:
-            self.multi_output = False
+    def _make_dist_class(self):
+        """
+        Return the distribution class that fit and pred_dist use. Here it is Dist.
+        NGBSurvival overrides this to add the censored scores to Dist, so that
+        self.Dist stays the class the user passed, as scikit-learn's clone requires.
+        """
+        return self.Dist
+
+    def _build_manifold(self):
+        """Build the distribution class and the Manifold from Dist and Score."""
+        self._dist_class = self._make_dist_class()
+        self.Manifold = manifold(self.Score, self._dist_class)
+        self.multi_output = getattr(self._dist_class, "multi_output", False)
 
     def __getstate__(self):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         del state["Manifold"]
+        del state["_dist_class"]
         state["Dist_name"] = self.Dist.__name__
         if self.Dist.__name__ == "Categorical":
             del state["Dist"]
@@ -162,8 +172,8 @@ class NGBoost:
             state_dict["Dist"] = name_to_dist_dict[state_dict["Dist_name"]](
                 state_dict["K"]
             )
-        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
+        self._build_manifold()
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
         self.init_params = self.Manifold.fit(
@@ -340,6 +350,8 @@ class NGBoost:
             A fit NGBRegressor object
         """
 
+        # Rebuild from Dist and Score so that changes from set_params take effect
+        self._build_manifold()
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
@@ -724,7 +736,7 @@ class NGBoost:
         X = check_array(X, accept_sparse=True, ensure_all_finite="allow-nan")
 
         params = np.asarray(self.pred_param(X, max_iter))
-        dist = self.Dist(params.T)
+        dist = self._dist_class(params.T)
 
         return dist
 
@@ -741,13 +753,13 @@ class NGBoost:
         """
         predictions = []
         m, n = X.shape
-        params = np.ones((m, self.Dist.n_params)) * self.init_params
+        params = np.ones((m, self._dist_class.n_params)) * self.init_params
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs), start=1
         ):
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(
+            dists = self._dist_class(
                 np.copy(params.T)
             )  # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)

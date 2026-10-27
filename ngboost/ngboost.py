@@ -140,7 +140,8 @@ class NGBoost:
     def _make_dist_class(self):
         """
         Return the distribution class that fit and pred_dist use. Here it is Dist.
-        NGBSurvival overrides this to add the censored scores to Dist, so that
+        NGBSurvival overrides this to add the censored scores to Dist, and
+        NGBRegressor to uncensor a Dist that has only censored scores. So
         self.Dist stays the class the user passed, as scikit-learn's clone requires.
         """
         return self.Dist

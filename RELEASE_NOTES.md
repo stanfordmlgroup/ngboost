@@ -8,7 +8,7 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
-* Fix `clone` and `GridSearchCV` for `NGBSurvival`, which now stores `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270)
+* Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270)
 
 ## Version 0.5.10
 

@@ -10,7 +10,8 @@ import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-mem
 from sklearn.tree import DecisionTreeRegressor
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, load_ngboost_model
-from ngboost.distns import LogNormal, MultivariateNormal
+from ngboost.distns import Exponential, LogNormal, MultivariateNormal
+from ngboost.scores import CRPScore, LogScore
 
 
 # name = learners_data to avoid pylint redefined-outer-name
@@ -44,6 +45,11 @@ def fixture_learners_data(
     ngb = NGBRegressor(Dist=MultivariateNormal(2), n_estimators=10)
     ngb.fit(X_surv_train, np.vstack((T_surv_train, E_surv_train)).T)
     models_data.append((ngb, X_surv_train, ngb.predict(X_surv_train)))
+
+    # LogNormal has only censored scores, so NGBRegressor uncensors them
+    ngb = NGBRegressor(Dist=LogNormal, verbose=False, n_estimators=10)
+    ngb.fit(X_reg_train, Y_reg_train)
+    models_data.append((ngb, X_reg_train, ngb.predict(X_reg_train)))
     return models_data
 
 
@@ -118,6 +124,41 @@ def test_survival_loads_pickle_with_basedist(monkeypatch):
 
     model = pickle.loads(serial)
     assert model.get_params()["Dist"] is LogNormal
+    assert (model.predict(X) == preds).all()
+    assert (pickle.loads(pickle.dumps(model)).predict(X) == preds).all()
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+@pytest.mark.parametrize("Score", [LogScore, CRPScore])
+def test_regressor_loads_pickle_with_uncensor_flag(monkeypatch, Dist, Score):
+    """
+    Before issue #270, NGBRegressor replaced a Dist that has only censored
+    scores with Dist.uncensor(Score). It pickled the user's Dist with the flag
+    "uncensor" set. Such pickles must still load.
+    """
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(60, 3))
+    Y = np.exp(X[:, 0] + 0.3 * rng.normal(size=60))
+    ngb = NGBRegressor(
+        Dist=Dist, Score=Score, n_estimators=5, verbose=False, random_state=0
+    ).fit(X, Y)
+    preds = ngb.predict(X)
+
+    def old_getstate(self):
+        state = self.__dict__.copy()
+        del state["Manifold"]
+        del state["_dist_class"]
+        state["Dist_name"] = "DistWithUncensoredScore"
+        state["uncensor"] = True
+        return state
+
+    monkeypatch.setattr(NGBRegressor, "__getstate__", old_getstate)
+    serial = pickle.dumps(ngb)
+    monkeypatch.undo()
+
+    model = pickle.loads(serial)
+    assert model.get_params()["Dist"] is Dist
+    assert issubclass(model.Manifold, Score)
     assert (model.predict(X) == preds).all()
     assert (pickle.loads(pickle.dumps(model)).predict(X) == preds).all()
 

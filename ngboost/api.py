@@ -83,15 +83,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         early_stopping_rounds=None,
         n_jobs=None,
     ):
-        assert issubclass(
-            Dist, RegressionDistn
-        ), f"{Dist.__name__} is not useable for regression."
-
-        if not hasattr(
-            Dist, "scores"
-        ):  # user is trying to use a dist that only has censored scores implemented
-            Dist = Dist.uncensor(Score)
-
+        # Dist is stored unchanged, as scikit-learn's clone requires. A Dist
+        # with only censored scores is uncensored in _make_dist_class.
         super().__init__(
             Dist,
             Score,
@@ -112,17 +105,19 @@ class NGBRegressor(NGBoost, BaseEstimator):
 
         self._estimator_type = "regressor"
 
-    def __getstate__(self):
-        state = super().__getstate__()
-        # Remove the unpicklable entries.
-        if self.Dist.__name__ == "DistWithUncensoredScore":
-            state["Dist"] = self.Dist.__base__
-            state["uncensor"] = True
-        return state
+    def _make_dist_class(self):
+        assert issubclass(
+            self.Dist, RegressionDistn
+        ), f"{self.Dist.__name__} is not useable for regression."
+        if not hasattr(self.Dist, "scores"):
+            # Dist has only censored scores, so use them with every event observed
+            return self.Dist.uncensor(self.Score)
+        return self.Dist
 
     def __setstate__(self, state_dict):
-        if "uncensor" in state_dict.keys():
-            state_dict["Dist"] = state_dict["Dist"].uncensor(state_dict["Score"])
+        # Older pickles of a Dist with only censored scores set this flag. They
+        # already store the user's Dist, which _make_dist_class uncensors.
+        state_dict.pop("uncensor", None)
         super().__setstate__(state_dict)
 
 

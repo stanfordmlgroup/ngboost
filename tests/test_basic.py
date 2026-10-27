@@ -27,6 +27,7 @@ from ngboost.distns import (
 )
 from ngboost.distns.normal import NormalFixedVar
 from ngboost.helpers import Y_from_censored
+from ngboost.scores import CRPScore, LogScore
 
 
 class RecordingRegressor(BaseEstimator, RegressorMixin):
@@ -424,6 +425,60 @@ def test_survival_grid_search_with_metadata_routing():
 
     assert np.isfinite(search.cv_results_["mean_test_score"]).all()
     assert search.best_params_ == {"Dist": LogNormal, "n_estimators": 100}
+
+
+def _positive_regression_data(n=150):
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(n, 3))
+    Y = np.exp(X[:, 0] + 0.3 * rng.normal(size=n))
+    return X, Y
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+def test_regressor_keeps_dist_with_only_censored_scores(Dist):
+    # NGBRegressor used to store Dist.uncensor(Score) in place of Dist
+    ngb = NGBRegressor(Dist=Dist, n_estimators=10)
+    assert ngb.get_params()["Dist"] is Dist
+    assert clone(ngb).get_params()["Dist"] is Dist
+
+
+@pytest.mark.parametrize("Dist", [LogNormal, Exponential])
+def test_regressor_set_params_score_with_only_censored_scores(Dist):
+    X, Y = _positive_regression_data()
+    options = {"Dist": Dist, "n_estimators": 10, "verbose": False, "random_state": 0}
+    model = NGBRegressor(**options).set_params(Score=CRPScore).fit(X, Y)
+    fresh = NGBRegressor(Score=CRPScore, **options).fit(X, Y)
+
+    assert issubclass(model.Manifold, CRPScore)
+    assert not issubclass(model.Manifold, LogScore)
+    np.testing.assert_allclose(model.predict(X), fresh.predict(X))
+
+
+def test_regressor_grid_search_over_score_with_only_censored_scores():
+    from sklearn.model_selection import (  # pylint: disable=import-outside-toplevel
+        cross_val_score,
+    )
+
+    # Each candidate's default score is its own scoring rule, so compare the
+    # candidates with one metric
+    X, Y = _positive_regression_data()
+    options = {"Dist": LogNormal, "n_estimators": 20, "verbose": False}
+    search = GridSearchCV(
+        NGBRegressor(random_state=0, **options),
+        {"Score": [LogScore, CRPScore]},
+        scoring="neg_mean_squared_error",
+        cv=3,
+    ).fit(X, Y)
+    direct = cross_val_score(
+        NGBRegressor(Score=CRPScore, random_state=0, **options),
+        X,
+        Y,
+        scoring="neg_mean_squared_error",
+        cv=3,
+    )
+
+    assert np.isfinite(search.cv_results_["mean_test_score"]).all()
+    assert search.cv_results_["mean_test_score"][1] == pytest.approx(direct.mean())
 
 
 def test_regression_accepts_base_learner_per_distribution_parameter():

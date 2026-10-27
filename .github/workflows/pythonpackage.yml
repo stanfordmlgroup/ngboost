@@ -2,9 +2,18 @@ name: Python lint and test
 
 on:
   push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
+
+# A new push to a PR cancels the older run for that PR. Pushes to master get a
+# group of their own (run_id), so a master run is never cancelled, not even
+# while it waits for a runner.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

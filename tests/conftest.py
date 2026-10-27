@@ -47,7 +47,7 @@ def california_housing_survival_data() -> Tuple5Array:
         Y_surv_train, censor_threshold
     )  # time of an event or censoring
     E_surv_train = (
-        Y_surv_train > censor_threshold
+        Y_surv_train <= censor_threshold
     )  # 1 if T[i] is the time of an event, 0 if it's a time of censoring
     return X_surv_train, X_surv_test, T_surv_train, E_surv_train, Y_surv_test
 

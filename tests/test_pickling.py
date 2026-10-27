@@ -6,11 +6,35 @@ import tempfile
 import joblib
 import numpy as np
 import pytest
+import scipy.stats
 import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-member
+import sympy as sp
+import sympy.stats as symstats
 from sklearn.tree import DecisionTreeRegressor
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, load_ngboost_model
-from ngboost.distns import MultivariateNormal
+from ngboost.distns import (
+    Beta,
+    BetaBernoulli,
+    BetaBinomial,
+    BetaBinomialEstN,
+    LogitNormal,
+    MultivariateNormal,
+)
+from ngboost.distns.sympy_utils import make_distribution
+
+# A distribution built with the SymPy factory outside ngboost, as a user would
+_alpha, _beta, _y = sp.symbols("alpha beta y", positive=True)
+UserBeta = make_distribution(
+    params=[(_alpha, True), (_beta, True)],
+    y=_y,
+    sympy_dist=symstats.Beta("Y", _alpha, _beta),
+    scipy_dist_cls=scipy.stats.beta,
+    scipy_kwarg_map={"a": _alpha, "b": _beta},
+    name="UserBeta",
+)
+
+FACTORY_DISTS = [Beta, BetaBernoulli, BetaBinomial, BetaBinomialEstN, LogitNormal]
 
 
 # name = learners_data to avoid pylint redefined-outer-name
@@ -91,6 +115,47 @@ def test_model_save_skops(learners_data):
         model = sio.loads(serial, trusted=sio.get_untrusted_types(data=serial))
         new_preds = model.predict(data)
         assert (new_preds == preds).all()
+
+
+@pytest.mark.parametrize(
+    "dist", FACTORY_DISTS + [UserBeta], ids=lambda dist: dist.__name__
+)
+def test_factory_distn_pickle(dist):
+    """Distributions made with make_distribution pickle by reference"""
+    assert pickle.loads(pickle.dumps(dist)) is dist
+
+    pred_dist = dist(np.zeros((dist.n_params, 3)))
+    new_pred_dist = pickle.loads(pickle.dumps(pred_dist))
+    assert isinstance(new_pred_dist, dist)
+    for name, value in pred_dist.params.items():
+        assert np.allclose(new_pred_dist.params[name], value)
+
+
+def _factory_model(dist):
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(100, 2))
+    Y = scipy.stats.beta(np.exp(X[:, 0]), 2).rvs(random_state=rng)
+    return NGBRegressor(Dist=dist, n_estimators=5, verbose=False).fit(X, Y), X
+
+
+@pytest.mark.parametrize(
+    "dist", [Beta, LogitNormal, UserBeta], ids=lambda dist: dist.__name__
+)
+def test_factory_distn_model_save(dist):
+    # compare parameters, since LogitNormal predicts a Monte Carlo mean
+    ngb, X = _factory_model(dist)
+    model = pickle.loads(pickle.dumps(ngb))
+    new_params = model.pred_dist(X).params
+    for name, value in ngb.pred_dist(X).params.items():
+        assert np.allclose(new_params[name], value)
+
+
+def test_factory_distn_model_save_skops():
+    sio = pytest.importorskip("skops.io")
+    ngb, X = _factory_model(Beta)
+    serial = sio.dumps(ngb)
+    model = sio.loads(serial, trusted=sio.get_untrusted_types(data=serial))
+    assert np.array_equal(model.predict(X), ngb.predict(X))
 
 
 # ---------------------------------------------------------------------------

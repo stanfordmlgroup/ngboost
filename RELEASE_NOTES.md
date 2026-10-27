@@ -2,6 +2,7 @@
 
 ## Version 0.5.11
 
+* Models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) can be saved with pickle, joblib and skops. Before, the generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)

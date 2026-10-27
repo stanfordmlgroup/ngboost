@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 from scipy.stats import norm as dist
 
-from ngboost.distns.distn import RegressionDistn
+from ngboost.distns.distn import RegressionDistn, deprecated_var
 from ngboost.scores import CRPScore, LogScore
 
 
@@ -14,13 +14,13 @@ class NormalLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 2))
-        D[:, 0] = (self.loc - Y) / self.var
-        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self.var
+        D[:, 0] = (self.loc - Y) / self._var
+        D[:, 1] = 1 - ((self.loc - Y) ** 2) / self._var
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 2, 2))
-        FI[:, 0, 0] = 1 / self.var
+        FI = np.zeros((self._var.shape[0], 2, 2))
+        FI[:, 0, 0] = 1 / self._var
         FI[:, 1, 1] = 2
         return FI
 
@@ -43,12 +43,12 @@ class NormalCRPScore(CRPScore):
 
     def metric(self):
         I = np.c_[
-            2 * np.ones_like(self.var),
-            np.zeros_like(self.var),
-            np.zeros_like(self.var),
-            self.var,
+            2 * np.ones_like(self._var),
+            np.zeros_like(self._var),
+            np.zeros_like(self._var),
+            self._var,
         ]
-        I = I.reshape((self.var.shape[0], 2, 2))
+        I = I.reshape((self._var.shape[0], 2, 2))
         # 2 * integral of grad F grad F^T, which scales like 1 / scale
         I = 1 / (2 * np.sqrt(np.pi) * self.scale[:, np.newaxis, np.newaxis]) * I
         return I
@@ -65,12 +65,13 @@ class Normal(RegressionDistn):
 
     n_params = 2
     scores = [NormalLogScore, NormalCRPScore]
+    var = deprecated_var()
 
     def __init__(self, params):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        self.var = self.scale**2
+        self._var = self.scale**2
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):
@@ -99,12 +100,12 @@ class NormalFixedVarLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 1))
-        D[:, 0] = (self.loc - Y) / self.var
+        D[:, 0] = (self.loc - Y) / self._var
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 1, 1))
-        FI[:, 0, 0] = 1 / self.var + 1e-5
+        FI = np.zeros((self._var.shape[0], 1, 1))
+        FI[:, 0, 0] = 1 / self._var + 1e-5
         return FI
 
 
@@ -124,8 +125,8 @@ class NormalFixedVarCRPScore(CRPScore):
         return D
 
     def metric(self):
-        I = np.c_[2 * np.ones_like(self.var)]
-        I = I.reshape((self.var.shape[0], 1, 1))
+        I = np.c_[2 * np.ones_like(self._var)]
+        I = I.reshape((self._var.shape[0], 1, 1))
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
@@ -144,7 +145,7 @@ class NormalFixedVar(Normal):
     # pylint: disable=super-init-not-called
     def __init__(self, params):
         self.loc = params[0]
-        self.var = np.ones_like(self.loc)
+        self._var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
         self.shape = self.loc.shape
         self.dist = dist(loc=self.loc, scale=self.scale)
@@ -161,11 +162,11 @@ class NormalFixedMeanLogScore(LogScore):
 
     def d_score(self, Y):
         D = np.zeros((len(Y), 1))
-        D[:, 0] = 1 - ((self.loc - Y) ** 2) / self.var
+        D[:, 0] = 1 - ((self.loc - Y) ** 2) / self._var
         return D
 
     def metric(self):
-        FI = np.zeros((self.var.shape[0], 1, 1))
+        FI = np.zeros((self._var.shape[0], 1, 1))
         FI[:, 0, 0] = 2
         return FI
 
@@ -187,7 +188,7 @@ class NormalFixedMeanCRPScore(CRPScore):
 
     def metric(self):
         I = np.c_[self.scale]
-        I = I.reshape((self.var.shape[0], 1, 1))
+        I = I.reshape((self._var.shape[0], 1, 1))
         I = 1 / (2 * np.sqrt(np.pi)) * I
         return I
 
@@ -207,7 +208,7 @@ class NormalFixedMean(Normal):
     def __init__(self, params):
         self.loc = np.zeros_like(params[0])
         self.scale = np.exp(params[0])
-        self.var = self.scale**2
+        self._var = self.scale**2
         self.shape = self.loc.shape
         self.dist = dist(loc=self.loc, scale=self.scale)
 

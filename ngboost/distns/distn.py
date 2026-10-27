@@ -75,3 +75,25 @@ class RegressionDistn(Distn):
 class ClassificationDistn(Distn):
     def predict(self):  # returns class assignments
         return np.argmax(self.class_probs(), 1)
+
+
+def deprecated_var(note=""):
+    """
+    Makes the deprecated var property of the Normal and T distributions.
+
+    The property returns self._var, the squared scale that the scores use, and
+    gives a FutureWarning. It hides the var() method of scipy.stats that
+    __getattr__ would give. Removing it makes dist.var() that method.
+    """
+
+    def var(self):
+        warn(
+            f"{type(self).__name__}.var is deprecated. {note}In a future release, "
+            "var will be the var() method of scipy.stats, as for the other "
+            "distributions. Use dist.scale ** 2 for the current values.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self._var  # pylint: disable=protected-access
+
+    return property(var)

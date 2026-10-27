@@ -2,6 +2,9 @@
 
 ## Version 0.5.11
 
+* Add the `NegativeBinomial` distribution for overdispersed counts, built with the SymPy factory. Its parameters are the mean `mu` and the dispersion `n`, and its variance is `mu + mu**2 / n` (issue #281)
+* `make_distribution` accepts expressions as values of `scipy_kwarg_map`, for distributions that scipy parameterizes differently, such as `p = n / (n + mu)` for `scipy.stats.nbinom`
+* Fix `sample(m)` of the SymPy factory distributions that use a scipy class, such as `Beta`. It failed for more than one row, and now returns one draw for each row in each of the `m` samples, as the other distributions do
 * Models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) can be saved with pickle, joblib and skops. Before, the generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.

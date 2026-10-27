@@ -2,6 +2,8 @@ from typing import Tuple
 
 import numpy as np
 import pytest
+import scipy.stats
+import sympy as sp
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -9,6 +11,7 @@ from sklearn.tree import DecisionTreeRegressor
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
 from ngboost.distns import (
     Bernoulli,
+    Beta,
     Cauchy,
     Distn,
     Exponential,
@@ -16,6 +19,7 @@ from ngboost.distns import (
     HalfNormal,
     LogNormal,
     MultivariateNormal,
+    NegativeBinomial,
     Normal,
     NormalFixedMean,
     NormalFixedVar,
@@ -25,6 +29,8 @@ from ngboost.distns import (
     Weibull,
     k_categorical,
 )
+from ngboost.distns.sympy_utils import make_distribution
+from ngboost.manifold import manifold
 from ngboost.scores import CRPScore, LogScore, Score
 
 # test all the dist methods and score implementation methods,#
@@ -224,3 +230,53 @@ def test_multivariatenormal(k: int, learner):
     mean = y_dist.mean
     sample = y_dist.rv()
     scipy_list = y_dist.scipy_distribution()
+
+
+def test_negative_binomial_matches_scipy():
+    mu, n = np.array([0.5, 4.0, 30.0]), np.array([0.3, 2.0, 50.0])
+    dist = manifold(LogScore, NegativeBinomial)(np.log(np.vstack([mu, n])))
+    ref = scipy.stats.nbinom(n, n / (n + mu))
+    y = np.array([0, 3, 41])
+    assert np.allclose(dist.score(y), -ref.logpmf(y))
+    assert np.allclose(dist.mean(), mu)
+    assert np.allclose(dist.var(), mu + mu**2 / n)
+    assert np.array_equal(dist.ppf(0.9), ref.ppf(0.9))
+
+
+def test_negative_binomial_fit():
+    Y = scipy.stats.nbinom(2.0, 0.5).rvs(size=20000, random_state=0)  # mu is 2
+    log_mu, log_n = NegativeBinomial.fit(Y)
+    assert np.exp(log_mu) == pytest.approx(2.0, rel=0.05)
+    assert np.exp(log_n) == pytest.approx(2.0, rel=0.2)
+    with pytest.raises(ValueError, match="counts"):
+        NegativeBinomial.fit(np.array([0.0, 1.5, 3.0]))
+
+
+@pytest.mark.slow
+def test_negative_binomial_regression():
+    np.random.seed(0)  # the Monte Carlo metric samples from the global generator
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(2000, 3))
+    mu = np.exp(1 + X[:, 0])
+    Y = scipy.stats.nbinom(2.0, 2.0 / (2.0 + mu)).rvs(random_state=rng)
+    ngb = NGBRegressor(Dist=NegativeBinomial, n_estimators=200, verbose=False)
+    ngb.fit(X, Y)
+    assert np.corrcoef(ngb.predict(X), mu)[0, 1] > 0.9
+    assert np.median(ngb.pred_dist(X).params["n"]) == pytest.approx(2.0, rel=0.3)
+
+
+@pytest.mark.parametrize("dist", [Beta, NegativeBinomial])
+def test_factory_sample_shape(dist):
+    assert dist(np.zeros((dist.n_params, 3))).sample(4).shape == (4, 3)
+
+
+def test_factory_scipy_expression_needs_fit_fn():
+    mu, n, y = sp.symbols("mu n y", positive=True)
+    with pytest.raises(ValueError, match="fit_fn"):
+        make_distribution(
+            params=[(mu, True), (n, True)],
+            y=y,
+            score_expr=(y - mu) ** 2 / n,
+            scipy_dist_cls=scipy.stats.nbinom,
+            scipy_kwarg_map={"n": n, "p": n / (n + mu)},
+        )

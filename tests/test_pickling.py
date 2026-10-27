@@ -80,6 +80,19 @@ def test_classifier_setstate_restores_missing_label_metadata(breast_cancer_data)
     assert np.allclose(model.predict_proba(X_train[:5]), ngb.predict_proba(X_train[:5]))
 
 
+def test_model_save_skops(learners_data):
+    """
+    Tests that the model can be saved and loaded with skops
+    It checks that the new predictions are the same as before saving
+    """
+    sio = pytest.importorskip("skops.io")
+    for learner, data, preds in learners_data:
+        serial = sio.dumps(learner)
+        model = sio.loads(serial, trusted=sio.get_untrusted_types(data=serial))
+        new_preds = model.predict(data)
+        assert (new_preds == preds).all()
+
+
 # ---------------------------------------------------------------------------
 # Helpers for backward-compatibility test (issue #389)
 # ---------------------------------------------------------------------------

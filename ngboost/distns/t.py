@@ -4,8 +4,10 @@ import numpy as np
 from scipy.special import digamma
 from scipy.stats import t as dist
 
-from ngboost.distns.distn import RegressionDistn
+from ngboost.distns.distn import RegressionDistn, deprecated_var
 from ngboost.scores import LogScore
+
+T_VAR_NOTE = "It is the squared scale, not the variance. "
 
 
 class TLogScore(LogScore):
@@ -56,13 +58,13 @@ class T(RegressionDistn):
 
     n_params = 3
     scores = [TLogScore]
+    var = deprecated_var(T_VAR_NOTE)
 
     def __init__(self, params):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        # the squared scale, not the variance of the t distribution. It is
-        # private, so that dist.var() reaches the var() method of scipy.stats
+        # the squared scale, not the variance of the t distribution
         self._var = self.scale**2
         self.df = np.exp(params[2])
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
@@ -120,6 +122,7 @@ class TFixedDf(RegressionDistn):
 
     n_params = 2
     scores = [TFixedDfLogScore]
+    var = deprecated_var(T_VAR_NOTE)
     fixed_df = 3.0
 
     def __init__(self, params):
@@ -177,6 +180,7 @@ class TFixedDfFixedVar(RegressionDistn):
 
     n_params = 1
     scores = [TFixedDfFixedVarLogScore]
+    var = deprecated_var(T_VAR_NOTE)
     fixed_df = 3.0
 
     def __init__(self, params):

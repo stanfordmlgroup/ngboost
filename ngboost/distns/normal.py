@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 from scipy.stats import norm as dist
 
-from ngboost.distns.distn import RegressionDistn
+from ngboost.distns.distn import RegressionDistn, deprecated_var
 from ngboost.scores import CRPScore, LogScore
 
 
@@ -65,12 +65,12 @@ class Normal(RegressionDistn):
 
     n_params = 2
     scores = [NormalLogScore, NormalCRPScore]
+    var = deprecated_var()
 
     def __init__(self, params):
         super().__init__(params)
         self.loc = params[0]
         self.scale = np.exp(params[1])
-        # private, so that dist.var() reaches the var() method of scipy.stats
         self._var = self.scale**2
         self.dist = dist(loc=self.loc, scale=self.scale)
 

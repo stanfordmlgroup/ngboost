@@ -27,6 +27,16 @@ class Distn:
     def __len__(self):
         return self._params.shape[1]
 
+    def __getattr__(self, name):
+        # gives access to the methods of the scipy.stats object, e.g. mean() and cdf()
+        # read dist from __dict__ so that unpickling and deepcopy do not recurse
+        dist = self.__dict__.get("dist")
+        if dist is not None and name in dir(dist):
+            return getattr(dist, name)
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )
+
     @classmethod
     def implementation(cls, Score, scores=None):
         """

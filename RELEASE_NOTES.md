@@ -8,6 +8,8 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
+* Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns`
+* Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions
 
 ## Version 0.5.10
 

@@ -143,6 +143,7 @@ class NormalFixedVar(Normal):
 
     # pylint: disable=super-init-not-called
     def __init__(self, params):
+        self._params = params
         self.loc = params[0]
         self.var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
@@ -205,6 +206,7 @@ class NormalFixedMean(Normal):
 
     # pylint: disable=super-init-not-called
     def __init__(self, params):
+        self._params = params
         self.loc = np.zeros_like(params[0])
         self.scale = np.exp(params[0])
         self.var = self.scale**2

@@ -2,6 +2,7 @@
 
 ## Version 0.5.11
 
+* Fix `LogitNormal.mean()`, and so `predict()`, which averaged 1000 random draws and gave a different value on each call. It is now computed by quadrature, is the same on every call, and is accurate to about 1e-14. The `make_distribution` docstring now warns that a regression distribution with neither `scipy_dist_cls` nor `mean_fn` gets the same random mean
 * **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
 * Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
 * Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)

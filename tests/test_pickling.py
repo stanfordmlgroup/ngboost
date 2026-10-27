@@ -59,6 +59,19 @@ def test_model_save(learners_data):
         assert (new_preds == preds).all()
 
 
+def test_model_save_skops(learners_data):
+    """
+    Tests that the model can be saved and loaded with skops
+    It checks that the new predictions are the same as before saving
+    """
+    sio = pytest.importorskip("skops.io")
+    for learner, data, preds in learners_data:
+        serial = sio.dumps(learner)
+        model = sio.loads(serial, trusted=sio.get_untrusted_types(data=serial))
+        new_preds = model.predict(data)
+        assert (new_preds == preds).all()
+
+
 # ---------------------------------------------------------------------------
 # Helpers for backward-compatibility test (issue #389)
 # ---------------------------------------------------------------------------

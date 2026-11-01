@@ -16,7 +16,15 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils.validation import check_is_fitted
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
-from ngboost.distns import Bernoulli, MultivariateNormal, Normal, k_categorical
+from ngboost.distns import (
+    Bernoulli,
+    Exponential,
+    Laplace,
+    LogNormal,
+    MultivariateNormal,
+    Normal,
+    k_categorical,
+)
 from ngboost.distns.normal import NormalFixedVar
 
 
@@ -759,3 +767,70 @@ def test_pipeline_predict_sees_fitted_regressor():
 
     X_scaled = StandardScaler().fit_transform(X)
     np.testing.assert_allclose(preds, ngb.fit(X_scaled, Y).predict(X_scaled))
+
+
+@pytest.mark.parametrize(
+    "dist,draw",
+    [
+        (Normal, lambda rng, n: rng.normal(size=n)),
+        (LogNormal, lambda rng, n: rng.lognormal(size=n)),
+        (Exponential, lambda rng, n: rng.exponential(size=n)),
+        (Bernoulli, lambda rng, n: rng.integers(0, 2, size=n)),
+    ],
+)
+def test_marginal_fit_weights_match_repeated_rows(dist, draw):
+    rng = np.random.default_rng(31)
+    Y = draw(rng, 200)
+    counts = rng.integers(0, 4, size=200)
+    weighted = dist.fit(Y, sample_weight=counts.astype(float))
+    np.testing.assert_allclose(weighted, dist.fit(np.repeat(Y, counts)))
+
+
+def test_zero_weight_rows_do_not_move_init_params():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(300, 2))
+    Y = 3 * X[:, 0] + rng.normal(size=300)
+    Y[200:] = 1000.0
+    weights = np.r_[np.ones(200), np.zeros(100)]
+    options = {
+        "n_estimators": 2,
+        "verbose": False,
+        "random_state": 0,
+        "minibatch_frac": 1.0,
+    }
+    with_weights = NGBRegressor(**options).fit(X, Y, sample_weight=weights)
+    rows_removed = NGBRegressor(**options).fit(X[:200], Y[:200])
+    np.testing.assert_allclose(with_weights.init_params, rows_removed.init_params)
+
+
+def test_distribution_without_weighted_fit_drops_zero_weight_rows():
+    rng = np.random.default_rng(1)
+    X = rng.normal(size=(100, 2))
+    Y = rng.normal(size=100)
+    Y[80:] = 1000.0
+    weights = np.r_[np.ones(80), np.zeros(20)]
+    options = {
+        "Dist": Laplace,
+        "n_estimators": 2,
+        "verbose": False,
+        "random_state": 0,
+    }
+    model = NGBRegressor(**options).fit(X, Y, sample_weight=weights)
+    np.testing.assert_allclose(model.init_params, Laplace.fit(Y[:80]))
+
+
+def test_survival_init_params_use_weights():
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(120, 2))
+    T = rng.lognormal(size=120)
+    T[100:] = 1e6
+    E = np.ones(120, dtype=bool)
+    weights = np.r_[np.ones(100), np.zeros(20)]
+    options = {
+        "n_estimators": 2,
+        "verbose": False,
+        "random_state": 0,
+        "minibatch_frac": 1.0,
+    }
+    model = NGBSurvival(**options).fit(X, T, E, sample_weight=weights)
+    np.testing.assert_allclose(model.init_params, LogNormal.fit(T[:100]))

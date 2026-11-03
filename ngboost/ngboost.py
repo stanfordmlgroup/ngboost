@@ -4,12 +4,14 @@
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
 # pylint: disable=redundant-keyword-arg,protected-access,unnecessary-lambda-assignment
+import warnings
+
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.sparse import issparse
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
 from ngboost.distns import MultivariateNormal, Normal, k_categorical
@@ -38,6 +40,120 @@ def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
             f"entries for {X.shape[0]} rows"
         )
     return sample_weight
+
+
+class NGBoostDegenerateWarning(UserWarning):
+    """Every base learner is constant, so the model predicts one distribution for all inputs."""
+
+
+def _constant_tree_value(tree):
+    """The output of a fitted regression tree whose leaves all hold the same value, else None."""
+    leaves = tree.tree_.value[tree.tree_.children_left == -1].reshape(-1)
+    bits = np.ascontiguousarray(leaves, dtype=np.float64).view(np.uint64)
+    if tree.n_outputs_ != 1 or not (bits == bits[0]).all():
+        return None
+    return tree.predict(np.zeros((1, tree.n_features_in_)))[0]
+
+
+class _PredictionPlan:
+    """
+    pred_param for a model whose base learners are all scikit-learn regression trees.
+
+    The input is checked once for all trees instead of once per tree, and a tree whose leaves all
+    hold the same value (it never split) is replaced by its update, a scalar. For each parameter,
+    the constant updates before its first tree that splits are subtracted from the initial
+    parameters once; later ones stay as scalar steps in round order. Every parameter therefore goes
+    through the same floating-point operations in the same order as the boosting loop, and the
+    result is bit-identical to it.
+
+    The plan keeps references to the rounds it was built from; matches() rejects it once the
+    model's rounds, initial parameters or learning rate change, so it can never go stale.
+    """
+
+    def __init__(self, model, n_params):
+        self.learning_rate = model.learning_rate
+        self.init_params = np.array(model.init_params, dtype=float)
+        self.base_models = [list(models) for models in model.base_models]
+        self.scalings = list(model.scalings)
+        self.col_idxs = list(model.col_idxs)
+        self.start = np.ones(n_params) * model.init_params
+        self.steps, self.n_constant, self.n_learners = [], 0, 0
+        split_seen = np.zeros(n_params, dtype=bool)
+        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
+            for k, tree in enumerate(models):
+                self.n_learners += 1
+                value = _constant_tree_value(tree)
+                if value is None:
+                    split_seen[k] = True
+                    self.steps.append((i, k, None))
+                    continue
+                self.n_constant += 1
+                # the update the boosting loop makes for this parameter
+                step = self.learning_rate * value * s
+                if split_seen[k]:
+                    self.steps.append((i, k, step))
+                else:
+                    self.start[k] -= step
+        cols = np.unique(
+            np.concatenate([np.asarray(c, dtype=np.intp) for c in self.col_idxs])
+        )
+        self.cols = cols
+        self.all_cols = np.array_equal(cols, np.arange(cols.size))
+        # positions of each round's columns in X[:, cols]; None when a round reads all of them
+        self.positions = [
+            None if np.array_equal(c, cols) else np.searchsorted(cols, c)
+            for c in self.col_idxs
+        ]
+        trees = [tree for models in self.base_models for tree in models]
+        # the trees' own check allows NaN only where every tree supports missing values
+        self.allow_nan = all(
+            tree.__sklearn_tags__().input_tags.allow_nan and tree.monotonic_cst is None
+            for tree in trees
+        )
+
+    @staticmethod
+    def applies_to(model):
+        return bool(model.base_models) and all(
+            type(learner) in (DecisionTreeRegressor, ExtraTreeRegressor)
+            for models in model.base_models
+            for learner in models
+        )
+
+    def matches(self, model):
+        return (
+            model.learning_rate == self.learning_rate
+            and np.array_equal(model.init_params, self.init_params)
+            and len(model.base_models) == len(self.base_models)
+            and all(
+                len(new) == len(old) and all(a is b for a, b in zip(new, old))
+                for new, old in zip(model.base_models, self.base_models)
+            )
+            and len(model.col_idxs) == len(self.col_idxs)
+            and all(a is b for a, b in zip(model.col_idxs, self.col_idxs))
+            and list(model.scalings) == self.scalings
+        )
+
+    def pred_param(self, X):
+        if not (self.all_cols and X.shape[1] == self.cols.size):
+            # only the columns the trees read, as the loop's X[:, col_idx]
+            X = X[:, self.cols]
+        X = check_array(
+            X,
+            dtype=np.float32,
+            ensure_all_finite="allow-nan" if self.allow_nan else True,
+        )
+        params = np.ones((X.shape[0], self.start.size)) * self.start
+        last, X_i = None, None
+        for i, k, step in self.steps:
+            if step is not None:
+                params[:, k] -= step
+                continue
+            if i != last:
+                pos = self.positions[i]
+                last, X_i = i, X if pos is None else X[:, pos]
+            pred = self.base_models[i][k].predict(X_i, check_input=False)
+            params[:, k] -= self.learning_rate * pred * self.scalings[i]
+        return params
 
 
 class NGBoost:
@@ -146,6 +262,7 @@ class NGBoost:
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         del state["Manifold"]
+        state.pop("_pred_plan", None)  # rebuilt on the first prediction
         state["Dist_name"] = self.Dist.__name__
         if self.Dist.__name__ == "Categorical":
             del state["Dist"]
@@ -175,7 +292,20 @@ class NGBoost:
             Y
         )  # would be best to put sample weights here too
 
+    def _prediction_plan(self):
+        plan = getattr(self, "_pred_plan", None)
+        if plan is None or not plan.matches(self):
+            plan = None
+            if _PredictionPlan.applies_to(self):
+                plan = _PredictionPlan(self, self.Manifold.n_params)
+            self._pred_plan = plan
+        return plan
+
     def pred_param(self, X, max_iter=None):
+        if not max_iter and not issparse(X):
+            plan = self._prediction_plan()
+            if plan is not None:
+                return plan.pred_param(X)
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
         for i, (models, s, col_idx) in enumerate(
@@ -597,6 +727,17 @@ class NGBoost:
         self.evals_result["train"] = {metric: loss_list}
         if X_val is not None and Y_val is not None:
             self.evals_result["val"] = {metric: val_loss_list}
+
+        plan = self._prediction_plan()
+        if plan is not None and plan.n_constant == plan.n_learners:
+            warnings.warn(
+                f"All {plan.n_learners} base learners are constant, so the model predicts "
+                "the same distribution for every input. Each round's trees are fitted on "
+                "int(minibatch_frac * n) rows and cannot split below "
+                "max(min_samples_split, 2 * min_samples_leaf) rows.",
+                NGBoostDegenerateWarning,
+                stacklevel=2,
+            )
 
         return self
 

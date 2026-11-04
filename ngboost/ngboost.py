@@ -348,6 +348,7 @@ class NGBoost:
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
+        self.init_params = None
         # Start a fresh random stream on every fit so that refitting with an
         # integer random_state gives the same model
         self._rng = check_random_state(self.random_state)
@@ -499,7 +500,8 @@ class NGBoost:
         self.n_features = X.shape[1]
 
         loss_list = []
-        self.fit_init_params_to_marginal(Y)
+        if self.init_params is None:
+            self.fit_init_params_to_marginal(Y)
 
         params = self.pred_param(X)
 

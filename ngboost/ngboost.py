@@ -836,8 +836,12 @@ class NGBoost:
         all_params_importances = np.average(
             all_params_importances, axis=1, weights=self.scalings
         )
-        return all_params_importances / np.sum(
-            all_params_importances, axis=1, keepdims=True
+        totals = np.sum(all_params_importances, axis=1, keepdims=True)
+        return np.divide(
+            all_params_importances,
+            totals,
+            out=np.zeros_like(all_params_importances),
+            where=totals != 0,
         )
 
     def _get_feature_importance(self, tree, tree_index):

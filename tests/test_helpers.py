@@ -8,6 +8,8 @@ import pytest
 import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-member
 from sklearn.tree import DecisionTreeRegressor
 
+from ngboost import NGBSurvival
+from ngboost.distns import Exponential
 from ngboost.helpers import Y_from_censored, load_ngboost_model
 
 
@@ -85,3 +87,42 @@ def test_load_ngboost_model_handles_plain_sklearn_tree_pickle():
         )
     finally:
         temp_path.unlink()
+
+
+@pytest.mark.parametrize("container", [list, np.asarray])
+def test_Y_from_censored_accepts_array_like_times(container):
+    y = Y_from_censored(container([1.0, 2.0, 3.0]), [1, 0, 1])
+    np.testing.assert_array_equal(y["Time"], [1.0, 2.0, 3.0])
+    np.testing.assert_array_equal(y["Event"], [True, False, True])
+
+
+@pytest.mark.parametrize("events", [[0], [1, 0], [1, 0, 1, 0]])
+def test_Y_from_censored_rejects_inconsistent_lengths(events):
+    with pytest.raises(ValueError, match="inconsistent numbers of samples"):
+        Y_from_censored(np.array([1.0, 2.0, 3.0]), np.asarray(events))
+
+
+def test_survival_fit_accepts_lists():
+    x = np.arange(12).reshape(6, 2)
+    times, events = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [1, 0, 1, 0, 1, 1]
+    kwargs = {
+        "Dist": Exponential,
+        "n_estimators": 2,
+        "verbose": False,
+        "random_state": 0,
+    }
+    array_model = NGBSurvival(**kwargs).fit(x, np.asarray(times), np.asarray(events))
+    list_model = NGBSurvival(**kwargs).fit(x.tolist(), times, events)
+    np.testing.assert_allclose(list_model.predict(x), array_model.predict(x))
+
+
+@pytest.mark.parametrize("validation", [False, True])
+def test_survival_fit_rejects_inconsistent_event_lengths(validation):
+    x = np.arange(12).reshape(6, 2)
+    times = np.arange(1.0, 7.0)
+    events = np.ones(6)
+    kwargs = {"X_val": x, "T_val": times, "E_val": np.array([1])} if validation else {}
+    with pytest.raises(ValueError, match="inconsistent numbers of samples"):
+        NGBSurvival(n_estimators=1, verbose=False).fit(
+            x, times, events if validation else np.array([1]), **kwargs
+        )

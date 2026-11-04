@@ -181,7 +181,7 @@ class NGBoost:
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
-            if max_iter and i == max_iter:
+            if max_iter is not None and i == max_iter:
                 break
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
@@ -745,6 +745,8 @@ class NGBoost:
             A list of NGBoost distribution objects, one per boosting stage up to max_iter
         """
         predictions = []
+        if max_iter == 0:
+            return predictions
         m, n = X.shape
         params = np.ones((m, self.Dist.n_params)) * self.init_params
         for i, (models, s, col_idx) in enumerate(

@@ -23,19 +23,22 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: docs/requirements.txt
+          cache-dependency-path: |
+            docs/requirements.txt
+            pyproject.toml
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: 24.x
-      - name: Install Jupyter Book
-        run: pip install -r docs/requirements.txt
-      # The build renders the outputs stored in the notebooks. It does not run them.
+      - name: Install ngboost, Jupyter Book and the notebook packages
+        run: pip install . -r docs/requirements.txt
+      # The build runs the notebooks and shows the new outputs.
+      # A cell that raises an error fails the build.
       - name: Build the site
         working-directory: docs
         env:
           BASE_URL: /${{ github.event.repository.name }}
-        run: jupyter-book build --html --strict --ci
+        run: jupyter-book build --html --strict --ci --execute
       - name: Upload the site for GitHub Pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v5

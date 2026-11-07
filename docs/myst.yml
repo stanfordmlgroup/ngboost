@@ -1,6 +1,6 @@
 # Jupyter Book 2 (MyST) configuration for the NGBoost user guide.
 # Build locally from this folder with `make html`. See https://jupyterbook.org
-# The build renders the outputs stored in the notebooks. It does not run them.
+# The build runs the notebooks (--execute) and caches the outputs in _build/execute.
 version: 1
 project:
   id: dd2759ea-e2a6-4bd3-9b9d-11056c23d974
@@ -17,8 +17,6 @@ project:
     - file: content/4-saving.ipynb
     - file: content/5-dev.ipynb
     - file: sympy_distributions.md
-  exclude:
-    - content/features/**
   settings:
     # Hide text such as "Text(0.5, 1.0, 'scale param')" above the plots.
     output_matplotlib_strings: remove

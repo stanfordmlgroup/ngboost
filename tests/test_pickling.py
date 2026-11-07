@@ -59,6 +59,27 @@ def test_model_save(learners_data):
         assert (new_preds == preds).all()
 
 
+def test_classifier_setstate_restores_missing_label_metadata(breast_cancer_data):
+    """Older classifier pickles do not include the sklearn label metadata."""
+
+    X_train, _, Y_train, _ = breast_cancer_data
+    ngb = NGBClassifier(verbose=False, n_estimators=2)
+    ngb.fit(X_train, Y_train)
+
+    state = ngb.__getstate__()
+    state.pop("classes_", None)
+    state.pop("_le", None)
+
+    model = NGBClassifier()
+    model.__setstate__(state)
+
+    assert np.array_equal(model.classes_, np.array([0, 1]))
+    label_classes = model._le.classes_  # pylint: disable=protected-access
+    assert np.array_equal(label_classes, model.classes_)
+    assert np.array_equal(model.predict(X_train[:5]), ngb.predict(X_train[:5]))
+    assert np.allclose(model.predict_proba(X_train[:5]), ngb.predict_proba(X_train[:5]))
+
+
 def test_model_save_skops(learners_data):
     """
     Tests that the model can be saved and loaded with skops

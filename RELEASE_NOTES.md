@@ -4,6 +4,7 @@
 
 ### Breaking changes
 
+* Drop support for Python 3.9. The minimum supported version is now Python 3.10
 * `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Previously, `GridSearchCV` and `cross_val_score` without an explicit `scoring` argument selected the worst model (issue #418, PR #423)
 * Base learners are now seeded from the model `random_state`, so fits are reproducible and independent of `n_jobs`. Output for the default base learner shifts relative to 0.5.x (PR #417)
 

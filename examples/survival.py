@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     # introduce administrative censoring
     T_train = np.minimum(Y_train, 30)
-    E_train = Y_train > 30
+    E_train = Y_train <= 30
 
     ngb = NGBSurvival(Dist=LogNormal).fit(X_train, T_train, E_train)
     Y_preds = ngb.predict(X_test)

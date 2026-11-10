@@ -9,6 +9,8 @@ Provides two factories:
   ``NGBRegressor(Dist=...)`` or ``NGBClassifier(Dist=...)``.
 """
 
+import sys
+
 import numpy as np
 import sympy as sym
 import sympy.stats as symstats
@@ -78,6 +80,22 @@ def _build_lambdified(expr, ordered_symbols, extra_symbols=None):
     expr_safe = expr.subs(subs)
 
     return lambdify(dummies, expr_safe, modules=["scipy", "numpy"])
+
+
+def _caller_module_name(depth):
+    """Return the ``__name__`` of the module ``depth`` frames above the function
+    that calls this helper (``depth=1`` gives that function's caller).
+
+    The generated classes take this as their ``__module__``, as
+    ``collections.namedtuple`` does.  Pickle finds a class by its module
+    and name, so without it every generated class claims to live in this
+    module and cannot be pickled.
+    """
+    try:
+        frame = sys._getframe(depth + 1)  # pylint: disable=protected-access
+    except (AttributeError, ValueError):
+        return None
+    return frame.f_globals.get("__name__", "__main__")
 
 
 def _extract_neglog_sum_terms(score_expr):
@@ -183,6 +201,7 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     sympy_dist=None,
     extra_params=None,
     name=None,
+    module=None,
 ):
     """Create a ``LogScore`` subclass from a symbolic score expression.
 
@@ -214,6 +233,10 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         the score expression but are *not* differentiated.
     name : str or None
         Class name for the generated ``LogScore`` subclass.
+    module : str or None
+        ``__module__`` of the generated class.  Pickle can find the class
+        only if this module has a variable called ``name`` that holds it.
+        If ``None``, the module that calls this function is used.
 
     Returns
     -------
@@ -221,6 +244,9 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         A ``LogScore`` subclass with ``score``, ``d_score``, and ``metric``
         methods.
     """
+    if module is None:
+        module = _caller_module_name(1)
+
     if score_expr is None and sympy_dist is None:
         raise ValueError("At least one of score_expr or sympy_dist must be provided")
 
@@ -483,6 +509,8 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     }
     if metric_method is not None:
         attrs["metric"] = metric_method
+    if module is not None:
+        attrs["__module__"] = module
 
     cls = type(class_name, (LogScore,), attrs)
     cls._score_fn = _score_fn  # pylint: disable=protected-access
@@ -502,6 +530,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     mean_fn=None,
     class_prob_exprs=None,
     name="SympyDistribution",
+    module=None,
 ):
     """Create a complete NGBoost distribution from a SymPy definition.
 
@@ -554,7 +583,12 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         When provided, the result is a ``ClassificationDistn`` subclass
         with ``class_probs()`` and categorical ``sample()`` auto-generated.
     name : str
-        Class name for the generated distribution.
+        Class name for the generated distribution.  Use the name of the
+        variable that will hold the class, so that pickle can find it.
+    module : str or None
+        ``__module__`` of the generated classes.  Pickle can find the class
+        only if this module has a variable called ``name`` that holds it.
+        If ``None``, the module that calls this function is used.
 
     Returns
     -------
@@ -592,6 +626,9 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     >>> from ngboost import NGBClassifier
     >>> ngb = NGBClassifier(Dist=BetaBernoulli)
     """
+    if module is None:
+        module = _caller_module_name(1)
+
     is_classification = class_prob_exprs is not None
 
     if is_classification and scipy_dist_cls is not None:
@@ -623,6 +660,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         sympy_dist=sympy_dist,
         extra_params=_extra_symbols or None,
         name=f"{name}LogScore",
+        module=module,
     )
 
     # ---- 2. Precompute param metadata ----
@@ -841,5 +879,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         attrs["__getitem__"] = _getitem
     if scipy_dist_cls is not None:
         attrs["__getattr__"] = _getattr
+    if module is not None:
+        attrs["__module__"] = module
 
     return type(name, (_base_cls,), attrs)

@@ -75,9 +75,9 @@ def classification_data():
             T,
             marks=pytest.mark.xfail(
                 reason=(
-                    "NGBRegressor(Dist=T) crashes with 'ValueError: Input y "
-                    "contains NaN': the natural gradient for log df runs away "
-                    "as df grows (#275)"
+                    "NGBRegressor(Dist=T) raises a ValueError: the natural "
+                    "gradient for log df runs away as df grows, and the "
+                    "gradient goes to NaN (#275)"
                 ),
                 raises=ValueError,
                 strict=True,

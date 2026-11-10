@@ -19,6 +19,8 @@
 * `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()` (issue #168, PR #438)
 * Document saving and loading models with `skops` and test the round trip (PR #427)
 * Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
+* Add the `NegativeBinomial` distribution for overdispersed counts, built with the SymPy factory. Its parameters are the mean `mu` and the dispersion `n`, and its variance is `mu + mu**2 / n` (issue #281, PR #446)
+* `make_distribution` accepts expressions as values of `scipy_kwarg_map`, for distributions that scipy parameterizes differently, such as `p = n / (n + mu)` for `scipy.stats.nbinom` (PR #446)
 
 ### Bug fixes
 
@@ -34,6 +36,7 @@
 * `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
 * Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
 * Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
+* Fix `sample(m)` of the SymPy factory distributions that use a scipy class, such as `Beta`. It failed for more than one row, and now returns one draw for each row in each of the `m` samples, as the other distributions do (PR #446)
 
 ### Documentation and CI
 

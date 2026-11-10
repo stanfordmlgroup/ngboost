@@ -22,6 +22,7 @@ from ngboost.distns import (
     LogitNormal,
     LogNormal,
     MultivariateNormal,
+    NegativeBinomial,
 )
 from ngboost.distns.sympy_utils import make_distribution
 from ngboost.scores import CRPScore, LogScore
@@ -37,7 +38,14 @@ UserBeta = make_distribution(
     name="UserBeta",
 )
 
-FACTORY_DISTS = [Beta, BetaBernoulli, BetaBinomial, BetaBinomialEstN, LogitNormal]
+FACTORY_DISTS = [
+    Beta,
+    BetaBernoulli,
+    BetaBinomial,
+    BetaBinomialEstN,
+    LogitNormal,
+    NegativeBinomial,
+]
 
 
 # name = learners_data to avoid pylint redefined-outer-name

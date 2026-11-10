@@ -20,6 +20,7 @@ from ngboost.distns import (
     LogitNormal,
     LogNormal,
     MultivariateNormal,
+    NegativeBinomial,
     Normal,
     NormalFixedMean,
     NormalFixedVar,
@@ -162,6 +163,7 @@ TEST_GRAD: List[DistScore] = TEST_METRIC + [
     (LogitNormal, LogScore),
     (BetaBinomial, LogScore),
     (BetaBinomialEstN, LogScore),
+    (NegativeBinomial, LogScore),
     (Normal, CRPScore),
 ]
 

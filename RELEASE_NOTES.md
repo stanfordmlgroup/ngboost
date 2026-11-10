@@ -17,6 +17,7 @@
 * Set scikit-learn classifier metadata on `NGBClassifier` so that scikit-learn correctly identifies it as a classifier (PR #413)
 * Handle array-like sample weights positionally and validate them at fit time; weights with wrong length, shape, NaN, or inf now raise `ValueError` (PR #425)
 * Document saving and loading models with `skops` and test the round trip (PR #427)
+* Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
 
 ### Bug fixes
 
@@ -24,6 +25,7 @@
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)
 * Fix the log-scale Fisher information of `TFixedDf` and `Cauchy`, which was off by a factor of `4 * var` (PR #422)
+* Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
 * Reset validation iteration metadata on refit so that re-calling `fit` on the same model behaves identically to fitting a fresh one (PR #426)
 * Keep `random_state` as given and seed a fresh generator in `fit`, so that `get_params` returns the original value and clones behave identically (PR #417)
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner (issue #408, PR #409)

@@ -323,6 +323,7 @@ def MultivariateNormal(k):
                 cov: N x p x p array, the covariance matrices
                 Row i gives scipy.stats.multivariate_normal(mean=loc[i], cov=cov[i]).
                 scipy_distribution() returns these N scipy objects.
+                For one row, as in dist[0], loc is p and cov is p x p.
 
                 params['scale'] is a deprecated alias of params['cov'] and gives
                 a FutureWarning. It is the covariance, not a standard deviation.

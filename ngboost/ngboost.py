@@ -275,27 +275,31 @@ class NGBoost:
         loss_init = D_init.total_score(Y, sample_weight)
         scale = scale_init
 
-        # first scale up
-        while True:
-            scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
-            loss = D.total_score(Y, sample_weight)
-            norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if not np.isfinite(loss) or loss > loss_init or scale > 256:
-                break
-            scale = scale * 2
+        # A trial step can be far too large (it is not multiplied by the learning
+        # rate), so computing its loss can overflow. Such a step gets a non-finite
+        # or larger loss and is rejected below, so its warnings are only noise.
+        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+            # first scale up
+            while True:
+                scaled_resids = resids * scale
+                D = self.Manifold((start - scaled_resids).T)
+                loss = D.total_score(Y, sample_weight)
+                norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+                if not np.isfinite(loss) or loss > loss_init or scale > 256:
+                    break
+                scale = scale * 2
 
-        # then scale down
-        while True:
-            scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
-            loss = D.total_score(Y, sample_weight)
-            norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if norm < self.tol:
-                break
-            if np.isfinite(loss) and loss < loss_init:
-                break
-            scale = scale * 0.5
+            # then scale down
+            while True:
+                scaled_resids = resids * scale
+                D = self.Manifold((start - scaled_resids).T)
+                loss = D.total_score(Y, sample_weight)
+                norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+                if norm < self.tol:
+                    break
+                if np.isfinite(loss) and loss < loss_init:
+                    break
+                scale = scale * 0.5
         self.scalings.append(scale)
         return scale
 
@@ -540,6 +544,14 @@ class NGBoost:
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
+            if not np.all(np.isfinite(grads)):
+                raise ValueError(
+                    f"The fit diverged at iteration {itr}: the gradient has "
+                    "non-finite values, usually because a predicted parameter "
+                    "overflowed or went to 0. Try a lower learning_rate, a base "
+                    "learner with shallower trees or larger leaves, or early "
+                    "stopping with a validation set."
+                )
 
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)

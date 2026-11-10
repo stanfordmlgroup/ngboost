@@ -72,9 +72,6 @@ class T(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(self, name):
-        return getattr(self.dist, name, None)
-
     @property
     def params(self):
         return {"loc": self.loc, "scale": self.scale, "df": self.df}
@@ -138,9 +135,6 @@ class TFixedDf(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(self, name):
-        return getattr(self.dist, name, None)
-
     @property
     def params(self):
         return {"loc": self.loc, "scale": self.scale}
@@ -198,9 +192,6 @@ class TFixedDfFixedVar(RegressionDistn):
 
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
-
-    def __getattr__(self, name):
-        return getattr(self.dist, name, None)
 
     @property
     def params(self):

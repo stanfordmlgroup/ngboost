@@ -16,6 +16,7 @@
 * Report fitted status to scikit-learn's `check_is_fitted` via `__sklearn_is_fitted__`, fixing `NotFittedError` in `Pipeline.predict` on sklearn >= 1.8 (PR #429)
 * Set scikit-learn classifier metadata on `NGBClassifier` so that scikit-learn correctly identifies it as a classifier (PR #413)
 * Handle array-like sample weights positionally and validate them at fit time; weights with wrong length, shape, NaN, or inf now raise `ValueError` (PR #425)
+* `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()` (issue #168, PR #438)
 * Document saving and loading models with `skops` and test the round trip (PR #427)
 * Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
 

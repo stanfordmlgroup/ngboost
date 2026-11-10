@@ -16,7 +16,6 @@ from ngboost.distns import (
 from ngboost.distns.utils import SurvivalDistnClass
 from ngboost.helpers import Y_from_censored
 from ngboost.learners import default_tree_learner
-from ngboost.manifold import manifold
 from ngboost.ngboost import NGBoost
 from ngboost.scores import LogScore
 
@@ -84,15 +83,8 @@ class NGBRegressor(NGBoost, BaseEstimator):
         early_stopping_rounds=None,
         n_jobs=None,
     ):
-        assert issubclass(
-            Dist, RegressionDistn
-        ), f"{Dist.__name__} is not useable for regression."
-
-        if not hasattr(
-            Dist, "scores"
-        ):  # user is trying to use a dist that only has censored scores implemented
-            Dist = Dist.uncensor(Score)
-
+        # Dist is stored unchanged, as scikit-learn's clone requires. A Dist
+        # with only censored scores is uncensored in _make_dist_class.
         super().__init__(
             Dist,
             Score,
@@ -113,17 +105,19 @@ class NGBRegressor(NGBoost, BaseEstimator):
 
         self._estimator_type = "regressor"
 
-    def __getstate__(self):
-        state = super().__getstate__()
-        # Remove the unpicklable entries.
-        if self.Dist.__name__ == "DistWithUncensoredScore":
-            state["Dist"] = self.Dist.__base__
-            state["uncensor"] = True
-        return state
+    def _make_dist_class(self):
+        assert issubclass(
+            self.Dist, RegressionDistn
+        ), f"{self.Dist.__name__} is not useable for regression."
+        if not hasattr(self.Dist, "scores"):
+            # Dist has only censored scores, so use them with every event observed
+            return self.Dist.uncensor(self.Score)
+        return self.Dist
 
     def __setstate__(self, state_dict):
-        if "uncensor" in state_dict.keys():
-            state_dict["Dist"] = state_dict["Dist"].uncensor(state_dict["Score"])
+        # Older pickles of a Dist with only censored scores set this flag. They
+        # already store the user's Dist, which _make_dist_class uncensors.
+        state_dict.pop("uncensor", None)
         super().__setstate__(state_dict)
 
 
@@ -399,20 +393,10 @@ class NGBSurvival(NGBoost, BaseEstimator):
         early_stopping_rounds=None,
         n_jobs=None,
     ):
-
-        assert issubclass(
-            Dist, RegressionDistn
-        ), f"{Dist.__name__} is not useable for regression."
-        if not hasattr(Dist, "censored_scores"):
-            raise ValueError(
-                f"The {Dist.__name__} distribution does not have any censored scores implemented."
-            )
-
-        SurvivalDistn = SurvivalDistnClass(Dist)
-
-        # assert issubclass(Dist, RegressionDistn), f'{Dist.__name__} is not useable for survival.'
+        # Dist is stored unchanged, as scikit-learn's clone requires. The class
+        # with the censored scores is built from it in _make_dist_class.
         super().__init__(
-            SurvivalDistn,
+            Dist,
             Score,
             Base,
             natural_gradient,
@@ -429,21 +413,53 @@ class NGBSurvival(NGBoost, BaseEstimator):
             n_jobs,
         )
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # Remove the unpicklable entries.
-        # Both of the below contain SurvivalDistn
-        del state["Manifold"]
-        state["_basedist"] = state["Dist"]._basedist
-        del state["Dist"]
-        return state
+    def _make_dist_class(self):
+        assert issubclass(
+            self.Dist, RegressionDistn
+        ), f"{self.Dist.__name__} is not useable for regression."
+        if not hasattr(self.Dist, "censored_scores"):
+            raise ValueError(
+                f"The {self.Dist.__name__} distribution does not have any "
+                "censored scores implemented."
+            )
+        return SurvivalDistnClass(self.Dist)
 
     def __setstate__(self, state_dict):
-        # Recreate the object which could not be pickled
-        state_dict["Dist"] = SurvivalDistnClass(state_dict["_basedist"])
-        del state_dict["_basedist"]
-        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
-        self.__dict__ = state_dict
+        # Older pickles store the user's Dist under _basedist
+        if "_basedist" in state_dict:
+            state_dict["Dist"] = state_dict.pop("_basedist")
+        super().__setstate__(state_dict)
+
+    def score(self, X, T, E=None):  # pylint: disable=arguments-renamed
+        """
+        Score the predicted distributions at the points X=x against the censored
+        outcomes. Higher is better: as in NGBoost.score, this is the negative of
+        the average (censored) scoring rule.
+
+        scikit-learn model selection calls score(X, T) without E by default. To
+        pass E, call sklearn.set_config(enable_metadata_routing=True) and
+        request E with set_fit_request(E=True) and set_score_request(E=True).
+
+        Parameters:
+            X : DataFrame object or List or
+                numpy array of predictors (n x p) in numeric format
+            T : numpy array of times to event or censoring (n), or the
+                structured array returned by ngboost.helpers.Y_from_censored
+            E : numpy array of event indicators (n).
+                E[i] = 1 <=> T[i] is the time of an event, else censoring time.
+                Required unless T is a structured array.
+
+        Output:
+            A float, the negative of the average censored score
+        """
+        if E is None and np.asarray(T).dtype.names is None:
+            raise ValueError(
+                "NGBSurvival.score needs the event indicators E. scikit-learn model "
+                "selection passes E to score only with metadata routing: call "
+                "sklearn.set_config(enable_metadata_routing=True), then "
+                "set_fit_request(E=True) and set_score_request(E=True) on the estimator."
+            )
+        return super().score(X, Y_from_censored(T, E))
 
     # pylint: disable=too-many-positional-arguments
     def fit(self, X, T, E, X_val=None, T_val=None, E_val=None, **kwargs):

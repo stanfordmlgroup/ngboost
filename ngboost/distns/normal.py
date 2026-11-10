@@ -73,8 +73,12 @@ class Normal(RegressionDistn):
         self.var = self.scale**2
         self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def fit(Y):
-        m, s = sp.stats.norm.fit(Y)
+    def fit(Y, sample_weight=None):
+        if sample_weight is None:
+            m, s = sp.stats.norm.fit(Y)
+        else:
+            m = np.average(Y, weights=sample_weight)
+            s = np.sqrt(np.average((Y - m) ** 2, weights=sample_weight))
         return np.array([m, np.log(s)])
 
     def sample(self, m):
@@ -149,7 +153,9 @@ class NormalFixedVar(Normal):
         self.shape = self.loc.shape
         self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def fit(Y):
+    def fit(Y, sample_weight=None):
+        if sample_weight is not None:
+            return np.average(Y, weights=sample_weight)
         m, _ = sp.stats.norm.fit(Y)
         return m
 

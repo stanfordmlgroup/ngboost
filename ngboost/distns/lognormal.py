@@ -113,6 +113,11 @@ class LogNormal(RegressionDistn):
     def params(self):
         return {"s": self.scale, "scale": np.exp(self.loc)}
 
-    def fit(Y):
-        m, s = sp.stats.norm.fit(np.log(Y))
+    def fit(Y, sample_weight=None):
+        logY = np.log(Y)
+        if sample_weight is None:
+            m, s = sp.stats.norm.fit(logY)
+        else:
+            m = np.average(logY, weights=sample_weight)
+            s = np.sqrt(np.average((logY - m) ** 2, weights=sample_weight))
         return np.array([m, np.log(s)])

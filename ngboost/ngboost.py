@@ -13,6 +13,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
 from ngboost.distns import MultivariateNormal, Normal, k_categorical
+from ngboost.distns.utils import fit_marginal
 from ngboost.learners import default_tree_learner
 from ngboost.manifold import manifold
 from ngboost.scores import LogScore
@@ -171,9 +172,7 @@ class NGBoost:
         return bool(getattr(self, "base_models", None))
 
     def fit_init_params_to_marginal(self, Y, sample_weight=None, iters=1000):
-        self.init_params = self.Manifold.fit(
-            Y
-        )  # would be best to put sample weights here too
+        self.init_params = fit_marginal(self.Manifold, Y, sample_weight)
 
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
@@ -499,7 +498,7 @@ class NGBoost:
         self.n_features = X.shape[1]
 
         loss_list = []
-        self.fit_init_params_to_marginal(Y)
+        self.fit_init_params_to_marginal(Y, sample_weight=sample_weight)
 
         params = self.pred_param(X)
 

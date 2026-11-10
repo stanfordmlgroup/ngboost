@@ -79,6 +79,8 @@ class Exponential(RegressionDistn):
     def params(self):
         return {"scale": self.scale}
 
-    def fit(Y):
+    def fit(Y, sample_weight=None):
+        if sample_weight is not None:
+            return np.array([np.log(np.average(Y, weights=sample_weight))])
         m, s = sp.stats.expon.fit(Y)
         return np.array([np.log(m + s)])

@@ -67,6 +67,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+# Models that docs/content/4-saving.ipynb saves when it runs
+docs/content/ngbtest.*
 
 # PyBuilder
 target/

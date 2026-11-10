@@ -1,3 +1,11 @@
 # Requirements for building the user guide (see docs/Makefile).
 # Jupyter Book also needs Node.js 18, 20 or 22+ on the PATH.
+# The build runs the notebooks, so ngboost must also be installed (pip install ..).
 jupyter-book==2.1.7
+# Kernel and packages that the notebooks import
+ipykernel
+ipywidgets
+pandas
+seaborn
+shap
+skops>=0.16

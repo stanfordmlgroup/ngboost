@@ -68,11 +68,6 @@ class Exponential(RegressionDistn):
         self.scale = np.exp(params[0])
         self.dist = dist(scale=self.scale)
 
-    def __getattr__(self, name):
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
-
     # should implement a `sample()` method
 
     @property

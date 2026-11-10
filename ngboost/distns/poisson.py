@@ -65,13 +65,6 @@ class Poisson(RegressionDistn):
     def sample(self, m):
         return np.array([self.dist.rvs() for i in range(m)])
 
-    def __getattr__(
-        self, name
-    ):  # gives us access to Poisson.mean() required for RegressionDist.predict()
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
-
     @property
     def params(self):
         return {"mu": self.mu}

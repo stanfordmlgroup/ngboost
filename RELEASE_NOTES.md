@@ -32,6 +32,7 @@
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner (issue #408, PR #409)
 * Stop the overflow warnings from trial steps that the line search rejects, such as `overflow encountered in exp` in `Normal`. They came most often from `natural_gradient=False` on a target with large units. Fitted models do not change (issue #352, PR #434)
 * `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
+* Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
 * Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
 
 ### Documentation and CI

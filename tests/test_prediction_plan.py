@@ -1,8 +1,7 @@
-"""pred_param checks the input once and skips constant trees, bit-identical to the loop."""
+"""pred_param checks the input once for all trees, bit-identical to the loop."""
 
 # pylint: disable=protected-access
 import pickle
-import warnings
 
 import numpy as np
 import pytest
@@ -12,7 +11,6 @@ from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 
 from ngboost import NGBClassifier, NGBoost, NGBRegressor
 from ngboost.distns import Bernoulli, Normal, T, k_categorical
-from ngboost.ngboost import NGBoostDegenerateWarning
 from ngboost.scores import LogScore
 
 
@@ -70,45 +68,14 @@ def make_ngb(base, n_estimators=40, **kwargs):
     )
 
 
-def fit_quietly(model, X, Y):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", NGBoostDegenerateWarning)
-        return model.fit(X, Y)
-
-
-def test_all_constant_model_warns_and_calls_no_tree():
-    X, Y = toy_data()
-    with pytest.warns(NGBoostDegenerateWarning):
-        model = make_ngb(constant_tree(), minibatch_frac=0.7, col_sample=0.5).fit(X, Y)
-    assert np.abs(model.pred_param(X)[0] - model.init_params).max() > 0.1
-    assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-    assert not model._pred_plan.steps
-
-
-def test_no_warning_when_trees_split():
-    X, Y = toy_data()
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", NGBoostDegenerateWarning)
-        model = make_ngb(split_tree(), n_estimators=5).fit(X, Y)
-    assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-
-
-def test_constant_and_split_trees_per_parameter():
-    X, Y = toy_data()
-    model = make_ngb([split_tree(), constant_tree()]).fit(X, Y)
-    assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-    assert {k for _, k, step in model._pred_plan.steps if step is None} == {0}
-
-
 def test_plan_follows_edited_rounds():
     X, Y = toy_data()
     model = make_ngb([split_tree(), split_tree()], n_estimators=30).fit(X, Y)
     model.pred_param(X)
-    for models in model.base_models[10:]:  # constant trees after trees that split
+    for models in model.base_models[10:]:  # replace the trees of the later rounds
         for k in range(2):
             models[k] = constant_tree().fit(X, np.full(len(X), 0.01 * (k + 1)))
     assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-    assert model._pred_plan.n_constant == 40
     model.base_models = model.base_models[:7]
     model.scalings = model.scalings[:7]
     model.col_idxs = model.col_idxs[:7]
@@ -133,19 +100,20 @@ def test_max_iter_and_staged_predictions():
 def test_refit_and_partial_fit():
     X, Y = toy_data()
     X2, Y2 = toy_data(seed=1)
-    model = fit_quietly(make_ngb(constant_tree(), n_estimators=15), X, Y)
-    fit_quietly(model, X2, Y2 + 3.0)
+    model = make_ngb(constant_tree(), n_estimators=15).fit(X, Y)
+    model.pred_param(X)
+    model.fit(X2, Y2 + 3.0)
     assert_bitwise_equal(model.pred_param(X2), loop_pred_param(model, X2))
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", NGBoostDegenerateWarning)
-        model.partial_fit(X, Y)
+    model.partial_fit(X, Y)
     assert len(model.base_models) == 30
     assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
 
 
 def test_plan_is_not_pickled():
     X, Y = toy_data()
-    model = fit_quietly(make_ngb(constant_tree(), n_estimators=15), X, Y)
+    model = make_ngb(constant_tree(), n_estimators=15).fit(X, Y)
+    model.pred_param(X)
+    assert model._pred_plan is not None
     loaded = pickle.loads(pickle.dumps(model))
     assert getattr(loaded, "_pred_plan", None) is None
     assert_bitwise_equal(loaded.pred_param(X), loop_pred_param(model, X))
@@ -205,7 +173,7 @@ def test_missing_values_follow_the_trees():
 
 def test_input_width():
     X, Y = toy_data()
-    model = fit_quietly(make_ngb(constant_tree(), n_estimators=10), X, Y)
+    model = make_ngb(constant_tree(), n_estimators=10).fit(X, Y)
     wide = np.hstack([X, X])
     assert_bitwise_equal(model.pred_param(wide), loop_pred_param(model, wide))
     with pytest.raises(IndexError):

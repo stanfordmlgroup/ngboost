@@ -4,8 +4,6 @@
 # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=unused-variable,invalid-unary-operand-type,attribute-defined-outside-init
 # pylint: disable=redundant-keyword-arg,protected-access,unnecessary-lambda-assignment
-import warnings
-
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.sparse import issparse
@@ -42,28 +40,12 @@ def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
     return sample_weight
 
 
-class NGBoostDegenerateWarning(UserWarning):
-    """Every base learner is constant, so the model predicts one distribution for all inputs."""
-
-
-def _constant_tree_value(tree):
-    """The output of a fitted regression tree whose leaves all hold the same value, else None."""
-    leaves = tree.tree_.value[tree.tree_.children_left == -1].reshape(-1)
-    bits = np.ascontiguousarray(leaves, dtype=np.float64).view(np.uint64)
-    if tree.n_outputs_ != 1 or not (bits == bits[0]).all():
-        return None
-    return tree.predict(np.zeros((1, tree.n_features_in_)))[0]
-
-
 class _PredictionPlan:
     """
     pred_param for a model whose base learners are all scikit-learn regression trees.
 
-    The input is checked once for all trees instead of once per tree, and a tree whose leaves all
-    hold the same value (it never split) is replaced by its update, a scalar. For each parameter,
-    the constant updates before its first tree that splits are subtracted from the initial
-    parameters once; later ones stay as scalar steps in round order. Every parameter therefore goes
-    through the same floating-point operations in the same order as the boosting loop, and the
+    The input is checked once for all trees, and each tree is called with check_input=False. The
+    updates are the same floating-point operations in the same order as the boosting loop, so the
     result is bit-identical to it.
 
     The plan keeps references to the rounds it was built from; matches() rejects it once the
@@ -71,29 +53,12 @@ class _PredictionPlan:
     """
 
     def __init__(self, model, n_params):
+        self.n_params = n_params
         self.learning_rate = model.learning_rate
         self.init_params = np.array(model.init_params, dtype=float)
         self.base_models = [list(models) for models in model.base_models]
         self.scalings = list(model.scalings)
         self.col_idxs = list(model.col_idxs)
-        self.start = np.ones(n_params) * model.init_params
-        self.steps, self.n_constant, self.n_learners = [], 0, 0
-        split_seen = np.zeros(n_params, dtype=bool)
-        for i, (models, s) in enumerate(zip(self.base_models, self.scalings)):
-            for k, tree in enumerate(models):
-                self.n_learners += 1
-                value = _constant_tree_value(tree)
-                if value is None:
-                    split_seen[k] = True
-                    self.steps.append((i, k, None))
-                    continue
-                self.n_constant += 1
-                # the update the boosting loop makes for this parameter
-                step = self.learning_rate * value * s
-                if split_seen[k]:
-                    self.steps.append((i, k, step))
-                else:
-                    self.start[k] -= step
         cols = np.unique(
             np.concatenate([np.asarray(c, dtype=np.intp) for c in self.col_idxs])
         )
@@ -142,17 +107,11 @@ class _PredictionPlan:
             dtype=np.float32,
             ensure_all_finite="allow-nan" if self.allow_nan else True,
         )
-        params = np.ones((X.shape[0], self.start.size)) * self.start
-        last, X_i = None, None
-        for i, k, step in self.steps:
-            if step is not None:
-                params[:, k] -= step
-                continue
-            if i != last:
-                pos = self.positions[i]
-                last, X_i = i, X if pos is None else X[:, pos]
-            pred = self.base_models[i][k].predict(X_i, check_input=False)
-            params[:, k] -= self.learning_rate * pred * self.scalings[i]
+        params = np.ones((X.shape[0], self.n_params)) * self.init_params
+        for models, s, pos in zip(self.base_models, self.scalings, self.positions):
+            X_i = X if pos is None else X[:, pos]
+            resids = np.array([m.predict(X_i, check_input=False) for m in models]).T
+            params -= self.learning_rate * resids * s
         return params
 
 
@@ -727,17 +686,6 @@ class NGBoost:
         self.evals_result["train"] = {metric: loss_list}
         if X_val is not None and Y_val is not None:
             self.evals_result["val"] = {metric: val_loss_list}
-
-        plan = self._prediction_plan()
-        if plan is not None and plan.n_constant == plan.n_learners:
-            warnings.warn(
-                f"All {plan.n_learners} base learners are constant, so the model predicts "
-                "the same distribution for every input. Each round's trees are fitted on "
-                "int(minibatch_frac * n) rows and cannot split below "
-                "max(min_samples_split, 2 * min_samples_leaf) rows.",
-                NGBoostDegenerateWarning,
-                stacklevel=2,
-            )
 
         return self
 

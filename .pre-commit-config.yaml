@@ -42,4 +42,7 @@ repos:
         name: pylint on tests*
         language: system
         files: ^tests
-        entry: pylint --disable=invalid-name,missing-docstring,too-many-function-args,unused-variable,fixme
+        # pre-commit splits the files over parallel pylint runs, so
+        # duplicate-code only sees pairs of files that share a run. Its result
+        # depends on the CPU count and the file list, so it is disabled here.
+        entry: pylint --disable=invalid-name,missing-docstring,too-many-function-args,unused-variable,fixme,duplicate-code

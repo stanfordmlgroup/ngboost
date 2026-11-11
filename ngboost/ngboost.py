@@ -192,7 +192,6 @@ class NGBoost:
         self.Dist = Dist
         self.Score = Score
         self.Base = Base
-        self.Manifold = manifold(Score, Dist)
         self.natural_gradient = natural_gradient
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
@@ -211,16 +210,28 @@ class NGBoost:
         self.validation_fraction = validation_fraction
         self.early_stopping_rounds = early_stopping_rounds
         self.n_jobs = n_jobs
+        self._build_manifold()
 
-        if hasattr(self.Dist, "multi_output"):
-            self.multi_output = self.Dist.multi_output
-        else:
-            self.multi_output = False
+    def _make_dist_class(self):
+        """
+        Return the distribution class that fit and pred_dist use. Here it is Dist.
+        NGBSurvival overrides this to add the censored scores to Dist, and
+        NGBRegressor to uncensor a Dist that has only censored scores. So
+        self.Dist stays the class the user passed, as scikit-learn's clone requires.
+        """
+        return self.Dist
+
+    def _build_manifold(self):
+        """Build the distribution class and the Manifold from Dist and Score."""
+        self._dist_class = self._make_dist_class()
+        self.Manifold = manifold(self.Score, self._dist_class)
+        self.multi_output = getattr(self._dist_class, "multi_output", False)
 
     def __getstate__(self):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         del state["Manifold"]
+        del state["_dist_class"]
         state.pop("_pred_plan", None)  # rebuilt on the first prediction
         state["Dist_name"] = self.Dist.__name__
         if self.Dist.__name__ == "Categorical":
@@ -238,8 +249,8 @@ class NGBoost:
             state_dict["Dist"] = name_to_dist_dict[state_dict["Dist_name"]](
                 state_dict["K"]
             )
-        state_dict["Manifold"] = manifold(state_dict["Score"], state_dict["Dist"])
         self.__dict__ = state_dict
+        self._build_manifold()
 
     def __sklearn_is_fitted__(self):
         # check_is_fitted (used by Pipeline.predict) otherwise looks for
@@ -364,27 +375,31 @@ class NGBoost:
         loss_init = D_init.total_score(Y, sample_weight)
         scale = scale_init
 
-        # first scale up
-        while True:
-            scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
-            loss = D.total_score(Y, sample_weight)
-            norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if not np.isfinite(loss) or loss > loss_init or scale > 256:
-                break
-            scale = scale * 2
+        # A trial step can be far too large (it is not multiplied by the learning
+        # rate), so computing its loss can overflow. Such a step gets a non-finite
+        # or larger loss and is rejected below, so its warnings are only noise.
+        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+            # first scale up
+            while True:
+                scaled_resids = resids * scale
+                D = self.Manifold((start - scaled_resids).T)
+                loss = D.total_score(Y, sample_weight)
+                norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+                if not np.isfinite(loss) or loss > loss_init or scale > 256:
+                    break
+                scale = scale * 2
 
-        # then scale down
-        while True:
-            scaled_resids = resids * scale
-            D = self.Manifold((start - scaled_resids).T)
-            loss = D.total_score(Y, sample_weight)
-            norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
-            if norm < self.tol:
-                break
-            if np.isfinite(loss) and loss < loss_init:
-                break
-            scale = scale * 0.5
+            # then scale down
+            while True:
+                scaled_resids = resids * scale
+                D = self.Manifold((start - scaled_resids).T)
+                loss = D.total_score(Y, sample_weight)
+                norm = np.mean(np.linalg.norm(scaled_resids, axis=1))
+                if norm < self.tol:
+                    break
+                if np.isfinite(loss) and loss < loss_init:
+                    break
+                scale = scale * 0.5
         self.scalings.append(scale)
         return scale
 
@@ -434,6 +449,8 @@ class NGBoost:
             A fit NGBRegressor object
         """
 
+        # Rebuild from Dist and Score so that changes from set_params take effect
+        self._build_manifold()
         self.base_models = []
         self.scalings = []
         self.col_idxs = []
@@ -629,6 +646,14 @@ class NGBoost:
             loss_list += [train_loss_monitor(D, Y_batch, weight_batch)]
             loss = loss_list[-1]
             grads = D.grad(Y_batch, natural=self.natural_gradient)
+            if not np.all(np.isfinite(grads)):
+                raise ValueError(
+                    f"The fit diverged at iteration {itr}: the gradient has "
+                    "non-finite values, usually because a predicted parameter "
+                    "overflowed or went to 0. Try a lower learning_rate, a base "
+                    "learner with shallower trees or larger leaves, or early "
+                    "stopping with a validation set."
+                )
 
             proj_grad = self.fit_base(X_batch, grads, weight_batch)
             scale = self.line_search(proj_grad, P_batch, Y_batch, weight_batch)
@@ -818,7 +843,7 @@ class NGBoost:
         X = check_array(X, accept_sparse=True, ensure_all_finite="allow-nan")
 
         params = np.asarray(self.pred_param(X, max_iter))
-        dist = self.Dist(params.T)
+        dist = self._dist_class(params.T)
 
         return dist
 
@@ -835,13 +860,13 @@ class NGBoost:
         """
         predictions = []
         m, n = X.shape
-        params = np.ones((m, self.Dist.n_params)) * self.init_params
+        params = np.ones((m, self._dist_class.n_params)) * self.init_params
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs), start=1
         ):
             resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
             params -= self.learning_rate * resids * s
-            dists = self.Dist(
+            dists = self._dist_class(
                 np.copy(params.T)
             )  # if the params aren't copied, param changes with stages carry over to dists
             predictions.append(dists)

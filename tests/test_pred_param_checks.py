@@ -179,11 +179,17 @@ def test_missing_values_follow_the_trees():
     X[::7, 2] = np.nan
     model = NGBRegressor(Base=split_tree(), n_estimators=20, verbose=False).fit(X, Y)
     assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-    no_nan = DecisionTreeRegressor(max_depth=2, criterion="absolute_error")
-    model = NGBRegressor(Base=no_nan, n_estimators=5, verbose=False)
+    # whether a tree accepts NaN depends on its settings and on the scikit-learn version
+    other = DecisionTreeRegressor(max_depth=2, criterion="absolute_error")
+    model = NGBRegressor(Base=other, n_estimators=5, verbose=False)
     model.fit(*toy_data())
-    with pytest.raises(ValueError):
-        model.pred_param(X)
+    try:
+        expected = loop_pred_param(model, X)
+    except ValueError:
+        with pytest.raises(ValueError):
+            model.pred_param(X)
+    else:
+        assert_bitwise_equal(model.pred_param(X), expected)
 
 
 def test_input_width():

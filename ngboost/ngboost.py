@@ -40,81 +40,6 @@ def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
     return sample_weight
 
 
-class _PredictionPlan:
-    """
-    pred_param for a model whose base learners are all scikit-learn regression trees.
-
-    The input is checked once for all trees, and each tree is called with check_input=False. The
-    updates are the same floating-point operations in the same order as the boosting loop, so the
-    result is bit-identical to it.
-
-    The plan keeps references to the rounds it was built from; matches() rejects it once the
-    model's rounds, initial parameters or learning rate change, so it can never go stale.
-    """
-
-    def __init__(self, model, n_params):
-        self.n_params = n_params
-        self.learning_rate = model.learning_rate
-        self.init_params = np.array(model.init_params, dtype=float)
-        self.base_models = [list(models) for models in model.base_models]
-        self.scalings = list(model.scalings)
-        self.col_idxs = list(model.col_idxs)
-        cols = np.unique(
-            np.concatenate([np.asarray(c, dtype=np.intp) for c in self.col_idxs])
-        )
-        self.cols = cols
-        self.all_cols = np.array_equal(cols, np.arange(cols.size))
-        # positions of each round's columns in X[:, cols]; None when a round reads all of them
-        self.positions = [
-            None if np.array_equal(c, cols) else np.searchsorted(cols, c)
-            for c in self.col_idxs
-        ]
-        trees = [tree for models in self.base_models for tree in models]
-        # the trees' own check allows NaN only where every tree supports missing values
-        self.allow_nan = all(
-            tree.__sklearn_tags__().input_tags.allow_nan and tree.monotonic_cst is None
-            for tree in trees
-        )
-
-    @staticmethod
-    def applies_to(model):
-        return bool(model.base_models) and all(
-            type(learner) in (DecisionTreeRegressor, ExtraTreeRegressor)
-            for models in model.base_models
-            for learner in models
-        )
-
-    def matches(self, model):
-        return (
-            model.learning_rate == self.learning_rate
-            and np.array_equal(model.init_params, self.init_params)
-            and len(model.base_models) == len(self.base_models)
-            and all(
-                len(new) == len(old) and all(a is b for a, b in zip(new, old))
-                for new, old in zip(model.base_models, self.base_models)
-            )
-            and len(model.col_idxs) == len(self.col_idxs)
-            and all(a is b for a, b in zip(model.col_idxs, self.col_idxs))
-            and list(model.scalings) == self.scalings
-        )
-
-    def pred_param(self, X):
-        if not (self.all_cols and X.shape[1] == self.cols.size):
-            # only the columns the trees read, as the loop's X[:, col_idx]
-            X = X[:, self.cols]
-        X = check_array(
-            X,
-            dtype=np.float32,
-            ensure_all_finite="allow-nan" if self.allow_nan else True,
-        )
-        params = np.ones((X.shape[0], self.n_params)) * self.init_params
-        for models, s, pos in zip(self.base_models, self.scalings, self.positions):
-            X_i = X if pos is None else X[:, pos]
-            resids = np.array([m.predict(X_i, check_input=False) for m in models]).T
-            params -= self.learning_rate * resids * s
-        return params
-
-
 class NGBoost:
     """
     Constructor for all NGBoost models.
@@ -232,7 +157,6 @@ class NGBoost:
         # Remove the unpicklable entries.
         del state["Manifold"]
         del state["_dist_class"]
-        state.pop("_pred_plan", None)  # rebuilt on the first prediction
         state["Dist_name"] = self.Dist.__name__
         if self.Dist.__name__ == "Categorical":
             del state["Dist"]
@@ -262,29 +186,35 @@ class NGBoost:
             Y
         )  # would be best to put sample weights here too
 
-    def _prediction_plan(self):
-        plan = getattr(self, "_pred_plan", None)
-        if plan is None or not plan.matches(self):
-            plan = None
-            if _PredictionPlan.applies_to(self):
-                plan = _PredictionPlan(self, self.Manifold.n_params)
-            self._pred_plan = plan
-        return plan
-
     def pred_param(self, X, max_iter=None):
-        if not max_iter and not issparse(X):
-            plan = self._prediction_plan()
-            if plan is not None:
-                return plan.pred_param(X)
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
+        # By default each base learner checks its own input. When all of them are scikit-learn
+        # regression trees, check X once as the trees do (float32, finite) and skip their
+        # checks. If X has NaN, the trees' own checks decide what to do, as before.
+        skip_checks = False
+        if not issparse(X) and all(
+            type(learner) in (DecisionTreeRegressor, ExtraTreeRegressor)
+            for models in self.base_models
+            for learner in models
+        ):
+            X_checked = check_array(X, dtype=np.float32, ensure_all_finite="allow-nan")
+            if not np.isnan(X_checked).any():
+                X, skip_checks = X_checked, True
+        all_cols = np.arange(n)
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
             if max_iter and i == max_iter:
                 break
-            resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
-            params -= self.learning_rate * resids * s
+            if skip_checks:
+                # a tree's output does not depend on the memory layout of X, so a round that
+                # reads every column can use X without a copy
+                X_i = X if np.array_equal(col_idx, all_cols) else X[:, col_idx]
+                preds = [model.predict(X_i, check_input=False) for model in models]
+            else:
+                preds = [model.predict(X[:, col_idx]) for model in models]
+            params -= self.learning_rate * np.array(preds).T * s
         return params
 
     def sample(self, X, Y, sample_weight, params):

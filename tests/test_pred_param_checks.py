@@ -15,7 +15,7 @@ from ngboost.scores import LogScore
 
 
 def loop_pred_param(model, X, max_iter=None):
-    """The boosting loop pred_param runs without a plan: the reference for every test."""
+    """The loop where every tree checks its own input: the reference for every test."""
     params = np.ones((X.shape[0], model.Manifold.n_params)) * model.init_params
     for i, (models, s, col_idx) in enumerate(
         zip(model.base_models, model.scalings, model.col_idxs)
@@ -68,10 +68,29 @@ def make_ngb(base, n_estimators=40, **kwargs):
     )
 
 
-def test_plan_follows_edited_rounds():
+def test_trees_skip_their_own_checks(monkeypatch):
+    X, Y = toy_data()
+    model = make_ngb(split_tree(), n_estimators=5).fit(X, Y)
+    n_trees = 2 * len(model.base_models)
+    calls = []
+    predict = DecisionTreeRegressor.predict
+
+    def spy(self, X, check_input=True):
+        calls.append(check_input)
+        return predict(self, X, check_input=check_input)
+
+    monkeypatch.setattr(DecisionTreeRegressor, "predict", spy)
+    model.pred_param(X)
+    assert len(calls) == n_trees and not any(calls)
+    calls.clear()
+    X[::7, 2] = np.nan  # with NaN, every tree checks its own input
+    model.pred_param(X)
+    assert len(calls) == n_trees and all(calls)
+
+
+def test_follows_edited_rounds():
     X, Y = toy_data()
     model = make_ngb([split_tree(), split_tree()], n_estimators=30).fit(X, Y)
-    model.pred_param(X)
     for models in model.base_models[10:]:  # replace the trees of the later rounds
         for k in range(2):
             models[k] = constant_tree().fit(X, np.full(len(X), 0.01 * (k + 1)))
@@ -101,7 +120,6 @@ def test_refit_and_partial_fit():
     X, Y = toy_data()
     X2, Y2 = toy_data(seed=1)
     model = make_ngb(constant_tree(), n_estimators=15).fit(X, Y)
-    model.pred_param(X)
     model.fit(X2, Y2 + 3.0)
     assert_bitwise_equal(model.pred_param(X2), loop_pred_param(model, X2))
     model.partial_fit(X, Y)
@@ -109,13 +127,10 @@ def test_refit_and_partial_fit():
     assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
 
 
-def test_plan_is_not_pickled():
+def test_pickled_model():
     X, Y = toy_data()
-    model = make_ngb(constant_tree(), n_estimators=15).fit(X, Y)
-    model.pred_param(X)
-    assert model._pred_plan is not None
+    model = make_ngb(split_tree(), n_estimators=15).fit(X, Y)
     loaded = pickle.loads(pickle.dumps(model))
-    assert getattr(loaded, "_pred_plan", None) is None
     assert_bitwise_equal(loaded.pred_param(X), loop_pred_param(model, X))
 
 
@@ -182,11 +197,10 @@ def test_input_width():
         model.pred_param(np.where(np.arange(4) == 1, np.inf, X))
 
 
-def test_other_learners_and_sparse_input_use_the_loop():
+def test_other_learners_and_sparse_input():
     X, Y = toy_data()
     model = NGBRegressor(Base=Ridge(), n_estimators=10, verbose=False).fit(X, Y)
     assert_bitwise_equal(model.pred_param(X), loop_pred_param(model, X))
-    assert model._pred_plan is None
     model = NGBRegressor(Base=split_tree(), n_estimators=10, verbose=False).fit(X, Y)
     X_sparse = sparse.csr_matrix(X)
     assert_bitwise_equal(model.pred_param(X_sparse), loop_pred_param(model, X_sparse))

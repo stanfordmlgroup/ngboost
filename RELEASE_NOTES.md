@@ -20,7 +20,7 @@
 * Document saving and loading models with `skops` and test the round trip (PR #427)
 * Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
 * The `var` attribute of `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar` is deprecated and gives a `FutureWarning`. It hides the `var()` method of `scipy.stats`, so `dist.var()` raises `TypeError` on these classes, while it works on the other distributions. In a future release, `var` will be that method. Use `dist.scale ** 2` for the current values, which works on every version. For the Normal classes these values are the variance. For the T and Cauchy classes they are the squared scale, not the variance (issue #168, PR #439)
-* Add `df` to the `params` of `T`, `TFixedDf`, `TFixedDfFixedVar` and the `Cauchy` classes built on them, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale` (issue #168, PR #440)
+* Add `df` to the `params` of `T`, `TFixedDf` and `TFixedDfFixedVar`, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale`. The `params` of `Cauchy` and `CauchyFixedVar` still hold only `loc` and `scale`, so that `scipy.stats.cauchy(**dist.params)` works as before (issue #168, PR #440)
 
 ### Bug fixes
 

@@ -26,6 +26,7 @@
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)
 * Fix the log-scale Fisher information of `TFixedDf` and `Cauchy`, which was off by a factor of `4 * var` (PR #422)
+* Fix `T`, whose fits failed with `ValueError: Input y contains NaN` after a few dozen iterations, because df ran away until `exp` overflowed. df is now capped at `T.max_df` (1000), and `TLogScore` uses the exact Fisher information instead of a 100-draw Monte Carlo estimate, so `T` fits are about three times as fast and reproducible with `random_state`. The docstrings of the T classes no longer call loc and scale the mean and standard deviation (issue #275, PR #443)
 * Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
 * Reset validation iteration metadata on refit so that re-calling `fit` on the same model behaves identically to fitting a fresh one (PR #426)
 * Keep `random_state` as given and seed a fresh generator in `fit`, so that `get_params` returns the original value and clones behave identically (PR #417)

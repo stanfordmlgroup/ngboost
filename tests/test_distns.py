@@ -1,7 +1,9 @@
+import warnings
 from typing import Tuple
 
 import numpy as np
 import pytest
+from scipy.stats import multivariate_normal
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
@@ -59,12 +61,6 @@ def classification_data():
     return X_train, X_test, y_train, y_test
 
 
-def is_t_distribution(
-    dist, learner, regression_data
-):  # pylint: disable=unused-argument
-    return dist == T
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "dist",
@@ -76,7 +72,21 @@ def is_t_distribution(
         LogNormal,
         Exponential,
         Gamma,
-        T,
+        # This case fails for both learners, so the marker is strict: if T starts
+        # to pass, the run fails and the marker has to go. Only a ValueError
+        # counts as the expected failure.
+        pytest.param(
+            T,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "NGBRegressor(Dist=T) raises a ValueError: the natural "
+                    "gradient for log df runs away as df grows, and the "
+                    "gradient goes to NaN (#275)"
+                ),
+                raises=ValueError,
+                strict=True,
+            ),
+        ),
         TFixedDf,
         TFixedDfFixedVar,
         Cauchy,
@@ -89,9 +99,6 @@ def is_t_distribution(
         DecisionTreeRegressor(criterion="squared_error", max_depth=3),
         DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
-)
-@pytest.mark.xfail(
-    condition=is_t_distribution, reason="Known to fail with T distribution"
 )
 def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     X_train, X_test, y_train, y_test = regression_data
@@ -346,3 +353,61 @@ def test_normal_fixed_fitted_prediction_supports_len_and_slice(Dist):
     np.testing.assert_allclose(sliced.loc, pred.loc[0:2])
     np.testing.assert_allclose(sliced.scale, pred.scale[0:2])
     np.testing.assert_allclose(pred[0].loc, pred.loc[0])
+
+
+def _mvn_with_cov(cov, N=4):
+    """N MultivariateNormal rows with means 0, ..., p - 1 and covariance cov"""
+    p = cov.shape[0]
+    # the internal parameters are the means and the lower triangle of L, where
+    # inv(cov) = L @ L.T and the diagonal of L is on the log scale
+    L = np.linalg.cholesky(np.linalg.inv(cov))
+    L[np.diag_indices(p)] = np.log(L[np.diag_indices(p)])
+    theta = np.concatenate([np.arange(p, dtype=float), L[np.tril_indices(p)]])
+    return MultivariateNormal(p)(np.tile(theta[:, None], (1, N)))
+
+
+def test_multivariatenormal_params_cov():
+    cov = np.array([[2.0, 0.6, 0.0], [0.6, 1.0, -0.3], [0.0, -0.3, 0.5]])
+    dist = _mvn_with_cov(cov)
+    params = dist.params
+
+    assert list(params) == ["loc", "cov"]
+    np.testing.assert_allclose(params["loc"], np.tile([0.0, 1.0, 2.0], (4, 1)))
+    # get_chol_factor adds 1e-6 to the diagonal of L, so the match is not exact
+    np.testing.assert_allclose(
+        params["cov"], np.broadcast_to(cov, (4, 3, 3)), rtol=1e-4, atol=1e-5
+    )
+    np.testing.assert_array_equal(params["cov"], dist.cov)
+
+    # the names fit scipy.stats.multivariate_normal row by row
+    Y = np.random.default_rng(0).normal(size=(4, 3))
+    scipy_logpdf = [
+        multivariate_normal(mean=params["loc"][i], cov=params["cov"][i]).logpdf(Y[i])
+        for i in range(4)
+    ]
+    np.testing.assert_allclose(scipy_logpdf, dist.logpdf(Y))
+
+
+def test_multivariatenormal_params_scale_is_deprecated():
+    dist = _mvn_with_cov(np.array([[1.0, 0.3], [0.3, 2.0]]))
+    params = dist.params
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params["scale"]
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params.get("scale")
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    # the other keys work as in a plain dict and give no warning
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert dict(params.items()).keys() == {"loc", "cov"}
+        np.testing.assert_array_equal(params["loc"], dist.loc)
+        np.testing.assert_array_equal(params.get("cov"), dist.cov)
+        assert params.get("df") is None
+        with pytest.raises(KeyError):
+            params["df"]  # pylint: disable=pointless-statement

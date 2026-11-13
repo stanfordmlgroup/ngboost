@@ -16,7 +16,7 @@ class GammaLogScore(LogScore):
         D = np.zeros((len(Y), 2))
         # d(-log(PDF))/dalpha
         D[:, 0] = self.alpha * (
-            sp.special.digamma(self.alpha) - np.log(self.eps + self.beta * Y)
+            sp.special.digamma(self.alpha) - np.log(self.beta) - np.log(Y)
         )
         # d(-log(PDF))/dbeta
         D[:, 1] = (self.beta * Y) - self.alpha
@@ -42,7 +42,6 @@ class Gamma(RegressionDistn):
         self.dist = dist(
             a=self.alpha, loc=np.zeros_like(self.alpha), scale=1 / self.beta
         )
-        self.eps = 1e-10
 
     def fit(Y):
         a, _, scale = dist.fit(Y, floc=0)

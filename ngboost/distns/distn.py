@@ -84,4 +84,4 @@ class RegressionDistn(Distn):
 
 class ClassificationDistn(Distn):
     def predict(self):  # returns class assignments
-        return np.argmax(self.class_probs(), 1)
+        return np.argmax(self.class_probs(), -1)

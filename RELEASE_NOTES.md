@@ -34,6 +34,7 @@
 * `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
 * Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
 * Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
+* Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
 
 ### Documentation and CI
 

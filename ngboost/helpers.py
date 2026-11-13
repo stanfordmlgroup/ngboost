@@ -5,7 +5,7 @@ import types as _types
 import joblib
 import numpy as np
 import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-member
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_consistent_length
 
 # ---------------------------------------------------------------------------
 # Backward compatibility helpers (issue #389)
@@ -119,7 +119,7 @@ def load_ngboost_model(filepath):
 def Y_from_censored(T, E=None):
     if T is None:
         return None
-    if T.dtype == [
+    if getattr(T, "dtype", None) == [
         ("Event", "?"),
         ("Time", "<f8"),
     ]:  # already processed. Necessary for when d_score() calls score() as in LogNormalCRPScore
@@ -131,6 +131,7 @@ def Y_from_censored(T, E=None):
     else:
         E = check_array(E, ensure_2d=False)
         E = E.reshape(E.shape[0])
+    check_consistent_length(T, E)
     Y = np.empty(dtype=[("Event", np.bool_), ("Time", np.float64)], shape=T.shape[0])
     Y["Event"] = E.astype(np.bool_)
     Y["Time"] = T.astype(np.float64)

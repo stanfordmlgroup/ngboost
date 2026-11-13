@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 from scipy.sparse import issparse
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.utils import check_array, check_random_state, check_X_y
 
 from ngboost.distns import MultivariateNormal, Normal, k_categorical
@@ -189,13 +189,32 @@ class NGBoost:
     def pred_param(self, X, max_iter=None):
         m, n = X.shape
         params = np.ones((m, self.Manifold.n_params)) * self.init_params
+        # By default each base learner checks its own input. When all of them are scikit-learn
+        # regression trees, check X once as the trees do (float32, finite) and skip their
+        # checks. If X has NaN, the trees' own checks decide what to do, as before.
+        skip_checks = False
+        if not issparse(X) and all(
+            type(learner) in (DecisionTreeRegressor, ExtraTreeRegressor)
+            for models in self.base_models
+            for learner in models
+        ):
+            X_checked = check_array(X, dtype=np.float32, ensure_all_finite="allow-nan")
+            if not np.isnan(X_checked).any():
+                X, skip_checks = X_checked, True
+        all_cols = np.arange(n)
         for i, (models, s, col_idx) in enumerate(
             zip(self.base_models, self.scalings, self.col_idxs)
         ):
             if max_iter and i == max_iter:
                 break
-            resids = np.array([model.predict(X[:, col_idx]) for model in models]).T
-            params -= self.learning_rate * resids * s
+            if skip_checks:
+                # a tree's output does not depend on the memory layout of X, so a round that
+                # reads every column can use X without a copy
+                X_i = X if np.array_equal(col_idx, all_cols) else X[:, col_idx]
+                preds = [model.predict(X_i, check_input=False) for model in models]
+            else:
+                preds = [model.predict(X[:, col_idx]) for model in models]
+            params -= self.learning_rate * np.array(preds).T * s
         return params
 
     def sample(self, X, Y, sample_weight, params):

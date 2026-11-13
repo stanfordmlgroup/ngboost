@@ -205,5 +205,5 @@ class NormalFixedMean(Normal):
         self.dist = dist(loc=self.loc, scale=self.scale)
 
     def fit(Y):
-        _, s = sp.stats.norm.fit(Y)
-        return s
+        _, s = sp.stats.norm.fit(Y, floc=0)
+        return np.array([np.log(s)])

@@ -1,42 +1,15 @@
-import io
-import pickle
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import pytest
-import sklearn.tree._tree as _sklearn_tree  # pylint: disable=c-extension-no-member
 from sklearn.tree import DecisionTreeRegressor
 
 from ngboost.helpers import Y_from_censored, load_ngboost_model
-
-
-def _sklearn_has_missing_go_to_left():
-    tree = DecisionTreeRegressor(max_depth=1)
-    tree.fit([[0], [1]], [0, 1])
-    return "missing_go_to_left" in (
-        tree.tree_.__getstate__()["nodes"].dtype.names or ()
-    )
-
-
-def _make_old_style_pickle_bytes(model):
-    def _old_tree_reducer(tree):
-        cls, args, state = tree.__reduce__()
-        nodes = state.get("nodes")
-        if nodes is not None and "missing_go_to_left" in (nodes.dtype.names or ()):
-            keep = [name for name in nodes.dtype.names if name != "missing_go_to_left"]
-            new_dtype = np.dtype([(name, nodes.dtype[name]) for name in keep])
-            new_nodes = np.zeros(nodes.shape, dtype=new_dtype)
-            for name in keep:
-                new_nodes[name] = nodes[name]
-            state = {**state, "nodes": new_nodes}
-        return (cls, args, state)
-
-    buf = io.BytesIO()
-    pickler = pickle.Pickler(buf)
-    pickler.dispatch_table = {_sklearn_tree.Tree: _old_tree_reducer}
-    pickler.dump(model)
-    return buf.getvalue()
+from tests.test_pickling import (
+    _make_old_style_pickle_bytes,
+    _sklearn_has_missing_go_to_left,
+)
 
 
 def test_Y_from_censored_with_default_event_vector():

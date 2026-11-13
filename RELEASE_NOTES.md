@@ -7,6 +7,7 @@
 * Drop support for Python 3.9, which reached end-of-life in October 2025. The minimum supported version is now Python 3.10
 * `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Previously, `GridSearchCV` and `cross_val_score` without an explicit `scoring` argument selected the worst model (issue #418, PR #423)
 * Base learners are now seeded from the model `random_state`, so fits are reproducible and independent of `n_jobs`. Output for the default base learner shifts relative to 0.5.x (PR #417)
+* `T.params` now also returns `df`, the fitted degrees of freedom, so `scipy.stats.t(**dist.params)` gives the predicted distribution. Code that expects only `loc` and `scale` in `T.params` gets one more key (PR #450)
 
 ### New features
 
@@ -27,6 +28,7 @@
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)
 * Fix the log-scale Fisher information of `TFixedDf` and `Cauchy`, which was off by a factor of `4 * var` (PR #422)
 * Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
+* Fix the starting (marginal) fit of `Cauchy` and `CauchyFixedVar`, which used 3 degrees of freedom instead of 1. `TFixedDf.fit` and `TFixedDfFixedVar.fit` now use the `fixed_df` of the class they are called on, so subclasses with their own `fixed_df` also start from the right fit. The starting fit of `TFixedDfFixedVar` and `CauchyFixedVar` now also holds the scale at 1, as the model does (PR #450)
 * Reset validation iteration metadata on refit so that re-calling `fit` on the same model behaves identically to fitting a fresh one (PR #426)
 * Keep `random_state` as given and seed a fresh generator in `fit`, so that `get_params` returns the original value and clones behave identically (PR #417)
 * Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner (issue #408, PR #409)

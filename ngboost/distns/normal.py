@@ -81,13 +81,6 @@ class Normal(RegressionDistn):
     def sample(self, m):
         return np.array([self.rvs() for i in range(m)])
 
-    def __getattr__(
-        self, name
-    ):  # gives us Normal.mean() required for RegressionDist.predict()
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
-
     @property
     def params(self):
         return {"loc": self.loc, "scale": self.scale}
@@ -144,6 +137,7 @@ class NormalFixedVar(Normal):
 
     # pylint: disable=super-init-not-called
     def __init__(self, params):
+        self._params = params
         self.loc = params[0]
         self._var = np.ones_like(self.loc)
         self.scale = np.ones_like(self.loc)
@@ -206,6 +200,7 @@ class NormalFixedMean(Normal):
 
     # pylint: disable=super-init-not-called
     def __init__(self, params):
+        self._params = params
         self.loc = np.zeros_like(params[0])
         self.scale = np.exp(params[0])
         self._var = self.scale**2

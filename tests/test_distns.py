@@ -1,16 +1,19 @@
+import warnings
 from typing import Tuple
 
 import numpy as np
 import pytest
 import scipy.stats
+from scipy.stats import multivariate_normal
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
-from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
+from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, distns
 from ngboost.distns import (
     Bernoulli,
     Cauchy,
+    ClassificationDistn,
     Distn,
     Exponential,
     Gamma,
@@ -20,6 +23,7 @@ from ngboost.distns import (
     Normal,
     NormalFixedMean,
     NormalFixedVar,
+    RegressionDistn,
     T,
     TFixedDf,
     TFixedDfFixedVar,
@@ -59,12 +63,6 @@ def classification_data():
     return X_train, X_test, y_train, y_test
 
 
-def is_t_distribution(
-    dist, learner, regression_data
-):  # pylint: disable=unused-argument
-    return dist == T
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "dist",
@@ -76,7 +74,21 @@ def is_t_distribution(
         LogNormal,
         Exponential,
         Gamma,
-        T,
+        # This case fails for both learners, so the marker is strict: if T starts
+        # to pass, the run fails and the marker has to go. Only a ValueError
+        # counts as the expected failure.
+        pytest.param(
+            T,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "NGBRegressor(Dist=T) raises a ValueError: the natural "
+                    "gradient for log df runs away as df grows, and the "
+                    "gradient goes to NaN (#275)"
+                ),
+                raises=ValueError,
+                strict=True,
+            ),
+        ),
         TFixedDf,
         TFixedDfFixedVar,
         Cauchy,
@@ -89,9 +101,6 @@ def is_t_distribution(
         DecisionTreeRegressor(criterion="squared_error", max_depth=3),
         DecisionTreeRegressor(criterion="squared_error", max_depth=5),
     ],
-)
-@pytest.mark.xfail(
-    condition=is_t_distribution, reason="Known to fail with T distribution"
 )
 def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     X_train, X_test, y_train, y_test = regression_data
@@ -226,6 +235,231 @@ def test_multivariatenormal(k: int, learner):
     mean = y_dist.mean
     sample = y_dist.rv()
     scipy_list = y_dist.scipy_distribution()
+
+
+# Slicing and len. Distn.__getitem__ and Distn.__len__ read self._params, so
+# every distribution has to store the params it was built from.
+
+_N_ROWS = 6
+
+
+def _concrete_distns():
+    """The concrete distributions in ngboost.distns.__all__.
+
+    k_categorical and MultivariateNormal are factories, so they are called
+    with a small size. Distn, RegressionDistn and ClassificationDistn are
+    abstract bases and are left out.
+    """
+    bases = (Distn, RegressionDistn, ClassificationDistn)
+    factories = {
+        "k_categorical": lambda: k_categorical(3),
+        "MultivariateNormal": lambda: MultivariateNormal(2),
+    }
+    cases = []
+    for name in distns.__all__:
+        obj = getattr(distns, name)
+        if name in factories:
+            obj = factories[name]()
+        if obj in bases:
+            continue
+        cases.append(pytest.param(obj, id=name))
+    return cases
+
+
+def _build(Dist):
+    rng = np.random.default_rng(0)
+    return Dist(rng.normal(scale=0.3, size=(Dist.n_params, _N_ROWS)))
+
+
+def _rows(value, key):
+    # a few distributions keep a scalar in params, such as the n of BetaBinomial
+    return value if np.ndim(value) == 0 else value[key]
+
+
+def test_concrete_distns_cover_all_exports():
+    names = [case.id for case in _concrete_distns()]
+    assert len(names) == len(set(names))
+    assert {"Normal", "NormalFixedVar", "NormalFixedMean", "Bernoulli"} <= set(names)
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns())
+def test_len(Dist):
+    assert len(_build(Dist)) == _N_ROWS
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns())
+def test_slice_keeps_class_and_params(Dist):
+    dist = _build(Dist)
+    sliced = dist[1:4]
+    assert sliced.__class__ is Dist
+    assert len(sliced) == 3
+    assert sliced.params.keys() == dist.params.keys()
+    for name, value in dist.params.items():
+        np.testing.assert_allclose(sliced.params[name], _rows(value, slice(1, 4)))
+
+
+@pytest.mark.parametrize("Dist", _concrete_distns())
+def test_integer_index_keeps_class_and_params(Dist):
+    dist = _build(Dist)
+    single = dist[2]
+    assert single.__class__ is Dist
+    for name, value in dist.params.items():
+        np.testing.assert_allclose(single.params[name], _rows(value, 2))
+
+
+@pytest.mark.parametrize(
+    "Dist, expected_loc, expected_scale",
+    [
+        (NormalFixedVar, lambda p: p[0], lambda p: np.ones(len(p[0]))),
+        (NormalFixedMean, lambda p: np.zeros(len(p[0])), lambda p: np.exp(p[0])),
+    ],
+    ids=["NormalFixedVar", "NormalFixedMean"],
+)
+def test_normal_fixed_slice_matches_rows(Dist, expected_loc, expected_scale):
+    params = np.random.default_rng(1).normal(size=(1, 8))
+    dist = Dist(params)
+    rows = slice(2, 7)
+    sliced = dist[rows]
+    assert sliced.__class__ is Dist
+    assert len(dist) == 8
+    assert len(sliced) == 5
+    np.testing.assert_allclose(sliced.loc, expected_loc(params)[rows])
+    np.testing.assert_allclose(sliced.scale, expected_scale(params)[rows])
+    np.testing.assert_allclose(sliced.params["loc"], sliced.loc)
+    np.testing.assert_allclose(sliced.params["scale"], sliced.scale)
+    y = np.linspace(-1, 1, 8)
+    np.testing.assert_allclose(
+        sliced.dist.logpdf(y[rows]), dist.dist.logpdf(y)[rows], rtol=1e-12
+    )
+
+
+@pytest.mark.parametrize("Dist", [NormalFixedVar, NormalFixedMean])
+def test_normal_fixed_fitted_prediction_supports_len_and_slice(Dist):
+    rng = np.random.default_rng(2)
+    X = rng.normal(size=(60, 3))
+    Y = X[:, 0] + rng.normal(size=60)
+    ngb = NGBRegressor(Dist=Dist, n_estimators=5, verbose=False).fit(X, Y)
+    pred = ngb.pred_dist(X)
+    assert len(pred) == 60
+    sliced = pred[0:2]
+    assert sliced.__class__ is Dist
+    assert len(sliced) == 2
+    np.testing.assert_allclose(sliced.loc, pred.loc[0:2])
+    np.testing.assert_allclose(sliced.scale, pred.scale[0:2])
+    np.testing.assert_allclose(pred[0].loc, pred.loc[0])
+
+
+# Distn.__getitem__ passes one-dimensional params to the constructor for an
+# integer key, so dist[i] has no row axis, as with numpy. Categorical and
+# MultivariateNormal used to need two-dimensional params.
+
+
+@pytest.mark.parametrize(
+    "Dist", [Bernoulli, k_categorical(3)], ids=["Bernoulli", "k_categorical"]
+)
+def test_categorical_integer_index_gives_one_row(Dist):
+    dist = _build(Dist)
+    for i in [2, -1]:
+        single = dist[i]
+        np.testing.assert_allclose(single.class_probs(), dist.class_probs()[i])
+        assert single.predict() == dist.predict()[i]
+        samples = single.sample(50)
+        assert samples.shape == (50,)
+        assert set(samples) <= set(range(Dist.K_))
+    np.testing.assert_allclose([d.class_probs() for d in dist], dist.class_probs())
+
+
+@pytest.mark.parametrize("k", [2, 3])
+def test_multivariatenormal_integer_index_gives_one_row(k):
+    dist = _build(MultivariateNormal(k))
+    Y = np.random.default_rng(3).normal(size=(_N_ROWS, k))
+    for i in [2, -1]:
+        single = dist[i]
+        np.testing.assert_allclose(single.predict(), dist.predict()[i])
+        np.testing.assert_allclose(single.cov, dist.cov[i])
+        np.testing.assert_allclose(single.logpdf(Y[i]), dist.logpdf(Y)[i])
+        np.testing.assert_allclose(
+            single.scipy_distribution().logpdf(Y[i]), dist.logpdf(Y)[i]
+        )
+        assert np.shape(single.sample(20)) == (20, k)
+    # one distribution evaluated at several points
+    np.testing.assert_allclose(single.logpdf(Y), [single.logpdf(y) for y in Y])
+
+
+def test_integer_index_of_fitted_classifier_and_mvn():
+    rng = np.random.default_rng(4)
+    X = rng.normal(size=(60, 3))
+    y = (X[:, 0] > 0).astype(int) + (X[:, 1] > 0).astype(int)
+    clf = NGBClassifier(Dist=k_categorical(3), n_estimators=5, verbose=False)
+    clf.fit(X, y)
+    pred = clf.pred_dist(X)
+    np.testing.assert_allclose(pred[0].class_probs(), clf.predict_proba(X)[0])
+    assert pred[0].predict() == clf.predict(X)[0]
+
+    Y = np.column_stack([X[:, 0], X[:, 1]]) + rng.normal(size=(60, 2))
+    reg = NGBRegressor(Dist=MultivariateNormal(2), n_estimators=5, verbose=False)
+    reg.fit(X, Y)
+    pred = reg.pred_dist(X)
+    np.testing.assert_allclose(pred[0].predict(), reg.predict(X)[0])
+    np.testing.assert_allclose(pred[0].logpdf(Y[0]), pred.logpdf(Y)[0])
+
+
+def _mvn_with_cov(cov, N=4):
+    """N MultivariateNormal rows with means 0, ..., p - 1 and covariance cov"""
+    p = cov.shape[0]
+    # the internal parameters are the means and the lower triangle of L, where
+    # inv(cov) = L @ L.T and the diagonal of L is on the log scale
+    L = np.linalg.cholesky(np.linalg.inv(cov))
+    L[np.diag_indices(p)] = np.log(L[np.diag_indices(p)])
+    theta = np.concatenate([np.arange(p, dtype=float), L[np.tril_indices(p)]])
+    return MultivariateNormal(p)(np.tile(theta[:, None], (1, N)))
+
+
+def test_multivariatenormal_params_cov():
+    cov = np.array([[2.0, 0.6, 0.0], [0.6, 1.0, -0.3], [0.0, -0.3, 0.5]])
+    dist = _mvn_with_cov(cov)
+    params = dist.params
+
+    assert list(params) == ["loc", "cov"]
+    np.testing.assert_allclose(params["loc"], np.tile([0.0, 1.0, 2.0], (4, 1)))
+    # get_chol_factor adds 1e-6 to the diagonal of L, so the match is not exact
+    np.testing.assert_allclose(
+        params["cov"], np.broadcast_to(cov, (4, 3, 3)), rtol=1e-4, atol=1e-5
+    )
+    np.testing.assert_array_equal(params["cov"], dist.cov)
+
+    # the names fit scipy.stats.multivariate_normal row by row
+    Y = np.random.default_rng(0).normal(size=(4, 3))
+    scipy_logpdf = [
+        multivariate_normal(mean=params["loc"][i], cov=params["cov"][i]).logpdf(Y[i])
+        for i in range(4)
+    ]
+    np.testing.assert_allclose(scipy_logpdf, dist.logpdf(Y))
+
+
+def test_multivariatenormal_params_scale_is_deprecated():
+    dist = _mvn_with_cov(np.array([[1.0, 0.3], [0.3, 2.0]]))
+    params = dist.params
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params["scale"]
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    with pytest.warns(FutureWarning, match=r"Use params\['cov'\]") as record:
+        scale = params.get("scale")
+    assert record[0].filename == __file__
+    np.testing.assert_array_equal(scale, params["cov"])
+
+    # the other keys work as in a plain dict and give no warning
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert dict(params.items()).keys() == {"loc", "cov"}
+        np.testing.assert_array_equal(params["loc"], dist.loc)
+        np.testing.assert_array_equal(params.get("cov"), dist.cov)
+        assert params.get("df") is None
+        with pytest.raises(KeyError):
+            params["df"]  # pylint: disable=pointless-statement
 
 
 @pytest.mark.parametrize(

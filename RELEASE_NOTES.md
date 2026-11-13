@@ -1,14 +1,52 @@
 # RELEASE NOTES
 
-## Version 0.5.11
+## Version 0.6.0
 
-* **Breaking:** `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Before, `GridSearchCV` and `cross_val_score` without an explicit `scoring` selected the model with the worst score (issue #418)
-* Added an optional n_jobs parameter that fits the per parameter base learners in parallel with threads. Base learners are now seeded from the model random_state, so fits are reproducible and independent of n_jobs; output for the default base learner shifts relative to 0.5.x.
-* Fix `NGBClassifier` and `NGBSurvival` API parity by adding `validation_fraction` and `early_stopping_rounds`, with regression coverage for their validation-split paths (issue #402)
-* Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner and distribution tests (issue #408, PR #409)
+### Breaking changes
+
+* Drop support for Python 3.9, which reached end-of-life in October 2025. The minimum supported version is now Python 3.10
+* `NGBoost.score` now returns the negative of the average scoring rule (the mean log-likelihood for `LogScore`), so that higher is better as scikit-learn expects. Previously, `GridSearchCV` and `cross_val_score` without an explicit `scoring` argument selected the worst model (issue #418, PR #423)
+* Base learners are now seeded from the model `random_state`, so fits are reproducible and independent of `n_jobs`. Output for the default base learner shifts relative to 0.5.x (PR #417)
+
+### New features
+
+* Add optional `n_jobs` parameter to fit base learners in parallel with threads (PR #416)
 * Support a distinct base learner for each distribution parameter, including scikit-learn nested parameters and feature importances for all-tree configurations (issue #338, PR #411)
-* Fix the `CRPScore` metric of `Normal`, `NormalFixedMean` and `LogNormal`, which was the correct metric multiplied by the scale. It was too large where the predicted scale is above 1 and too small where it is below 1. Fits that use `CRPScore` with these distributions change wherever the predicted scale is not 1 (issue #421)
-* Add `df` to the `params` of `T`, `TFixedDf`, `TFixedDfFixedVar` and the `Cauchy` classes built on them, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale`
+* Add `validation_fraction` and `early_stopping_rounds` to `NGBClassifier` and `NGBSurvival` for API parity with `NGBRegressor` (issue #402, PR #407)
+* Report fitted status to scikit-learn's `check_is_fitted` via `__sklearn_is_fitted__`, fixing `NotFittedError` in `Pipeline.predict` on sklearn >= 1.8 (PR #429)
+* Set scikit-learn classifier metadata on `NGBClassifier` so that scikit-learn correctly identifies it as a classifier (PR #413)
+* Handle array-like sample weights positionally and validate them at fit time; weights with wrong length, shape, NaN, or inf now raise `ValueError` (PR #425)
+* `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()` (issue #168, PR #438)
+* Document saving and loading models with `skops` and test the round trip (PR #427)
+* Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
+* The `var` attribute of `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar` is deprecated and gives a `FutureWarning`. It hides the `var()` method of `scipy.stats`, so `dist.var()` raises `TypeError` on these classes, while it works on the other distributions. In a future release, `var` will be that method. Use `dist.scale ** 2` for the current values, which works on every version. For the Normal classes these values are the variance. For the T and Cauchy classes they are the squared scale, not the variance (issue #168, PR #439)
+* Add `df` to the `params` of `T`, `TFixedDf`, `TFixedDfFixedVar` and the `Cauchy` classes built on them, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale` (issue #168, PR #440)
+
+### Bug fixes
+
+* Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
+* Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
+* Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)
+* Fix the log-scale Fisher information of `TFixedDf` and `Cauchy`, which was off by a factor of `4 * var` (PR #422)
+* Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
+* Reset validation iteration metadata on refit so that re-calling `fit` on the same model behaves identically to fitting a fresh one (PR #426)
+* Keep `random_state` as given and seed a fresh generator in `fit`, so that `get_params` returns the original value and clones behave identically (PR #417)
+* Replace the deprecated `friedman_mse` criterion with `squared_error` for the default tree learner (issue #408, PR #409)
+* Stop the overflow warnings from trial steps that the line search rejects, such as `overflow encountered in exp` in `Normal`. They came most often from `natural_gradient=False` on a target with large units. Fitted models do not change (issue #352, PR #434)
+* `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
+* Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
+* Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
+* Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
+
+### Documentation and CI
+
+* Build the user guide with Jupyter Book 2 in GitHub Actions and deploy on push to master (PR #428)
+* Remove the old prebuilt docs site generated by jupyter-book 0.x in 2020 (PR #430)
+* Run user guide notebooks during the docs build with `--execute`, replacing removed `load_boston` calls with `load_diabetes` (PR #431)
+* Mark observed rows as events in the survival examples (PR #436)
+* Add a section on overflow warnings and diverging fits to the tuning page of the user guide (PR #434)
+* Run the test matrix once per commit and cancel stale PR runs via concurrency groups (PR #444)
+* Fix scikit-learn wheel resolution on Python 3.14 (PR #414)
 
 ## Version 0.5.10
 

@@ -19,6 +19,7 @@
 * `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()` (issue #168, PR #438)
 * Document saving and loading models with `skops` and test the round trip (PR #427)
 * Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
+* The `var` attribute of `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar` is deprecated and gives a `FutureWarning`. It hides the `var()` method of `scipy.stats`, so `dist.var()` raises `TypeError` on these classes, while it works on the other distributions. In a future release, `var` will be that method. Use `dist.scale ** 2` for the current values, which works on every version. For the Normal classes these values are the variance. For the T and Cauchy classes they are the squared scale, not the variance (issue #168, PR #439)
 
 ### Bug fixes
 

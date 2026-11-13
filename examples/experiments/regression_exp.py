@@ -153,7 +153,8 @@ if __name__ == "__main__":
         # set the appropriate scale if using a homoskedastic Normal
         if args.distn == "NormalFixedVar":
             scale = (
-                forecast.var * ((forecast_val.loc - y_val.flatten()) ** 2).mean() ** 0.5
+                forecast.scale
+                * ((forecast_val.loc - y_val.flatten()) ** 2).mean() ** 0.5
             )
             forecast = norm_dist(loc=forecast.loc, scale=scale)
 

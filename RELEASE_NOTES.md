@@ -22,6 +22,7 @@
 
 ### Bug fixes
 
+* Fix `LogitNormal.mean()`, and so `predict()`, which averaged 1000 random draws and gave a different value on each call. It is now computed by quadrature, is the same on every call, and is accurate to about 1e-14. The `make_distribution` docstring now warns that a regression distribution with neither `scipy_dist_cls` nor `mean_fn` gets the same random mean (PR #449)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)

@@ -14,6 +14,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival
@@ -39,6 +40,46 @@ class RecordingRegressor(BaseEstimator, RegressorMixin):
 
     def predict(self, X):
         return np.full(X.shape[0], self.prediction_)
+
+
+@pytest.mark.parametrize("first_rounds", [0, 2])
+def test_partial_fit_preserves_initial_distribution(first_rounds):
+    rng = check_random_state(7)
+    X = rng.normal(size=(40, 3))
+    y = X[:, 0] + rng.normal(size=40)
+    model = NGBRegressor(n_estimators=first_rounds, verbose=False, random_state=1).fit(
+        X, y
+    )
+    initial = model.init_params.copy()
+    predictions = model.pred_param(X).copy()
+
+    model.set_params(n_estimators=0).partial_fit(X, y + 100)
+
+    np.testing.assert_array_equal(model.init_params, initial)
+    np.testing.assert_array_equal(model.pred_param(X), predictions)
+
+    # A fresh fit must still learn the new data's marginal distribution.
+    model.fit(X, y + 100)
+    fresh = NGBRegressor(n_estimators=0, verbose=False).fit(X, y + 100)
+    np.testing.assert_array_equal(model.init_params, fresh.init_params)
+
+
+def test_partial_fit_with_new_targets_matches_continuation_from_original_intercept():
+    rng = check_random_state(14)
+    X = rng.normal(size=(40, 3))
+    y = X[:, 0] + rng.normal(size=40)
+    model = NGBRegressor(n_estimators=2, verbose=False, random_state=1).fit(X, y)
+    initial = model.init_params.copy()
+    observed_initial_params = []
+
+    def monitor(dist, target, weights):
+        observed_initial_params.append(dist.loc.copy())
+        return dist.total_score(target, sample_weight=weights)
+
+    before = model.pred_dist(X).loc.copy()
+    model.set_params(n_estimators=1).partial_fit(X, y + 2, train_loss_monitor=monitor)
+    np.testing.assert_array_equal(observed_initial_params[0], before)
+    np.testing.assert_array_equal(model.init_params, initial)
 
 
 @pytest.mark.parametrize("n_estimators", [0, 2])

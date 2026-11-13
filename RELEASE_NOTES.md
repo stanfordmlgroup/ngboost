@@ -22,7 +22,7 @@
 
 ### Bug fixes
 
-* Fit the `NormalFixedMean` marginal scale with the mean fixed at zero and return it on the internal log scale, correcting the initial predictive distribution
+* Fit the `NormalFixedMean` marginal scale with the mean fixed at zero and return it on the internal log scale, correcting the initial predictive distribution (PR #465)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)

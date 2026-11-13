@@ -22,6 +22,7 @@
 
 ### Bug fixes
 
+* Fix `NGBClassifier(Dist=BetaBernoulli)`, which raised `ValueError` on binary labels because the classifier counted the classes as `n_params + 1`. Classification distributions now have an `n_classes` attribute, which `k_categorical` and the SymPy factory set and which defaults to `n_params + 1` for other subclasses (PR #448)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)

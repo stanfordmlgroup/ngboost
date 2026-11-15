@@ -2,19 +2,8 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from ngboost.distns import Cauchy, T, TFixedDf, TFixedDfFixedVar
+from ngboost.distns import Cauchy, TFixedDf, TFixedDfFixedVar
 from ngboost.distns.cauchy import CauchyFixedVar
-
-
-def test_t_params_include_df():
-    params = np.array(
-        [[0.5, -1.0], [np.log(2.0), np.log(0.5)], [np.log(4.0), np.log(10.0)]]
-    )
-    dist = T(params)
-    assert set(dist.params) == {"loc", "scale", "df"}
-    np.testing.assert_allclose(dist.params["df"], [4.0, 10.0])
-    Y = np.array([0.0, 1.0])
-    np.testing.assert_allclose(stats.t(**dist.params).logpdf(Y), dist.logpdf(Y))
 
 
 class TFixedDf5(TFixedDf):

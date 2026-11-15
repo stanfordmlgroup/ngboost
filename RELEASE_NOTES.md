@@ -21,6 +21,8 @@
 * Add `mu` and `sigma` to `LogNormal`, the mean and standard deviation of log(Y). `LogNormal.loc` and `LogNormal.scale` are deprecated and give a `FutureWarning`. `LogNormal.scale` was sigma, but `params['scale']` is exp(mu) as in `scipy.stats.lognorm`, and users mixed the two up. `params` does not change (issue #168, PR #433)
 * The `var` attribute of `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar` is deprecated and gives a `FutureWarning`. It hides the `var()` method of `scipy.stats`, so `dist.var()` raises `TypeError` on these classes, while it works on the other distributions. In a future release, `var` will be that method. Use `dist.scale ** 2` for the current values, which works on every version. For the Normal classes these values are the variance. For the T and Cauchy classes they are the squared scale, not the variance (issue #168, PR #439)
 * Add `df` to the `params` of `T`, `TFixedDf` and `TFixedDfFixedVar`, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale`. The `params` of `Cauchy` and `CauchyFixedVar` still hold only `loc` and `scale`, so that `scipy.stats.cauchy(**dist.params)` works as before (issue #168, PR #440)
+* Add the `NegativeBinomial` distribution for overdispersed counts, built with the SymPy factory. Its parameters are the mean `mu` and the dispersion `n`, and its variance is `mu + mu**2 / n` (issue #281, PR #446)
+* `make_distribution` accepts expressions as values of `scipy_kwarg_map`, for distributions that scipy parameterizes differently, such as `p = n / (n + mu)` for `scipy.stats.nbinom` (PR #446)
 
 ### Bug fixes
 
@@ -38,6 +40,7 @@
 * Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
 * Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
 * Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
+* Fix `sample(m)` of the SymPy factory distributions that use a scipy class, such as `Beta`. It failed for more than one row, and now returns one draw for each row in each of the `m` samples, as the other distributions do (PR #446)
 
 ### Documentation and CI
 

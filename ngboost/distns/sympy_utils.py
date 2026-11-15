@@ -560,10 +560,13 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         E.g. ``scipy.stats.beta``.  Enables auto-generated ``fit``,
         ``sample``, and ``mean`` (via ``__getattr__`` delegation).
         Mutually exclusive with ``class_prob_exprs``.
-    scipy_kwarg_map : dict[str, sympy.Symbol] or None
+    scipy_kwarg_map : dict[str, sympy.Expr] or None
         Maps scipy keyword argument names to sympy parameter symbols.
         E.g. ``{"a": alpha, "b": beta}`` for ``scipy.stats.beta(a=, b=)``.
         May reference extra_params symbols (e.g. ``{"n": n, ...}``).
+        A value can also be an expression in the symbols, when scipy uses
+        another parameterization, e.g. ``{"n": n, "p": n / (n + mu)}`` for
+        ``scipy.stats.nbinom``.  Expressions need a custom ``fit_fn``.
     extra_params : list or None
         Non-optimised parameters (e.g. ``n`` in BetaBinomial).
         Each entry is either a bare ``sympy.Symbol`` (no default, for
@@ -667,10 +670,31 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     param_info = [(str(s), is_log) for s, is_log in params]
     _n_params = len(params)
 
-    # Convert scipy_kwarg_map: {scipy_name: sympy_symbol} → {scipy_name: attr_name}
+    # Convert scipy_kwarg_map: {scipy_name: sympy_symbol} → {scipy_name: attr_name}.
+    # Values that are expressions, such as p = n / (n + mu), are lambdified.
     _scipy_map = None
+    _scipy_expr_fns = {}
+    _all_symbols = [s for s, _ in params] + _extra_symbols
     if scipy_kwarg_map is not None:
-        _scipy_map = {k: str(v) for k, v in scipy_kwarg_map.items()}
+        _scipy_map = {
+            k: str(v) for k, v in scipy_kwarg_map.items() if isinstance(v, sym.Symbol)
+        }
+        _scipy_expr_fns = {
+            k: _build_lambdified(sym.sympify(v), _all_symbols)
+            for k, v in scipy_kwarg_map.items()
+            if not isinstance(v, sym.Symbol)
+        }
+        if _scipy_expr_fns and fit_fn is None:
+            raise ValueError(
+                "scipy_kwarg_map values that are expressions need a custom fit_fn."
+            )
+
+    def _scipy_kwargs(obj):
+        kwargs = {k: getattr(obj, v) for k, v in _scipy_map.items()}
+        if _scipy_expr_fns:
+            values = [getattr(obj, str(s)) for s in _all_symbols]
+            kwargs.update({k: fn(*values) for k, fn in _scipy_expr_fns.items()})
+        return kwargs
 
     # ---- 2b. Lambdify class probability expressions (classification) ----
     _class_prob_fns = None
@@ -697,8 +721,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         for _, ep_name, ep_default in _extra_param_info:
             setattr(self, ep_name, kwargs.get(ep_name, ep_default))
         if scipy_dist_cls is not None and _scipy_map is not None:
-            sc_kwargs = {k: getattr(self, v) for k, v in _scipy_map.items()}
-            self.dist = scipy_dist_cls(**sc_kwargs)
+            self.dist = scipy_dist_cls(**_scipy_kwargs(self))
 
     # ---- 4. fit ----
     if fit_fn is not None:
@@ -766,7 +789,8 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     elif scipy_dist_cls is not None:
 
         def _sample(self, m):
-            return self.dist.rvs(size=m)
+            # one draw for each row per sample, as the other distributions do
+            return np.array([self.dist.rvs() for _ in range(m)])
 
     elif is_classification:
 
@@ -808,8 +832,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
             for _, ep_name, _ in _extra_param_info:
                 setattr(obj, ep_name, getattr(self, ep_name))
             if scipy_dist_cls is not None and _scipy_map is not None:
-                sc_kw = {k: getattr(obj, v) for k, v in _scipy_map.items()}
-                obj.dist = scipy_dist_cls(**sc_kw)
+                obj.dist = scipy_dist_cls(**_scipy_kwargs(obj))
             return obj
 
     else:

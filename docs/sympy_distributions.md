@@ -22,7 +22,9 @@ Two factories are provided:
 All SymPy-powered distributions are importable directly:
 
 ```python
-from ngboost.distns import Beta, BetaBernoulli, BetaBinomial, BetaBinomialEstN, LogitNormal
+from ngboost.distns import (
+    Beta, BetaBernoulli, BetaBinomial, BetaBinomialEstN, LogitNormal, NegativeBinomial,
+)
 ```
 
 | Distribution      | Type           | Factory used          | Use case                                  |
@@ -32,6 +34,7 @@ from ngboost.distns import Beta, BetaBernoulli, BetaBinomial, BetaBinomialEstN, 
 | BetaBernoulli    | Classification | `make_distribution`   | Binary with calibrated uncertainty         |
 | BetaBinomial     | Regression     | `make_distribution`   | Overdispersed count data (known n)        |
 | BetaBinomialEstN | Regression     | `make_distribution`   | Overdispersed count data (unknown n)      |
+| NegativeBinomial | Regression     | `make_distribution`   | Overdispersed counts with no upper bound  |
 
 ## Quickstart: Using Built-in Distributions
 
@@ -41,7 +44,7 @@ All SymPy-powered distributions work out of the box — just import and go:
 
 ```python
 from ngboost import NGBRegressor
-from ngboost.distns import Beta  # or LogitNormal, BetaBinomial, BetaBinomialEstN
+from ngboost.distns import Beta  # or LogitNormal, BetaBinomial, NegativeBinomial, ...
 
 ngb = NGBRegressor(Dist=Beta)
 ngb.fit(X_train, Y_train)
@@ -213,7 +216,8 @@ possible, using a three-tier strategy:
 
 3. **Monte Carlo fallback**: If neither analytical approach succeeds, the
    class inherits `LogScore.metric()` which estimates the FI via Monte
-   Carlo sampling. This is used for LogitNormal and BetaBinomial.
+   Carlo sampling. This is used for LogitNormal, BetaBinomial and
+   NegativeBinomial.
 
 ## Discrete Distribution Support
 
@@ -335,6 +339,37 @@ BetaBinomialEstN = make_distribution(
 FI path: Monte Carlo fallback (tier 3). Note: estimating `n` from count
 data is harder than fixing it — prefer `BetaBinomial` when `n` is known.
 
+### Another scipy parameterization (NegativeBinomial)
+
+NGBoost fits the mean `mu` and the dispersion `n`, but `scipy.stats.nbinom`
+takes `n` and `p = n / (n + mu)`. A value in `scipy_kwarg_map` can be an
+expression in the parameters, so the scipy methods (`pmf`, `cdf`, `ppf`,
+`interval`, ...) still work on the predicted distributions:
+
+```python
+mu, n = sp.symbols("mu n", positive=True)
+y = sp.symbols("y", nonnegative=True, integer=True)
+
+score = -(
+    sp.loggamma(y + n) - sp.loggamma(n) - sp.loggamma(y + 1)
+    + n * sp.log(n / (n + mu)) + y * sp.log(mu / (n + mu))
+)
+
+NegativeBinomial = make_distribution(
+    params=[(mu, True), (n, True)],
+    y=y,
+    score_expr=score,
+    scipy_dist_cls=scipy.stats.nbinom,
+    scipy_kwarg_map={"n": n, "p": n / (n + mu)},
+    fit_fn=nbinom_fit,
+    name="NegativeBinomial",
+)
+```
+
+The factory cannot invert an expression to fit the marginal distribution
+with scipy, so an expression in `scipy_kwarg_map` needs a `fit_fn`. FI path:
+Monte Carlo fallback (tier 3), since E[trigamma(Y + n)] has no closed form.
+
 ## Testing
 
 ### Gradient correctness
@@ -342,7 +377,7 @@ data is harder than fixing it — prefer `BetaBinomial` when `n` is known.
 `tests/test_score.py` uses `scipy.optimize.approx_fprime` to compare
 `d_score()` against finite differences of `score()`. All SymPy
 distributions (Beta, LogitNormal, BetaBernoulli, BetaBinomial,
-BetaBinomialEstN) are included.
+BetaBinomialEstN, NegativeBinomial) are included.
 
 ### Metric correctness
 

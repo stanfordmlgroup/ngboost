@@ -24,6 +24,7 @@
 ### Documentation and CI
 
 * Add a section on overflow warnings and diverging fits to the tuning page of the user guide (PR #434)
+* Add `CONTRIBUTING.md`, which tells contributors how to write a release note and what counts as a breaking change, and a PR template. The release notes now have an `Unreleased` section that each PR adds to (PR #468)
 
 ## Version 0.6.0
 

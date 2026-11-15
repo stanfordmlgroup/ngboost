@@ -114,12 +114,6 @@ class NGBRegressor(NGBoost, BaseEstimator):
             return self.Dist.uncensor(self.Score)
         return self.Dist
 
-    def __setstate__(self, state_dict):
-        # Older pickles of a Dist with only censored scores set this flag. They
-        # already store the user's Dist, which _make_dist_class uncensors.
-        state_dict.pop("uncensor", None)
-        super().__setstate__(state_dict)
-
 
 class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
     """
@@ -215,16 +209,6 @@ class NGBClassifier(ClassifierMixin, NGBoost, BaseEstimator):
                 "NGBClassifier Dist expects "
                 f"{n_classes} classes, got {len(self.classes_)}."
             )
-
-    def __setstate__(
-        self, state_dict
-    ):  # pylint: disable=attribute-defined-outside-init
-        super().__setstate__(state_dict)
-        if not hasattr(self, "classes_"):
-            self.classes_ = np.arange(self.Dist.n_params + 1)
-        if not hasattr(self, "_le"):
-            self._le = LabelEncoder()
-            self._le.classes_ = self.classes_
 
     # fit and partial_fit pass their arguments on to NGBoost unchanged, so
     # pylint reads the calls as copies of the one in NGBoost.fit.
@@ -423,12 +407,6 @@ class NGBSurvival(NGBoost, BaseEstimator):
                 "censored scores implemented."
             )
         return SurvivalDistnClass(self.Dist)
-
-    def __setstate__(self, state_dict):
-        # Older pickles store the user's Dist under _basedist
-        if "_basedist" in state_dict:
-            state_dict["Dist"] = state_dict.pop("_basedist")
-        super().__setstate__(state_dict)
 
     def score(self, X, T, E=None):  # pylint: disable=arguments-renamed
         """

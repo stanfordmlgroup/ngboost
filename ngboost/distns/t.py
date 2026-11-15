@@ -131,8 +131,10 @@ class TFixedDf(RegressionDistn):
         self.df = np.ones_like(self.loc) * self.fixed_df
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
 
-    def fit(Y):
-        _, m, s = dist.fit(Y, fdf=TFixedDf.fixed_df)
+    # a classmethod, so that subclasses such as Cauchy fit with their own fixed_df
+    @classmethod
+    def fit(cls, Y):
+        _, m, s = dist.fit(Y, fdf=cls.fixed_df)
         return np.array([m, np.log(s)])
 
     def sample(self, m):
@@ -187,8 +189,11 @@ class TFixedDfFixedVar(RegressionDistn):
         self.df = np.ones_like(self.loc) * self.fixed_df
         self.dist = dist(loc=self.loc, scale=self.scale, df=self.df)
 
-    def fit(Y):
-        _, m, _ = dist.fit(Y, fdf=TFixedDfFixedVar.fixed_df)
+    # a classmethod, so that subclasses such as CauchyFixedVar fit with their own
+    # fixed_df
+    @classmethod
+    def fit(cls, Y):
+        _, m, _ = dist.fit(Y, fdf=cls.fixed_df, fscale=1.0)
         return m
 
     def sample(self, m):

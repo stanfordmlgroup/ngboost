@@ -835,6 +835,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     }
     if _class_probs is not None:
         attrs["class_probs"] = _class_probs
+        attrs["n_classes"] = _n_classes
     if _mean is not None:
         attrs["mean"] = _mean
     if _getitem is not None:

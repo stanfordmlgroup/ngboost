@@ -549,6 +549,11 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     mean_fn : callable or None
         Custom ``mean(self) -> np.ndarray`` override.  When provided,
         takes precedence over scipy delegation and MC fallback.
+        A regression distribution with neither ``scipy_dist_cls`` nor
+        ``mean_fn`` gets the MC fallback: ``mean()`` averages 1000 draws
+        from ``sample()``.  That mean, and so ``predict()``, is random and
+        changes from call to call.  Pass ``mean_fn`` to make it
+        deterministic.
     class_prob_exprs : list[sympy.Expr] or None
         SymPy expressions for class probabilities ``[P(Y=0), P(Y=1), ...]``.
         When provided, the result is a ``ClassificationDistn`` subclass
@@ -817,6 +822,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     if mean_fn is not None:
         _mean = mean_fn
     elif not is_classification and scipy_dist_cls is None:
+        # Monte Carlo mean: random from call to call (see ``mean_fn`` above).
 
         def _mean(self):
             return np.mean(self.sample(1000), axis=0)

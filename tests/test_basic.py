@@ -872,8 +872,7 @@ def test_check_is_fitted(learner):
 
     ngb.fit(X, *targets)
     check_is_fitted(ngb)
-    # A pickle saved before __sklearn_is_fitted__ existed has the same state,
-    # so it must load as fitted too
+    # A copy made by pickle, as in cross_val_score(n_jobs=2), is fitted too
     check_is_fitted(pickle.loads(pickle.dumps(ngb)))
 
 

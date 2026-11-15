@@ -1,5 +1,16 @@
 # RELEASE NOTES
 
+## Version 0.7.0
+
+### Breaking changes
+
+* Remove `load_ngboost_model`. It loaded a file with `joblib.load`, which runs any code that the file holds, so a model file from another person could run code on your computer. To load a model saved with scikit-learn < 1.3, use ngboost 0.6.0 (issue #466, PR #467)
+* Stop support for pickle as a file format. ngboost no longer converts the state of older pickles: the `uncensor` flag and `_basedist` of models saved with ngboost 0.5.x, and classifiers saved without `classes_`. Such files can fail to load. Use skops to save models, as the user guide shows. To load an old pickle, use the ngboost version that saved it (issue #466, PR #467)
+
+### Documentation
+
+* The saving page of the user guide now uses skops only. It loads a file with a fixed list of trusted types, and does not trust every type that the file asks for (issue #466, PR #467)
+
 ## Version 0.6.0
 
 ### Breaking changes

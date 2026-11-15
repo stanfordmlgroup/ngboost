@@ -37,6 +37,7 @@
 * Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
 * Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
 * Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
+* Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
 
 ### Documentation and CI
 

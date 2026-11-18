@@ -207,6 +207,9 @@ class NormalFixedMean(Normal):
         self.shape = self.loc.shape
         self.dist = dist(loc=self.loc, scale=self.scale)
 
-    def fit(Y):
-        _, s = sp.stats.norm.fit(Y, floc=0)
+    def fit(Y, sample_weight=None):
+        if sample_weight is None:
+            _, s = sp.stats.norm.fit(Y, floc=0)
+        else:
+            s = np.sqrt(np.average(Y**2, weights=sample_weight))
         return np.array([np.log(s)])

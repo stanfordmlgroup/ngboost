@@ -574,3 +574,14 @@ def test_normal_fixed_mean_first_boosting_round(score):
     np.testing.assert_allclose(starting_scales[0], np.sqrt(np.mean(y**2)))
     assert len(model.base_models) == 1
     assert np.all(np.isfinite(model.pred_dist(X).scale))
+
+
+def test_normal_fixed_mean_weighted_fit_matches_repeated_rows():
+    # integer weights, zeros included, must give the fit to the repeated rows
+    rng = np.random.default_rng(5)
+    y = rng.normal(loc=1.0, size=200)
+    counts = rng.integers(0, 4, size=200)
+    np.testing.assert_allclose(
+        NormalFixedMean.fit(y, sample_weight=counts.astype(float)),
+        NormalFixedMean.fit(np.repeat(y, counts)),
+    )

@@ -24,6 +24,7 @@
 
 ### Bug fixes
 
+* `fit` now uses `sample_weight` when it fits the starting distribution. Before, it ignored the weights, so rows with zero weight still changed the predictions. `Normal`, `NormalFixedVar`, `LogNormal`, `Exponential`, `HalfNormal`, `Laplace`, `Poisson`, `Weibull`, `MultivariateNormal`, `Bernoulli` and `k_categorical` use the weights in full. The other distributions, and custom distributions whose `fit` has no `sample_weight` argument, leave out the rows with zero weight but ignore the other weights. Results change for fits with weights that are not all equal (issue #435, PR #451)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)

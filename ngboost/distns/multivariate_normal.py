@@ -280,11 +280,16 @@ def MultivariateNormal(k):
             ret = p1 + p2 + self.pdf_constant
             return ret
 
-        def fit(Y):
+        def fit(Y, sample_weight=None):
             N, p = Y.shape
-            m = Y.mean(axis=0)  # pylint: disable=unexpected-keyword-arg
-            diff = Y - m
-            sigma = 1 / N * (diff[:, :, None] @ diff[:, None, :]).sum(0)
+            if sample_weight is None:
+                m = Y.mean(axis=0)  # pylint: disable=unexpected-keyword-arg
+                diff = Y - m
+                sigma = 1 / N * (diff[:, :, None] @ diff[:, None, :]).sum(0)
+            else:
+                m = np.average(Y, axis=0, weights=sample_weight)
+                diff = Y - m
+                sigma = (sample_weight[:, None] * diff).T @ diff / sample_weight.sum()
             L = sp.linalg.cholesky(np.linalg.inv(sigma), lower=True)
             diag_idx = np.diag_indices(p)
             L[diag_idx] = np.log(L[diag_idx])

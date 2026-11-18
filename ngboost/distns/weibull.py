@@ -4,6 +4,7 @@ import numpy as np
 from scipy.stats import weibull_min as dist
 
 from ngboost.distns.distn import RegressionDistn
+from ngboost.distns.utils import weighted_mle
 from ngboost.scores import LogScore
 
 
@@ -49,7 +50,9 @@ class Weibull(RegressionDistn):
         self.scale = np.exp(params[1])  # scale (labmda)
         self.dist = dist(c=self.shape, loc=0, scale=self.scale)
 
-    def fit(Y):
+    def fit(Y, sample_weight=None):
+        if sample_weight is not None:
+            return weighted_mle(Weibull, Y, sample_weight)
         shape, _loc, scale = dist.fit(Y, floc=0)  # hold loc constant
         return np.array([np.log(shape), np.log(scale)])
 

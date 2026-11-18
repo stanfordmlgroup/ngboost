@@ -47,11 +47,14 @@ class Poisson(RegressionDistn):
         self.mu = np.exp(self.logmu)
         self.dist = dist(mu=self.mu)
 
-    def fit(Y):
+    def fit(Y, sample_weight=None):
         assert np.equal(
             np.mod(Y, 1), 0
         ).all(), "All Poisson target data must be discrete integers"
         assert np.all([y >= 0 for y in Y]), "Count data must be >= 0"
+
+        if sample_weight is not None:
+            return np.array([np.log(np.average(Y, weights=sample_weight))])
 
         # minimize negative log likelihood
         m = minimize(
@@ -60,7 +63,7 @@ class Poisson(RegressionDistn):
             args=(Y,),
             bounds=(Bounds(0, np.max(Y))),
         )
-        return np.array([np.log(m.x)])
+        return np.log(m.x)
 
     def sample(self, m):
         return np.array([self.dist.rvs() for i in range(m)])

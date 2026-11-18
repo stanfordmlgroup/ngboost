@@ -4,7 +4,10 @@
 
 from inspect import signature
 
-from ngboost.distns import RegressionDistn
+import numpy as np
+from scipy.optimize import minimize
+
+from ngboost.distns.distn import RegressionDistn
 
 # pylint: disable=too-few-public-methods
 
@@ -21,6 +24,32 @@ def fit_marginal(Dist, Y, sample_weight=None):
     if "sample_weight" in signature(Dist.fit).parameters:
         return Dist.fit(Y, sample_weight=sample_weight)
     return Dist.fit(Y[sample_weight > 0])
+
+
+def weighted_mle(Dist, Y, sample_weight):
+    """
+    Maximizes the weighted log-likelihood of Y over the internal parameters of Dist.
+
+    The search starts from the unweighted fit to the rows of positive weight. Rows of
+    zero weight therefore have no effect, and equal weights give the unweighted fit.
+    """
+    keep = sample_weight > 0
+    Y, sample_weight = Y[keep], sample_weight[keep]
+    start = np.asarray(Dist.fit(Y), dtype=float)
+    if np.all(sample_weight == sample_weight[0]):
+        return start
+
+    def negative_log_likelihood(params):
+        logpdf = Dist(params.reshape(-1, 1)).logpdf(Y)
+        return -np.average(logpdf, weights=sample_weight)
+
+    result = minimize(
+        negative_log_likelihood,
+        start.ravel(),
+        method="Nelder-Mead",
+        options={"xatol": 1e-10, "fatol": 1e-14, "maxiter": 10_000},
+    )
+    return result.x.reshape(start.shape)
 
 
 def SurvivalDistnClass(Dist: RegressionDistn):

@@ -38,6 +38,8 @@ def _validate_sample_weight(sample_weight, X, input_name="sample_weight"):
             f"{input_name} must have one entry per row: got {sample_weight.shape[0]} "
             f"entries for {X.shape[0]} rows"
         )
+    if not np.any(sample_weight > 0):
+        raise ValueError(f"{input_name} must have at least one positive entry")
     return sample_weight
 
 

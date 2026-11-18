@@ -39,7 +39,9 @@ class HalfNormal(RegressionDistn):
         self.scale = np.exp(params[0])  # scale (sigma)
         self.dist = dist(loc=0, scale=self.scale)
 
-    def fit(Y):
+    def fit(Y, sample_weight=None):
+        if sample_weight is not None:
+            return np.array([np.log(np.sqrt(np.average(Y**2, weights=sample_weight)))])
         _loc, scale = dist.fit(Y, floc=0)  # loc held constant
         return np.array([np.log(scale)])
 

@@ -24,7 +24,6 @@
 
 ### Bug fixes
 
-* `fit` now uses `sample_weight` when it fits the starting distribution. Before, it ignored the weights, so rows with zero weight still changed the predictions. `Normal`, `NormalFixedVar`, `LogNormal`, `Exponential`, `HalfNormal`, `Laplace`, `Poisson`, `Weibull`, `MultivariateNormal`, `Bernoulli` and `k_categorical` use the weights in full. The other distributions, and custom distributions whose `fit` has no `sample_weight` argument, leave out the rows with zero weight but ignore the other weights. Results change for fits with weights that are not all equal (issue #435, PR #451)
 * Fix the `CRPScore` metric of `Normal`, `NormalFixedMean`, and `LogNormal`, which was off by a factor of the predicted scale. Fits using `CRPScore` with these distributions now produce correct natural gradients (issue #421, PR #424)
 * Fix the scale gradient of the `Laplace` `CRPScore`, which dropped a `0.75 * scale` term (PR #419)
 * Fix censored scores and gradients for `Exponential` and `LogNormal`, which swapped censored and observed rows and had sign and extra-term errors (PR #420)
@@ -38,6 +37,7 @@
 * Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
 * Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
 * Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
+* `fit` now uses `sample_weight` when it fits the starting distribution. Before, it ignored the weights, so rows with zero weight still changed the predictions. `Normal`, `NormalFixedVar`, `LogNormal`, `Exponential`, `HalfNormal`, `Laplace`, `Poisson`, `Weibull`, `MultivariateNormal`, `Bernoulli` and `k_categorical` use the weights in full. The other distributions, and custom distributions whose `fit` has no `sample_weight` argument, leave out the rows with zero weight but ignore the other weights. Results change for fits with weights that are not all equal (issue #435, PR #451)
 
 ### Documentation and CI
 

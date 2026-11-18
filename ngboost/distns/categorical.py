@@ -68,9 +68,14 @@ def k_categorical(K):
             # this makes me want to refactor all the other code to use lists
             # of distributions, would be more readable imo
 
-        def fit(Y):
-            _, n = np.unique(Y, return_counts=True)
-            p = n / len(Y)
+        def fit(Y, sample_weight=None):
+            _, inverse, n = np.unique(Y, return_inverse=True, return_counts=True)
+            if sample_weight is not None:
+                # a class with no weight must not give an infinite initial parameter
+                n = np.maximum(
+                    np.bincount(inverse, weights=sample_weight), np.finfo(float).eps
+                )
+            p = n / n.sum()
             return np.log(p[1:K]) - np.log(p[0])
             # https://math.stackexchange.com/questions/2786600/invert-the-softmax-function
 

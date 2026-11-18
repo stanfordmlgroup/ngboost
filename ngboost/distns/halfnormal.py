@@ -46,11 +46,6 @@ class HalfNormal(RegressionDistn):
     def sample(self, m):
         return np.array([self.dist.rvs() for i in range(m)])
 
-    def __getattr__(self, name):
-        if name in dir(self.dist):
-            return getattr(self.dist, name)
-        return None
-
     @property
     def params(self):
         return {"loc": np.zeros(shape=self.scale.shape), "scale": self.scale}

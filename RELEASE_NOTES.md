@@ -4,6 +4,20 @@
 
 <!-- Each PR adds one line to a section below. Add a "### Breaking changes" section for PRs with the `breaking` label. At release time, change this heading to the version number and start a new "Unreleased" section above it. See CONTRIBUTING.md. -->
 
+## Version 0.6.1
+
+Bug fixes for scikit-learn integration, distribution attribute handling, and prediction indexing. Several distribution attributes are deprecated with `FutureWarning` to fix naming inconsistencies before a future breaking release.
+
+### Bug fixes
+
+* Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
+* Stop the overflow warnings from trial steps that the line search rejects, such as `overflow encountered in exp` in `Normal`. They came most often from `natural_gradient=False` on a target with large units. Fitted models do not change (issue #352, PR #434)
+* `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
+* Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
+* Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
+* Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
+* Allow scikit-learn 1.7 and later on Python < 3.14. Before, ngboost needed scikit-learn < 1.7 there, so it could not be installed together with packages such as SHAP that need a newer version (issue #463, PR #464)
+
 ### New features
 
 * `MultivariateNormal` `params` now gives the covariance matrices under the key `cov`, the name that `scipy.stats.multivariate_normal` uses. The old key `scale` is deprecated: `params['scale']` and `params.get('scale')` still return the covariance, but give a `FutureWarning`. Everywhere else in ngboost `scale` is a standard deviation, so users read the covariance as one. `scale` is no longer in `params.keys()` (issue #168, PR #438)
@@ -11,19 +25,11 @@
 * The `var` attribute of `Normal`, `NormalFixedVar`, `NormalFixedMean`, `T`, `TFixedDf`, `TFixedDfFixedVar`, `Cauchy` and `CauchyFixedVar` is deprecated and gives a `FutureWarning`. It hides the `var()` method of `scipy.stats`, so `dist.var()` raises `TypeError` on these classes, while it works on the other distributions. In a future release, `var` will be that method. Use `dist.scale ** 2` for the current values, which works on every version. For the Normal classes these values are the variance. For the T and Cauchy classes they are the squared scale, not the variance (issue #168, PR #439)
 * Add `df` to the `params` of `T`, `TFixedDf` and `TFixedDfFixedVar`, so that `scipy.stats.t(**dist.params)` rebuilds the predicted distribution. Before, `params` held only `loc` and `scale`. The `params` of `Cauchy` and `CauchyFixedVar` still hold only `loc` and `scale`, so that `scipy.stats.cauchy(**dist.params)` works as before (issue #168, PR #440)
 
-### Bug fixes
-
-* Raise `AttributeError` for an attribute that a distribution does not have. Before, the distributions built on `scipy.stats` returned `None`, so a typo such as `dist.s` failed silently. Predicted distributions can now be pickled and deep-copied (issue #168, PR #433)
-* Stop the overflow warnings from trial steps that the line search rejects, such as `overflow encountered in exp` in `Normal`. They came most often from `natural_gradient=False` on a target with large units. Fitted models do not change (issue #352, PR #434)
-* `fit` now raises a `ValueError` that says the fit diverged when the gradient has non-finite values, in place of the base learner's `Input y contains NaN` error (PR #434)
-* Fix `clone` and `GridSearchCV` for `NGBSurvival`. `NGBSurvival`, and `NGBRegressor` with a distribution that has only censored scores such as `LogNormal`, now store `Dist` as passed. `set_params(Dist=...)` and `set_params(Score=...)` now take effect at the next `fit` for every model, and `NGBSurvival.score(X, T, E)` takes the event indicators, which `GridSearchCV` passes to it when metadata routing is on (issue #270, PR #432)
-* Fix `len(dist)` and slicing such as `dist[0:2]` for `NormalFixedVar` and `NormalFixedMean` predictions, which raised an error because these classes did not store their parameters. New tests check `len` and slicing for every distribution in `ngboost.distns` (PR #441)
-* Fix integer indexing such as `dist[0]` for `Bernoulli`, `k_categorical` and `MultivariateNormal` predictions, which raised an error because their constructors needed two-dimensional params. `dist[i]` is now the distribution of row i without the row axis, as for the other distributions (PR #442)
-* Allow scikit-learn 1.7 and later on Python < 3.14. Before, ngboost needed scikit-learn < 1.7 there, so it could not be installed together with packages such as SHAP that need a newer version (issue #463, PR #464)
-
 ### Documentation and CI
 
 * Add a section on overflow warnings and diverging fits to the tuning page of the user guide (PR #434)
+* Add SHAP integration tests for `NGBRegressor` and `NGBClassifier` with the `Explainer` and `TreeExplainer` APIs (PR #464)
+* Fix the `xfail` marker on `test_dists_runs_on_examples_logscore` to target only the `T` distribution case, not all distributions (PR #437)
 * Add `CONTRIBUTING.md`, which tells contributors how to write a release note and what counts as a breaking change, and a PR template. The release notes now have an `Unreleased` section that each PR adds to (PR #468)
 
 ## Version 0.6.0

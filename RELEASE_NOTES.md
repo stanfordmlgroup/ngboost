@@ -4,6 +4,10 @@
 
 <!-- Each PR adds one line to a section below. Add a "### Breaking changes" section for PRs with the `breaking` label. At release time, change this heading to the version number and start a new "Unreleased" section above it. See CONTRIBUTING.md. -->
 
+### Documentation and CI
+
+* The distribution tables of the user guide now list every distribution in `ngboost.distns`, with the keys of `params`, the scores and a reference for each, and notes on fixed parameters and on names that differ from `scipy.stats` (PR #447)
+
 ## Version 0.6.1
 
 Bug fixes for scikit-learn integration, distribution attribute handling, and prediction indexing. Several distribution attributes are deprecated with `FutureWarning` to fix naming inconsistencies before a future breaking release.

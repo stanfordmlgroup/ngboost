@@ -245,7 +245,6 @@ def test_classifier_refit_matches_fresh_fit():
     assert list(model.classes_) == [0, 1]
 
 
-# TODO: This is non-deterministic in the model fitting
 @pytest.mark.parametrize("classifier", [False, True])
 @pytest.mark.parametrize("input_type", ["list", "dataframe", "csr"])
 def test_staged_predictions_accept_prediction_input_types(classifier, input_type):
@@ -273,6 +272,7 @@ def test_staged_predictions_accept_prediction_input_types(classifier, input_type
             )
 
 
+# TODO: This is non-deterministic in the model fitting
 def test_classification(breast_cancer_data):
     from sklearn.metrics import (  # pylint: disable=import-outside-toplevel
         log_loss,

@@ -4,10 +4,16 @@
 
 <!-- Each PR adds one line to a section below. Add a "### Breaking changes" section for PRs with the `breaking` label. At release time, change this heading to the version number and start a new "Unreleased" section above it. See CONTRIBUTING.md. -->
 
+### New features
+
+* Add the `NegativeBinomial` distribution for overdispersed counts, built with the SymPy factory. Its parameters are the mean `mu` and the dispersion `n`, and its variance is `mu + mu**2 / n` (issue #281, PR #446)
+* `make_distribution` accepts expressions as values of `scipy_kwarg_map`, for distributions that scipy parameterizes differently, such as `p = n / (n + mu)` for `scipy.stats.nbinom` (PR #446)
+
 ### Bug fixes
 
 * Fix `T`, whose default fits failed after a few dozen iterations, because df grew until `exp` overflowed. The error was `ValueError: The fit diverged` in 0.6.1 and `ValueError: Input y contains NaN` before. df is now capped at `T.max_df` (1000), and `TLogScore` uses the exact Fisher information instead of a 100-draw Monte Carlo estimate, so `T` fits are about three times as fast and reproducible with `random_state`. The docstrings of the T classes no longer call loc and scale the mean and standard deviation (issue #275, PR #443)
 * Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
+* Fix `sample(m)` of the SymPy factory distributions that use a scipy class, such as `Beta`. It failed for more than one row, and now returns one draw for each row in each of the `m` samples, as the other distributions do (PR #446)
 
 ### Documentation and CI
 

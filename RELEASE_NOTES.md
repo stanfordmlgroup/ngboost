@@ -14,6 +14,7 @@
 * Fix `T`, whose default fits failed after a few dozen iterations, because df grew until `exp` overflowed. The error was `ValueError: The fit diverged` in 0.6.1 and `ValueError: Input y contains NaN` before. df is now capped at `T.max_df` (1000), and `TLogScore` uses the exact Fisher information instead of a 100-draw Monte Carlo estimate, so `T` fits are about three times as fast and reproducible with `random_state`. The docstrings of the T classes no longer call loc and scale the mean and standard deviation (issue #275, PR #443)
 * Fix saving models that use a distribution made with the SymPy factory (`Beta`, `BetaBernoulli`, `BetaBinomial`, `BetaBinomialEstN`, `LogitNormal` or a user's own) with pickle, joblib and skops. The generated classes reported `ngboost.distns.sympy_utils` as their module, so saving failed with a `PicklingError`. `make_distribution` and `make_sympy_log_score` now set the module of a class to the module that creates it, and take a new `module` argument (PR #445)
 * Fix `sample(m)` of the SymPy factory distributions that use a scipy class, such as `Beta`. It failed for more than one row, and now returns one draw for each row in each of the `m` samples, as the other distributions do (PR #446)
+* Fix `staged_pred_dist`, `staged_predict` and `staged_predict_proba` for a list or a pandas DataFrame `X`. They failed with an `AttributeError` or a `KeyError`, because they did not check `X` as `predict` does (PR #455)
 
 ### Documentation and CI
 

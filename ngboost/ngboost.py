@@ -769,6 +769,7 @@ class NGBoost:
         Output:
             A list of NGBoost distribution objects, one per boosting stage up to max_iter
         """
+        X = check_array(X, accept_sparse=True, ensure_all_finite="allow-nan")
         predictions = []
         m, n = X.shape
         params = np.ones((m, self._dist_class.n_params)) * self.init_params

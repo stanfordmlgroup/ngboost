@@ -4,6 +4,10 @@
 
 <!-- Each PR adds one line to a section below. Add a "### Breaking changes" section for PRs with the `breaking` label. At release time, change this heading to the version number and start a new "Unreleased" section above it. See CONTRIBUTING.md. -->
 
+### Documentation and CI
+
+* Add `AGENTS.md`, which gives AI coding agents the steps to review, merge and write PRs and to prepare a release. `CLAUDE.md` loads it in Claude Code (PR #470)
+
 ## Version 0.6.1
 
 Bug fixes for scikit-learn integration, distribution attribute handling, and prediction indexing. Several distribution attributes are deprecated with `FutureWarning` to fix naming inconsistencies before a future breaking release.

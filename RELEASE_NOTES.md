@@ -18,6 +18,7 @@
 ### Documentation and CI
 
 * Add `AGENTS.md`, which gives AI coding agents the steps to review, merge and write PRs and to prepare a release. `CLAUDE.md` loads it in Claude Code (PR #470)
+* The distribution tables of the user guide now list every distribution in `ngboost.distns`, with the keys of `params`, the scores and a reference for each, and notes on fixed parameters and on names that differ from `scipy.stats` (PR #447)
 
 ## Version 0.6.1
 

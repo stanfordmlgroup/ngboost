@@ -108,6 +108,11 @@ The factory auto-derives score, gradients, and Fisher Information
 from the SymPy distribution, and auto-generates fit/sample/mean (regression)
 or class_probs/sample (classification).
 
+Without `scipy_dist_cls` or `mean_fn`, a regression distribution's `mean()`
+is the average of 1000 draws from `sample()`. That mean, and so `predict()`,
+changes from call to call. Pass `mean_fn` to get a deterministic mean, as
+`LogitNormal` does.
+
 ## When You Need a Manual Score Expression
 
 For distributions without a `sympy.stats` equivalent (e.g., LogitNormal), or

@@ -20,6 +20,7 @@ from ngboost.distns import (
     LogitNormal,
     LogNormal,
     MultivariateNormal,
+    NegativeBinomial,
     Normal,
     NormalFixedMean,
     NormalFixedVar,
@@ -143,10 +144,13 @@ def idfn(dist_score: DistScore):
 # test_crps_metric checks the CRPScore metrics
 TEST_METRIC: List[DistScore] = [
     (Normal, LogScore),
+    (NormalFixedVar, LogScore),
+    (NormalFixedMean, LogScore),
     (HalfNormal, LogScore),
     (TFixedDfFixedVar, LogScore),
     (Laplace, LogScore),
     (TFixedDf, LogScore),
+    (T, LogScore),
     (Cauchy, LogScore),
     (Poisson, LogScore),
     (Gamma, LogScore),
@@ -158,10 +162,10 @@ TEST_METRIC: List[DistScore] = [
 # Tests all in TEST_METRIC by default
 TEST_GRAD: List[DistScore] = TEST_METRIC + [
     (Laplace, CRPScore),
-    (T, LogScore),
     (LogitNormal, LogScore),
     (BetaBinomial, LogScore),
     (BetaBinomialEstN, LogScore),
+    (NegativeBinomial, LogScore),
     (Normal, CRPScore),
 ]
 
@@ -242,6 +246,27 @@ def test_exponential_crps_censoring(event: bool):
     if event:
         expected += quad(lambda z: (1 - cdf(z)) ** 2, time, np.inf)[0]
     assert np.allclose(manifold_test(np.log([[scale]])).score(y), expected)
+
+
+@pytest.mark.parametrize("df", [1.5, 3.0, 30.0, 500.0])
+def test_t_metric(df):
+    # E[s s^T] by quadrature, for the score s of loc, log scale and log df.
+    # The information for log df falls like 1 / df^2, so the test runs up to
+    # a large df below the cap
+    params = np.array([[0.3], [np.log(1.7)], [np.log(df)]])
+    D = manifold(LogScore, T)(params)
+
+    def integrand(y, i, j):
+        s = D.d_score(np.array([y]))[0]
+        return s[i] * s[j] * D.dist.pdf(y)[0]
+
+    expected = np.array(
+        [
+            [quad(integrand, -np.inf, np.inf, args=(i, j))[0] for j in range(3)]
+            for i in range(3)
+        ]
+    )
+    np.testing.assert_allclose(D.metric()[0], expected, rtol=1e-6, atol=1e-12)
 
 
 @pytest.mark.slow

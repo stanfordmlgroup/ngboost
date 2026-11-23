@@ -9,6 +9,8 @@ Provides two factories:
   ``NGBRegressor(Dist=...)`` or ``NGBClassifier(Dist=...)``.
 """
 
+import sys
+
 import numpy as np
 import sympy as sym
 import sympy.stats as symstats
@@ -78,6 +80,22 @@ def _build_lambdified(expr, ordered_symbols, extra_symbols=None):
     expr_safe = expr.subs(subs)
 
     return lambdify(dummies, expr_safe, modules=["scipy", "numpy"])
+
+
+def _caller_module_name(depth):
+    """Return the ``__name__`` of the module ``depth`` frames above the function
+    that calls this helper (``depth=1`` gives that function's caller).
+
+    The generated classes take this as their ``__module__``, as
+    ``collections.namedtuple`` does.  Pickle finds a class by its module
+    and name, so without it every generated class claims to live in this
+    module and cannot be pickled.
+    """
+    try:
+        frame = sys._getframe(depth + 1)  # pylint: disable=protected-access
+    except (AttributeError, ValueError):
+        return None
+    return frame.f_globals.get("__name__", "__main__")
 
 
 def _extract_neglog_sum_terms(score_expr):
@@ -183,6 +201,7 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     sympy_dist=None,
     extra_params=None,
     name=None,
+    module=None,
 ):
     """Create a ``LogScore`` subclass from a symbolic score expression.
 
@@ -214,6 +233,10 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         the score expression but are *not* differentiated.
     name : str or None
         Class name for the generated ``LogScore`` subclass.
+    module : str or None
+        ``__module__`` of the generated class.  Pickle can find the class
+        only if this module has a variable called ``name`` that holds it.
+        If ``None``, the module that calls this function is used.
 
     Returns
     -------
@@ -221,6 +244,9 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         A ``LogScore`` subclass with ``score``, ``d_score``, and ``metric``
         methods.
     """
+    if module is None:
+        module = _caller_module_name(1)
+
     if score_expr is None and sympy_dist is None:
         raise ValueError("At least one of score_expr or sympy_dist must be provided")
 
@@ -483,6 +509,8 @@ def make_sympy_log_score(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     }
     if metric_method is not None:
         attrs["metric"] = metric_method
+    if module is not None:
+        attrs["__module__"] = module
 
     cls = type(class_name, (LogScore,), attrs)
     cls._score_fn = _score_fn  # pylint: disable=protected-access
@@ -502,6 +530,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     mean_fn=None,
     class_prob_exprs=None,
     name="SympyDistribution",
+    module=None,
 ):
     """Create a complete NGBoost distribution from a SymPy definition.
 
@@ -531,10 +560,13 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         E.g. ``scipy.stats.beta``.  Enables auto-generated ``fit``,
         ``sample``, and ``mean`` (via ``__getattr__`` delegation).
         Mutually exclusive with ``class_prob_exprs``.
-    scipy_kwarg_map : dict[str, sympy.Symbol] or None
+    scipy_kwarg_map : dict[str, sympy.Expr] or None
         Maps scipy keyword argument names to sympy parameter symbols.
         E.g. ``{"a": alpha, "b": beta}`` for ``scipy.stats.beta(a=, b=)``.
         May reference extra_params symbols (e.g. ``{"n": n, ...}``).
+        A value can also be an expression in the symbols, when scipy uses
+        another parameterization, e.g. ``{"n": n, "p": n / (n + mu)}`` for
+        ``scipy.stats.nbinom``.  Expressions need a custom ``fit_fn``.
     extra_params : list or None
         Non-optimised parameters (e.g. ``n`` in BetaBinomial).
         Each entry is either a bare ``sympy.Symbol`` (no default, for
@@ -554,7 +586,12 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         When provided, the result is a ``ClassificationDistn`` subclass
         with ``class_probs()`` and categorical ``sample()`` auto-generated.
     name : str
-        Class name for the generated distribution.
+        Class name for the generated distribution.  Use the name of the
+        variable that will hold the class, so that pickle can find it.
+    module : str or None
+        ``__module__`` of the generated classes.  Pickle can find the class
+        only if this module has a variable called ``name`` that holds it.
+        If ``None``, the module that calls this function is used.
 
     Returns
     -------
@@ -592,6 +629,9 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     >>> from ngboost import NGBClassifier
     >>> ngb = NGBClassifier(Dist=BetaBernoulli)
     """
+    if module is None:
+        module = _caller_module_name(1)
+
     is_classification = class_prob_exprs is not None
 
     if is_classification and scipy_dist_cls is not None:
@@ -623,16 +663,38 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         sympy_dist=sympy_dist,
         extra_params=_extra_symbols or None,
         name=f"{name}LogScore",
+        module=module,
     )
 
     # ---- 2. Precompute param metadata ----
     param_info = [(str(s), is_log) for s, is_log in params]
     _n_params = len(params)
 
-    # Convert scipy_kwarg_map: {scipy_name: sympy_symbol} → {scipy_name: attr_name}
+    # Convert scipy_kwarg_map: {scipy_name: sympy_symbol} → {scipy_name: attr_name}.
+    # Values that are expressions, such as p = n / (n + mu), are lambdified.
     _scipy_map = None
+    _scipy_expr_fns = {}
+    _all_symbols = [s for s, _ in params] + _extra_symbols
     if scipy_kwarg_map is not None:
-        _scipy_map = {k: str(v) for k, v in scipy_kwarg_map.items()}
+        _scipy_map = {
+            k: str(v) for k, v in scipy_kwarg_map.items() if isinstance(v, sym.Symbol)
+        }
+        _scipy_expr_fns = {
+            k: _build_lambdified(sym.sympify(v), _all_symbols)
+            for k, v in scipy_kwarg_map.items()
+            if not isinstance(v, sym.Symbol)
+        }
+        if _scipy_expr_fns and fit_fn is None:
+            raise ValueError(
+                "scipy_kwarg_map values that are expressions need a custom fit_fn."
+            )
+
+    def _scipy_kwargs(obj):
+        kwargs = {k: getattr(obj, v) for k, v in _scipy_map.items()}
+        if _scipy_expr_fns:
+            values = [getattr(obj, str(s)) for s in _all_symbols]
+            kwargs.update({k: fn(*values) for k, fn in _scipy_expr_fns.items()})
+        return kwargs
 
     # ---- 2b. Lambdify class probability expressions (classification) ----
     _class_prob_fns = None
@@ -659,8 +721,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         for _, ep_name, ep_default in _extra_param_info:
             setattr(self, ep_name, kwargs.get(ep_name, ep_default))
         if scipy_dist_cls is not None and _scipy_map is not None:
-            sc_kwargs = {k: getattr(self, v) for k, v in _scipy_map.items()}
-            self.dist = scipy_dist_cls(**sc_kwargs)
+            self.dist = scipy_dist_cls(**_scipy_kwargs(self))
 
     # ---- 4. fit ----
     if fit_fn is not None:
@@ -728,7 +789,8 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
     elif scipy_dist_cls is not None:
 
         def _sample(self, m):
-            return self.dist.rvs(size=m)
+            # one draw for each row per sample, as the other distributions do
+            return np.array([self.dist.rvs() for _ in range(m)])
 
     elif is_classification:
 
@@ -770,8 +832,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
             for _, ep_name, _ in _extra_param_info:
                 setattr(obj, ep_name, getattr(self, ep_name))
             if scipy_dist_cls is not None and _scipy_map is not None:
-                sc_kw = {k: getattr(obj, v) for k, v in _scipy_map.items()}
-                obj.dist = scipy_dist_cls(**sc_kw)
+                obj.dist = scipy_dist_cls(**_scipy_kwargs(obj))
             return obj
 
     else:
@@ -841,5 +902,7 @@ def make_distribution(  # pylint: disable=R0912,R0913,R0914,R0915,R0917
         attrs["__getitem__"] = _getitem
     if scipy_dist_cls is not None:
         attrs["__getattr__"] = _getattr
+    if module is not None:
+        attrs["__module__"] = module
 
     return type(name, (_base_cls,), attrs)

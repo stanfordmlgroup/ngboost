@@ -58,9 +58,9 @@ def k_categorical(K):
 
         def __init__(self, params):
             super().__init__(params)
-            _, N = params.shape
-            self.logits = np.zeros((K, N))
-            self.logits[1:K, :] = params  # default the 0th class logits to 0
+            # params is (K - 1) x N, or has only the first axis for one row (dist[0])
+            self.logits = np.zeros((K,) + params.shape[1:])
+            self.logits[1:K] = params  # default the 0th class logits to 0
             self.probs = sp.special.softmax(self.logits, axis=0)
             # self.dist = dist(n=1, p=self.probs)
             # scipy doesn't allow vectorized multinomial (!?!?)
@@ -76,7 +76,7 @@ def k_categorical(K):
 
         def sample1(self):  # this is just a helper for sample()
             cum_p = np.cumsum(self.probs, axis=0)[0:-1]
-            interval = cum_p < np.random.random((1, len(self)))
+            interval = cum_p < np.random.random(self.probs.shape[1:])
             return np.sum(interval, axis=0)
 
         def sample(self, m):

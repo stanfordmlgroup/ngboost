@@ -358,6 +358,12 @@ class NGBoost:
 
         Output:
             A fit NGBRegressor object
+
+        With a validation set, fit stores the validation loss of each boosting iteration
+        in evals_result["val"]. It sets best_val_loss_itr to the 0-based index of the
+        iteration with the lowest validation loss. The model at that iteration has
+        best_val_loss_itr + 1 trees. To predict with it, pass
+        max_iter=best_val_loss_itr + 1 to predict or pred_dist.
         """
 
         # Rebuild from Dist and Score so that changes from set_params take effect
@@ -431,6 +437,14 @@ class NGBoost:
 
         Output:
             A fit NGBRegressor object
+
+        With a validation set, partial_fit stores the validation loss of each boosting
+        iteration of this call in evals_result["val"]. It sets best_val_loss_itr to the
+        0-based index of the iteration with the lowest validation loss. The index counts
+        all the trees of the model, including the trees from earlier calls. The model at
+        that iteration has best_val_loss_itr + 1 trees. To predict with it, pass
+        max_iter=best_val_loss_itr + 1 to predict or pred_dist. If the model had trees
+        before this call, best_val_loss_itr is not an index into evals_result["val"].
         """
 
         if len(self.base_models) != len(self.scalings) or len(self.base_models) != len(

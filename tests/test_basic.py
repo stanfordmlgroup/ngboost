@@ -66,6 +66,52 @@ def test_refit_resets_best_validation_iteration(n_estimators):
     assert model.best_val_loss_itr is None
 
 
+def _best_val_loss_data():
+    rng = np.random.default_rng(3)
+    X = rng.normal(size=(200, 3))
+    Y = X[:, 0] - X[:, 1] + rng.normal(size=200)
+    return X[:100], Y[:100], X[100:], Y[100:]
+
+
+def test_best_val_loss_itr_is_a_zero_based_index():
+    # best_val_loss_itr is an index into evals_result["val"], so the model with
+    # the lowest validation loss has best_val_loss_itr + 1 trees.
+    X_train, Y_train, X_val, Y_val = _best_val_loss_data()
+    model = NGBRegressor(
+        n_estimators=500, learning_rate=0.1, verbose=False, random_state=0
+    )
+    model.fit(X_train, Y_train, X_val=X_val, Y_val=Y_val, early_stopping_rounds=10)
+
+    best = model.best_val_loss_itr
+    val_losses = model.evals_result["val"]["LOGSCORE"]
+    # The fit stops early, after the best iteration
+    assert len(val_losses) == len(model.base_models)
+    assert 1 <= best < len(model.base_models) - 1
+
+    def val_loss(max_iter):
+        return -model.pred_dist(X_val, max_iter=max_iter).logpdf(Y_val).mean()
+
+    np.testing.assert_allclose(val_loss(best + 1), val_losses[best])
+    # With max_iter=best the model has one tree fewer and a higher loss
+    np.testing.assert_allclose(val_loss(best), val_losses[best - 1])
+    assert val_loss(best) > val_losses[best]
+
+
+def test_best_val_loss_itr_after_partial_fit_counts_all_trees():
+    X_train, Y_train, X_val, Y_val = _best_val_loss_data()
+    model = NGBRegressor(n_estimators=10, verbose=False, random_state=0)
+    model.fit(X_train, Y_train)
+    model.partial_fit(X_train, Y_train, X_val=X_val, Y_val=Y_val)
+
+    best = model.best_val_loss_itr
+    val_losses = model.evals_result["val"]["LOGSCORE"]
+    # evals_result["val"] has the losses of the second call only
+    assert len(val_losses) == 10
+    assert best == 10 + int(np.argmin(val_losses))
+    best_dist = model.pred_dist(X_val, max_iter=best + 1)
+    np.testing.assert_allclose(-best_dist.logpdf(Y_val).mean(), min(val_losses))
+
+
 @pytest.mark.parametrize(
     "weight_kind", ["array", "list", "series", "offset_series", "reversed_series"]
 )

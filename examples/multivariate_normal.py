@@ -69,7 +69,7 @@ if __name__ == "__main__":
         Dist=dist, verbose=True, n_estimators=2000, natural_gradient=True
     )
     ngb.fit(X, Y, X_val=X_val, Y_val=Y_val, early_stopping_rounds=100)
-    y_dist = ngb.pred_dist(X, max_iter=ngb.best_val_loss_itr)
+    y_dist = ngb.pred_dist(X, max_iter=ngb.best_val_loss_itr + 1)
 
     # Extract parameters for plotting
     mean = y_dist.mean()

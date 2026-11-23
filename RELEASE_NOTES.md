@@ -19,6 +19,7 @@
 
 * Add `AGENTS.md`, which gives AI coding agents the steps to review, merge and write PRs and to prepare a release. `CLAUDE.md` loads it in Claude Code (PR #470)
 * The distribution tables of the user guide now list every distribution in `ngboost.distns`, with the keys of `params`, the scores and a reference for each, and notes on fixed parameters and on names that differ from `scipy.stats` (PR #447)
+* Fix the tuning guide and `examples/multivariate_normal.py`, which predicted with `max_iter=ngb.best_val_loss_itr` and so used one tree fewer than the model with the lowest validation loss. `best_val_loss_itr` is a 0-based index: use `max_iter=ngb.best_val_loss_itr + 1` in your own code. The docstrings of `fit` and `partial_fit` now say this (PR #471)
 
 ## Version 0.6.1
 

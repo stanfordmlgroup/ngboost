@@ -8,6 +8,10 @@
 
 * Fix `T`, whose default fits failed after a few dozen iterations, because df grew until `exp` overflowed. The error was `ValueError: The fit diverged` in 0.6.1 and `ValueError: Input y contains NaN` before. df is now capped at `T.max_df` (1000), and `TLogScore` uses the exact Fisher information instead of a 100-draw Monte Carlo estimate, so `T` fits are about three times as fast and reproducible with `random_state`. The docstrings of the T classes no longer call loc and scale the mean and standard deviation (issue #275, PR #443)
 
+### Documentation and CI
+
+* Add `AGENTS.md`, which gives AI coding agents the steps to review, merge and write PRs and to prepare a release. `CLAUDE.md` loads it in Claude Code (PR #470)
+
 ## Version 0.6.1
 
 Bug fixes for scikit-learn integration, distribution attribute handling, and prediction indexing. Several distribution attributes are deprecated with `FutureWarning` to fix naming inconsistencies before a future breaking release.

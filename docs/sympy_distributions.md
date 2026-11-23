@@ -85,6 +85,10 @@ MyBeta = make_distribution(
 )
 ```
 
+Give `name` the name of the variable that holds the class, and create the
+class at the top level of a module. Pickle, joblib and skops find a class
+by its module and name, so models that use the class can then be saved.
+
 ### Classification with class_prob_exprs
 
 Pass `class_prob_exprs` — a list of SymPy expressions giving

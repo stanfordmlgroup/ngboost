@@ -14,9 +14,7 @@ class LogNormalLogScoreCensored(LogScore):
     def score(self, Y):
         E = Y["Event"]
         T = Y["Time"]
-        cens = (1 - E) * np.log(1 - self.dist.cdf(T) + self.eps)
-        uncens = E * self.dist.logpdf(T)
-        return -(cens + uncens)
+        return -np.where(E, self.dist.logpdf(T), self.dist.logsf(T))
 
     def d_score(self, Y):
         E = Y["Event"][:, np.newaxis]
@@ -29,10 +27,9 @@ class LogNormalLogScoreCensored(LogScore):
         D_uncens[:, 1] = 1 - ((self.mu - lT) ** 2) / (self.sigma**2)
 
         D_cens = np.zeros((self.mu.shape[0], 2))
-        D_cens[:, 0] = -sp.stats.norm.pdf(lT, loc=self.mu, scale=self.sigma) / (
-            1 - self.dist.cdf(T) + self.eps
-        )
-        D_cens[:, 1] = -Z * sp.stats.norm.pdf(Z) / (1 - self.dist.cdf(T) + self.eps)
+        hazard = np.exp(sp.stats.norm.logpdf(Z) - sp.stats.norm.logsf(Z))
+        D_cens[:, 0] = -hazard / self.sigma
+        D_cens[:, 1] = -Z * hazard
 
         return (1 - E) * D_cens + E * D_uncens
 

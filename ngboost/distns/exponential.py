@@ -7,15 +7,11 @@ from scipy.stats import expon as dist
 from ngboost.distns.distn import RegressionDistn
 from ngboost.scores import CRPScore, LogScore
 
-eps = 1e-10
-
 
 class ExponentialLogScore(LogScore):
     def score(self, Y):
         E, T = Y["Event"], Y["Time"]
-        cens = (1 - E) * np.log(1 - self.dist.cdf(T) + eps)
-        uncens = E * self.dist.logpdf(T)
-        return -(cens + uncens)
+        return -np.where(E, self.dist.logpdf(T), self.dist.logsf(T))
 
     def d_score(self, Y):
         E, T = Y["Event"], Y["Time"]

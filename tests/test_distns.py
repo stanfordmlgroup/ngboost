@@ -4,6 +4,7 @@ from typing import Tuple
 import numpy as np
 import pytest
 import scipy.stats
+import sympy as sp
 from scipy.stats import multivariate_normal
 from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.model_selection import train_test_split
@@ -12,6 +13,7 @@ from sklearn.tree import DecisionTreeRegressor
 from ngboost import NGBClassifier, NGBRegressor, NGBSurvival, distns
 from ngboost.distns import (
     Bernoulli,
+    Beta,
     Cauchy,
     ClassificationDistn,
     Distn,
@@ -20,6 +22,7 @@ from ngboost.distns import (
     HalfNormal,
     LogNormal,
     MultivariateNormal,
+    NegativeBinomial,
     Normal,
     NormalFixedMean,
     NormalFixedVar,
@@ -31,6 +34,8 @@ from ngboost.distns import (
     k_categorical,
 )
 from ngboost.distns.cauchy import CauchyFixedVar
+from ngboost.distns.sympy_utils import make_distribution
+from ngboost.manifold import manifold
 from ngboost.scores import CRPScore, LogScore, Score
 
 # test all the dist methods and score implementation methods,#
@@ -74,21 +79,7 @@ def classification_data():
         LogNormal,
         Exponential,
         Gamma,
-        # This case fails for both learners, so the marker is strict: if T starts
-        # to pass, the run fails and the marker has to go. Only a ValueError
-        # counts as the expected failure.
-        pytest.param(
-            T,
-            marks=pytest.mark.xfail(
-                reason=(
-                    "NGBRegressor(Dist=T) raises a ValueError: the natural "
-                    "gradient for log df runs away as df grows, and the "
-                    "gradient goes to NaN (#275)"
-                ),
-                raises=ValueError,
-                strict=True,
-            ),
-        ),
+        T,
         TFixedDf,
         TFixedDfFixedVar,
         Cauchy,
@@ -110,6 +101,38 @@ def test_dists_runs_on_examples_logscore(dist: Distn, learner, regression_data):
     y_pred = ngb.predict(X_test)
     y_dist = ngb.pred_dist(X_test)
     # TODO: test properties of output
+
+
+# Before df was capped, df ran away to infinity on these data within 60
+# iterations, exp(log df) overflowed and the fit failed with NaN gradients
+@pytest.mark.parametrize("units", [1.0, 1e4])
+def test_t_df_stays_finite(units):
+    rng = np.random.default_rng(0)
+    X = rng.uniform(-1, 1, size=(500, 3))
+    y = np.sin(np.pi * X[:, 0]) + X[:, 1] + 0.5 * rng.standard_t(5, size=500)
+    ngb = NGBRegressor(Dist=T, n_estimators=100, verbose=False, random_state=0)
+    ngb.fit(X, units * y)
+    df = ngb.pred_dist(X).df
+    assert np.all(np.isfinite(df))
+    assert np.all(df <= T.max_df)
+
+
+def test_t_df_is_capped():
+    # a log df far above the cap, as boosting steps can give
+    D = manifold(LogScore, T)(np.array([[0.0, 0.0], [0.0, 0.0], [1.0, 800.0]]))
+    np.testing.assert_allclose(D.df, [np.e, T.max_df])
+    y = np.array([0.5, -2.0])
+    assert np.all(np.isfinite(D.score(y)))
+    assert np.all(np.isfinite(D.grad(y, natural=True)))
+
+
+def test_t_no_push_above_cap():
+    # Both rows are at the cap. Y near loc favors a larger df, an outlier a
+    # smaller one. Boosting subtracts the gradient.
+    D = manifold(LogScore, T)(np.array([[0.0, 0.0], [0.0, 0.0], [800.0, 800.0]]))
+    grad = D.grad(np.array([0.1, 10.0]), natural=True)
+    assert grad[0, 2] == 0
+    assert grad[1, 2] > 0
 
 
 @pytest.mark.slow
@@ -507,3 +530,53 @@ def test_cauchy_params_match_scipy_cauchy(dist_class):
     frozen = scipy.stats.cauchy(**params)
     np.testing.assert_allclose(frozen.logpdf(y), dist.logpdf(y))
     np.testing.assert_allclose(frozen.ppf(0.9), dist.ppf(0.9))
+
+
+def test_negative_binomial_matches_scipy():
+    mu, n = np.array([0.5, 4.0, 30.0]), np.array([0.3, 2.0, 50.0])
+    dist = manifold(LogScore, NegativeBinomial)(np.log(np.vstack([mu, n])))
+    ref = scipy.stats.nbinom(n, n / (n + mu))
+    y = np.array([0, 3, 41])
+    assert np.allclose(dist.score(y), -ref.logpmf(y))
+    assert np.allclose(dist.mean(), mu)
+    assert np.allclose(dist.var(), mu + mu**2 / n)
+    assert np.array_equal(dist.ppf(0.9), ref.ppf(0.9))
+
+
+def test_negative_binomial_fit():
+    Y = scipy.stats.nbinom(2.0, 0.5).rvs(size=20000, random_state=0)  # mu is 2
+    log_mu, log_n = NegativeBinomial.fit(Y)
+    assert np.exp(log_mu) == pytest.approx(2.0, rel=0.05)
+    assert np.exp(log_n) == pytest.approx(2.0, rel=0.2)
+    with pytest.raises(ValueError, match="counts"):
+        NegativeBinomial.fit(np.array([0.0, 1.5, 3.0]))
+
+
+@pytest.mark.slow
+def test_negative_binomial_regression():
+    np.random.seed(0)  # the Monte Carlo metric samples from the global generator
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(2000, 3))
+    mu = np.exp(1 + X[:, 0])
+    Y = scipy.stats.nbinom(2.0, 2.0 / (2.0 + mu)).rvs(random_state=rng)
+    ngb = NGBRegressor(Dist=NegativeBinomial, n_estimators=200, verbose=False)
+    ngb.fit(X, Y)
+    assert np.corrcoef(ngb.predict(X), mu)[0, 1] > 0.9
+    assert np.median(ngb.pred_dist(X).params["n"]) == pytest.approx(2.0, rel=0.3)
+
+
+@pytest.mark.parametrize("dist", [Beta, NegativeBinomial])
+def test_factory_sample_shape(dist):
+    assert dist(np.zeros((dist.n_params, 3))).sample(4).shape == (4, 3)
+
+
+def test_factory_scipy_expression_needs_fit_fn():
+    mu, n, y = sp.symbols("mu n y", positive=True)
+    with pytest.raises(ValueError, match="fit_fn"):
+        make_distribution(
+            params=[(mu, True), (n, True)],
+            y=y,
+            score_expr=(y - mu) ** 2 / n,
+            scipy_dist_cls=scipy.stats.nbinom,
+            scipy_kwarg_map={"n": n, "p": n / (n + mu)},
+        )
